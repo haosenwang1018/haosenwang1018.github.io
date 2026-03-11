@@ -11,24 +11,33 @@
       font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
       color: #111;
       background: #fff;
-      line-height: 1.7;
-      font-size: 16px;
+      line-height: 1.6;
+      font-size: 15px;
       -webkit-font-smoothing: antialiased;
+      height: 100vh;
+      overflow: hidden;
     }
 
     main {
       max-width: 600px;
       margin: 0 auto;
-      padding: 80px 20px 120px;
+      padding: 0 20px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
     h1 {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 600;
-      margin-bottom: 24px;
+      margin-bottom: 12px;
     }
 
-    p { margin-bottom: 16px; }
+    p {
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
 
     a {
       color: #111;
@@ -38,28 +47,24 @@
 
     a:hover { opacity: 0.5; }
 
-    .section {
-      margin-top: 48px;
-    }
+    .section { margin-top: 28px; }
 
     .section-title {
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #888;
-      margin-bottom: 16px;
+      color: #999;
+      margin-bottom: 8px;
     }
 
     .values {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px 16px;
+      gap: 2px 14px;
     }
 
-    .values span {
-      font-size: 15px;
-    }
+    .values span { font-size: 14px; }
 
     .values span::before {
       content: "/ ";
@@ -68,40 +73,33 @@
 
     .projects { list-style: none; }
 
-    .projects li {
-      margin-bottom: 10px;
-    }
+    .projects li { margin-bottom: 4px; }
 
     .projects li a {
       font-weight: 500;
+      font-size: 14px;
     }
 
     .projects li span {
       color: #888;
-      font-size: 14px;
+      font-size: 13px;
     }
 
-    .links {
-      list-style: none;
-    }
+    .links { list-style: none; }
 
-    .links li {
-      display: inline;
-    }
+    .links li { display: inline; font-size: 14px; }
 
     .links li::after {
       content: " · ";
       color: #ccc;
     }
 
-    .links li:last-child::after {
-      content: "";
-    }
+    .links li:last-child::after { content: ""; }
 
     .footer {
-      margin-top: 80px;
-      font-size: 13px;
-      color: #bbb;
+      margin-top: 28px;
+      font-size: 11px;
+      color: #ccc;
     }
   </style>
 </head>
@@ -113,8 +111,7 @@
 
     <p>
       I build things with AI, ship fast, and iterate.
-      Currently contributing to open-source AI infrastructure
-      and agent systems.
+      Currently contributing to open-source AI infrastructure and agent systems.
     </p>
 
     <div class="section">
