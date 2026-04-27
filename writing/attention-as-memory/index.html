@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attention Is Not Expensive. Remembering Attention Is. — Sense Wang</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600&amp;display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: "Source Serif 4", Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      color: #111;
+      background: #fff;
+      line-height: 1.7;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    main {
+      max-width: 760px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 72px 20px 112px;
+      overflow: hidden;
+    }
+
+    nav {
+      margin-bottom: 52px;
+      font-size: 13px;
+    }
+
+    h1 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 42px;
+      line-height: 1.1;
+      font-weight: 700;
+      margin-bottom: 14px;
+      max-width: 720px;
+      overflow-wrap: break-word;
+    }
+
+    h2 {
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: 25px;
+      line-height: 1.25;
+      margin: 56px 0 14px;
+    }
+
+    p {
+      margin-bottom: 17px;
+    }
+
+    a {
+      color: #111;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    a:hover { opacity: 0.55; }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.88em;
+    }
+
+    pre {
+      background: #fafafa;
+      border: 1px solid #ececec;
+      color: #333;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      line-height: 1.55;
+      margin: 24px 0;
+      overflow-x: auto;
+      padding: 18px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .meta {
+      color: #999;
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+
+    .dek {
+      color: #444;
+      font-size: 19px;
+      line-height: 1.55;
+      max-width: 680px;
+      margin-bottom: 44px;
+    }
+
+    .note-box {
+      border-top: 1px solid #eee;
+      border-bottom: 1px solid #eee;
+      padding: 30px 0;
+      margin: 34px 0;
+      color: #555;
+      font-size: 15px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #999;
+      margin-bottom: 10px;
+    }
+
+    figure {
+      margin: 38px 0;
+    }
+
+    figcaption {
+      color: #777;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 10px;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid #eee;
+      background: #fff;
+    }
+
+    .svg-label {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      fill: #333;
+    }
+
+    .svg-small {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 11px;
+      fill: #777;
+    }
+
+    .svg-small.light {
+      fill: #fff;
+    }
+
+    .references {
+      color: #555;
+      font-size: 15px;
+      margin-left: 22px;
+    }
+
+    .references li {
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    @media (max-width: 560px) {
+      main {
+        margin: 0;
+        max-width: 390px;
+        padding-top: 48px;
+      }
+      h1 { font-size: 30px; }
+      body { font-size: 16px; }
+      .dek { font-size: 18px; }
+      .mobile-break { display: block; }
+    }
+
+    @media (min-width: 561px) {
+      .mobile-break { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+    <h1>Attention Is Not <span class="mobile-break"></span>Expensive.<span class="mobile-break"></span> Remembering <span class="mobile-break"></span>Attention Is.</h1>
+    <div class="meta">April 2026</div>
+
+    <p class="dek">
+      A note on KV cache, MQA/GQA, MLA, and why long-context models are
+      becoming memory systems.
+    </p>
+
+    <p>
+      When I first learned attention, I thought the expensive part was the
+      attention matrix.
+    </p>
+
+    <p>
+      That is not wrong. During training, self-attention really does create a
+      pairwise interaction between tokens. The familiar phrase is
+      <code>O(n^2)</code>. It is the first thing everyone learns about
+      Transformers, and it is still a useful warning label.
+    </p>
+
+    <p>
+      But I now think that framing is incomplete. During autoregressive
+      inference, a different object quietly becomes the center of the system:
+      the KV cache.
+    </p>
+
+    <div class="note-box">
+      <div class="section-title">The shift</div>
+      Training asks: how do we compute attention over a sequence?
+      <br>
+      Inference asks: what form should the past take so the next token can read
+      from it cheaply?
+    </div>
+
+    <h2>The object we keep carrying forward</h2>
+
+    <p>
+      In a decoder-only Transformer, each new token produces a query
+      <code>q_t</code>. That query attends to all previous keys and reads from
+      all previous values:
+    </p>
+
+    <pre><code>q_t attends to K_1 ... K_t
+and reads from V_1 ... V_t</code></pre>
+
+    <p>
+      The new query is temporary. The past keys and values are not. They must be
+      saved for every layer, for every previous token, for every KV head.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 760 250" role="img" aria-label="Autoregressive inference reads previous keys and values from KV cache">
+        <line x1="70" y1="122" x2="645" y2="122" stroke="#ddd" stroke-width="1"/>
+        <rect x="70" y="82" width="80" height="80" fill="#fafafa" stroke="#222"/>
+        <rect x="170" y="82" width="80" height="80" fill="#fafafa" stroke="#222"/>
+        <rect x="270" y="82" width="80" height="80" fill="#fafafa" stroke="#222"/>
+        <rect x="370" y="82" width="80" height="80" fill="#fafafa" stroke="#222"/>
+        <rect x="500" y="82" width="80" height="80" fill="#fff" stroke="#111" stroke-width="2"/>
+        <text x="96" y="116" class="svg-label">K,V</text>
+        <text x="92" y="136" class="svg-small">token 1</text>
+        <text x="196" y="116" class="svg-label">K,V</text>
+        <text x="192" y="136" class="svg-small">token 2</text>
+        <text x="296" y="116" class="svg-label">K,V</text>
+        <text x="292" y="136" class="svg-small">token 3</text>
+        <text x="396" y="116" class="svg-label">K,V</text>
+        <text x="392" y="136" class="svg-small">token t-1</text>
+        <text x="524" y="116" class="svg-label">q_t</text>
+        <text x="520" y="136" class="svg-small">new query</text>
+        <path d="M 500 92 C 430 24, 170 24, 110 82" fill="none" stroke="#555" stroke-width="1.6"/>
+        <path d="M 500 112 C 420 52, 265 52, 310 82" fill="none" stroke="#555" stroke-width="1.6"/>
+        <path d="M 500 132 C 470 75, 430 78, 410 82" fill="none" stroke="#555" stroke-width="1.6"/>
+        <text x="70" y="198" class="svg-small">The past is not recomputed from scratch. It is stored as keys and values, then read again and again.</text>
+      </svg>
+      <figcaption>
+        Figure 1. In autoregressive inference, the current query is cheap to
+        create. The expensive part is carrying a growing memory of past K/V
+        states through the whole generation.
+      </figcaption>
+    </figure>
+
+    <p>
+      A rough size formula is:
+    </p>
+
+    <pre><code>KV cache ~= layers * context_length * kv_heads * head_dim * 2 * bytes</code></pre>
+
+    <p>
+      The <code>2</code> is for keys and values. This is not an implementation
+      footnote. Once the context gets long, this object becomes one of the main
+      economic constraints of serving a model.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 760 280" role="img" aria-label="KV cache size formula">
+        <text x="40" y="48" class="svg-label">KV cache size grows with:</text>
+        <rect x="40" y="82" width="120" height="56" fill="#fafafa" stroke="#222"/>
+        <rect x="190" y="82" width="150" height="56" fill="#fafafa" stroke="#222"/>
+        <rect x="370" y="82" width="120" height="56" fill="#fafafa" stroke="#222"/>
+        <rect x="520" y="82" width="110" height="56" fill="#fafafa" stroke="#222"/>
+        <rect x="660" y="82" width="56" height="56" fill="#fafafa" stroke="#222"/>
+        <text x="76" y="116" class="svg-label">layers</text>
+        <text x="218" y="116" class="svg-label">context</text>
+        <text x="398" y="116" class="svg-label">heads</text>
+        <text x="548" y="116" class="svg-label">dim</text>
+        <text x="676" y="116" class="svg-label">2</text>
+        <text x="166" y="116" class="svg-label">*</text>
+        <text x="348" y="116" class="svg-label">*</text>
+        <text x="498" y="116" class="svg-label">*</text>
+        <text x="638" y="116" class="svg-label">*</text>
+        <rect x="40" y="178" width="676" height="36" fill="#111"/>
+        <rect x="40" y="178" width="235" height="36" fill="#777"/>
+        <rect x="275" y="178" width="210" height="36" fill="#aaa"/>
+        <text x="54" y="202" class="svg-small light">model depth</text>
+        <text x="292" y="202" class="svg-small light">sequence length</text>
+        <text x="500" y="202" class="svg-small light">KV representation</text>
+        <text x="40" y="244" class="svg-small">Long context hurts because this memory grows across depth and time.</text>
+      </svg>
+      <figcaption>
+        Figure 2. The cache is a product of architectural choices and workload
+        length. Reducing it can be as important as making attention compute
+        faster.
+      </figcaption>
+    </figure>
+
+    <p>
+      This changed how I think about attention. The question is not only
+      whether each token can look back. The question is: what exactly are we
+      forcing the model to carry forward as its past?
+    </p>
+
+    <h2>Why MQA and GQA exist</h2>
+
+    <p>
+      Standard multi-head attention gives each query head its own key and value
+      head. That is expressive, but expensive at inference time. More KV heads
+      means more cache.
+    </p>
+
+    <p>
+      Multi-Query Attention makes many query heads share a single K/V head.
+      Grouped-Query Attention is the less extreme version: groups of query
+      heads share K/V heads.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 760 330" role="img" aria-label="MHA, MQA, and GQA compare KV sharing">
+        <text x="52" y="42" class="svg-label">MHA</text>
+        <text x="308" y="42" class="svg-label">MQA</text>
+        <text x="560" y="42" class="svg-label">GQA</text>
+
+        <g transform="translate(32,72)">
+          <rect x="0" y="0" width="170" height="190" fill="#fff" stroke="#eee"/>
+          <rect x="22" y="24" width="28" height="28" fill="#111"/>
+          <rect x="62" y="24" width="28" height="28" fill="#111"/>
+          <rect x="102" y="24" width="28" height="28" fill="#111"/>
+          <rect x="142" y="24" width="28" height="28" fill="#111"/>
+          <rect x="22" y="116" width="28" height="28" fill="#fafafa" stroke="#111"/>
+          <rect x="62" y="116" width="28" height="28" fill="#fafafa" stroke="#111"/>
+          <rect x="102" y="116" width="28" height="28" fill="#fafafa" stroke="#111"/>
+          <rect x="142" y="116" width="28" height="28" fill="#fafafa" stroke="#111"/>
+          <line x1="36" y1="52" x2="36" y2="116" stroke="#777"/>
+          <line x1="76" y1="52" x2="76" y2="116" stroke="#777"/>
+          <line x1="116" y1="52" x2="116" y2="116" stroke="#777"/>
+          <line x1="156" y1="52" x2="156" y2="116" stroke="#777"/>
+          <text x="42" y="176" class="svg-small">one KV per Q head</text>
+        </g>
+
+        <g transform="translate(288,72)">
+          <rect x="0" y="0" width="170" height="190" fill="#fff" stroke="#eee"/>
+          <rect x="22" y="24" width="28" height="28" fill="#111"/>
+          <rect x="62" y="24" width="28" height="28" fill="#111"/>
+          <rect x="102" y="24" width="28" height="28" fill="#111"/>
+          <rect x="142" y="24" width="28" height="28" fill="#111"/>
+          <rect x="82" y="116" width="28" height="28" fill="#fafafa" stroke="#111"/>
+          <line x1="36" y1="52" x2="96" y2="116" stroke="#777"/>
+          <line x1="76" y1="52" x2="96" y2="116" stroke="#777"/>
+          <line x1="116" y1="52" x2="96" y2="116" stroke="#777"/>
+          <line x1="156" y1="52" x2="96" y2="116" stroke="#777"/>
+          <text x="37" y="176" class="svg-small">all Q heads share KV</text>
+        </g>
+
+        <g transform="translate(544,72)">
+          <rect x="0" y="0" width="170" height="190" fill="#fff" stroke="#eee"/>
+          <rect x="22" y="24" width="28" height="28" fill="#111"/>
+          <rect x="62" y="24" width="28" height="28" fill="#111"/>
+          <rect x="102" y="24" width="28" height="28" fill="#111"/>
+          <rect x="142" y="24" width="28" height="28" fill="#111"/>
+          <rect x="42" y="116" width="28" height="28" fill="#fafafa" stroke="#111"/>
+          <rect x="122" y="116" width="28" height="28" fill="#fafafa" stroke="#111"/>
+          <line x1="36" y1="52" x2="56" y2="116" stroke="#777"/>
+          <line x1="76" y1="52" x2="56" y2="116" stroke="#777"/>
+          <line x1="116" y1="52" x2="136" y2="116" stroke="#777"/>
+          <line x1="156" y1="52" x2="136" y2="116" stroke="#777"/>
+          <text x="34" y="176" class="svg-small">groups of Q heads share KV</text>
+        </g>
+
+        <text x="40" y="302" class="svg-small">Black blocks are query heads. White blocks are stored K/V heads.</text>
+      </svg>
+      <figcaption>
+        Figure 3. MQA and GQA are not cosmetic variants. They are cache
+        reductions that came from serving pressure.
+      </figcaption>
+    </figure>
+
+    <p>
+      This is easy to describe, but the reason matters. MQA and GQA are not
+      just small architecture variants. They are evidence that inference
+      pressure feeds back into model design. The cache is not a byproduct
+      anymore. It is part of the architecture.
+    </p>
+
+    <h2>MLA changes the question</h2>
+
+    <p>
+      MQA and GQA ask: can we store fewer KV heads?
+    </p>
+
+    <p>
+      DeepSeek's Multi-Head Latent Attention asks a deeper question: can we
+      change the representation of the cache itself?
+    </p>
+
+    <p>
+      In the simplified picture, instead of storing the full key-value
+      representation for every token in the obvious form, MLA stores a compressed
+      latent representation and reconstructs the needed K/V-like objects through
+      projections.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 760 310" role="img" aria-label="MLA stores compressed latent cache before projection">
+        <text x="52" y="42" class="svg-label">Before: cache K/V directly</text>
+        <rect x="52" y="72" width="90" height="60" fill="#fafafa" stroke="#111"/>
+        <rect x="160" y="72" width="90" height="60" fill="#fafafa" stroke="#111"/>
+        <rect x="268" y="72" width="90" height="60" fill="#fafafa" stroke="#111"/>
+        <rect x="376" y="72" width="90" height="60" fill="#fafafa" stroke="#111"/>
+        <text x="80" y="106" class="svg-label">K,V</text>
+        <text x="188" y="106" class="svg-label">K,V</text>
+        <text x="296" y="106" class="svg-label">K,V</text>
+        <text x="404" y="106" class="svg-label">K,V</text>
+        <text x="500" y="106" class="svg-small">large per-token representation</text>
+
+        <text x="52" y="190" class="svg-label">MLA: cache a latent, then project when needed</text>
+        <rect x="52" y="220" width="250" height="46" fill="#111"/>
+        <text x="102" y="248" class="svg-small light">compressed latent cache</text>
+        <path d="M 306 243 L 382 243" stroke="#777" stroke-width="1.5"/>
+        <path d="M 382 243 L 370 237 M 382 243 L 370 249" stroke="#777" stroke-width="1.5"/>
+        <rect x="402" y="212" width="74" height="62" fill="#fafafa" stroke="#111"/>
+        <rect x="494" y="212" width="74" height="62" fill="#fafafa" stroke="#111"/>
+        <text x="424" y="247" class="svg-label">K</text>
+        <text x="516" y="247" class="svg-label">V</text>
+        <text x="596" y="247" class="svg-small">recovered for attention</text>
+      </svg>
+      <figcaption>
+        Figure 4. MLA is interesting because it treats the cache representation
+        as a design object, not a leftover tensor from attention.
+      </figcaption>
+    </figure>
+
+    <p>
+      The exact projection scheme matters, but the larger point is simpler:
+      MLA treats the cache not as a leftover tensor from attention, but as a
+      first-class object to be designed.
+    </p>
+
+    <p>
+      This is the point where attention starts to look less like a layer and
+      more like a memory system. The model is no longer only learning how to
+      attend. It is also learning what form its remembered past should take.
+    </p>
+
+    <h2>DeepSeek V4 feels less surprising after this</h2>
+
+    <p>
+      This is why I think DeepSeek V4 is interesting, but not as an isolated
+      event.
+    </p>
+
+    <p>
+      Its model card describes a hybrid attention architecture combining
+      Compressed Sparse Attention and Heavily Compressed Attention. It also
+      claims that, in the 1M-token setting, DeepSeek-V4-Pro uses 27% of the
+      single-token inference FLOPs and 10% of the KV cache compared with
+      DeepSeek-V3.2.
+    </p>
+
+    <p>
+      The important idea is not simply "1M context". A million-token window is
+      only useful if the system can afford to keep, read, and route that history.
+      Otherwise it is a benchmark number rather than a working memory.
+    </p>
+
+    <figure>
+      <svg viewBox="0 0 760 360" role="img" aria-label="Long context as memory hierarchy">
+        <text x="44" y="44" class="svg-label">Long context as memory hierarchy</text>
+
+        <rect x="70" y="88" width="620" height="56" fill="#111"/>
+        <text x="94" y="122" class="svg-small light">local window: high fidelity, recent tokens</text>
+
+        <rect x="110" y="164" width="540" height="56" fill="#555"/>
+        <text x="134" y="198" class="svg-small light">compressed memory: cheaper representation of longer history</text>
+
+        <rect x="150" y="240" width="460" height="56" fill="#999"/>
+        <text x="174" y="274" class="svg-small light">sparse retrieval: select useful blocks</text>
+
+        <text x="70" y="326" class="svg-small">The hard question is not how to see more tokens. It is how to decide what form the past should take.</text>
+      </svg>
+      <figcaption>
+        Figure 5. DeepSeek V4 is a useful trigger because it makes the memory
+        hierarchy visible: local, compressed, and sparse access are no longer
+        separate ideas.
+      </figcaption>
+    </figure>
+
+    <p>
+      Once the KV cache becomes a central bottleneck, a hybrid attention design
+      is much less surprising. Some parts of the past should be local. Some
+      should be compressed. Some should be retrieved sparsely. Some may be
+      stored in a much more compact global representation.
+    </p>
+
+    <p>
+      This makes long-context modeling feel closer to memory hierarchy design
+      than to just making the attention matrix bigger.
+    </p>
+
+    <h2>What changed in my model</h2>
+
+    <p>
+      I used to think attention was expensive because every token looks at every
+      previous token. I now think that is only half of the story.
+    </p>
+
+    <p>
+      In production, the more interesting question is not just how tokens look
+      back, but what form the past is allowed to take.
+    </p>
+
+    <p>
+      This is a better way for me to read recent model architecture papers.
+      MQA, GQA, MLA, sparse attention, and hybrid attention are not separate
+      tricks. They are different answers to the same pressure: the model wants
+      more context, but the system cannot afford to remember everything in the
+      most literal form.
+    </p>
+
+    <p>
+      Attention is not just getting longer. It is being forced to become more
+      selective about memory.
+    </p>
+
+    <h2>References</h2>
+    <ol class="references">
+      <li><a href="https://arxiv.org/abs/1911.02150">Noam Shazeer, Fast Transformer Decoding: One Write-Head is All You Need</a></li>
+      <li><a href="https://arxiv.org/abs/2305.13245">GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints</a></li>
+      <li><a href="https://arxiv.org/abs/2405.04434">DeepSeek-V2: A Strong, Economical, and Efficient Mixture-of-Experts Language Model</a></li>
+      <li><a href="https://arxiv.org/abs/2412.19437">DeepSeek-V3 Technical Report</a></li>
+      <li><a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro">DeepSeek-V4-Pro Technical Report and Model Card</a></li>
+      <li><a href="https://blog.vllm.ai/2023/06/20/vllm.html">vLLM: Efficient Memory Management with PagedAttention</a></li>
+    </ol>
+  </main>
+</body>
+</html>
