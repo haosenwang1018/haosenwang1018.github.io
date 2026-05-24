@@ -4,172 +4,313 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sense Wang</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600&amp;display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    :root {
+      --text: #f5f5f0;
+      --muted: rgba(245, 245, 240, 0.64);
+      --quiet: rgba(245, 245, 240, 0.42);
+      --line: rgba(245, 245, 240, 0.18);
+      --black: #050505;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--black);
+    }
+
     body {
-      font-family: "Source Serif 4", Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif;
-      color: #111;
-      background: #fff;
-      line-height: 1.6;
+      min-height: 100vh;
+      color: var(--text);
+      background: var(--black);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
       font-size: 15px;
+      line-height: 1.55;
       -webkit-font-smoothing: antialiased;
-      height: 100vh;
+      text-rendering: optimizeLegibility;
       overflow: hidden;
+      overflow-x: hidden;
     }
 
-    main {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 0 20px;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        linear-gradient(90deg, rgba(5, 5, 5, 0.92) 0%, rgba(5, 5, 5, 0.72) 42%, rgba(5, 5, 5, 0.18) 100%),
+        linear-gradient(0deg, rgba(5, 5, 5, 0.86) 0%, rgba(5, 5, 5, 0.18) 52%, rgba(5, 5, 5, 0.72) 100%),
+        url("assets/home-earth-limb.jpg") center right / cover no-repeat;
+      filter: saturate(0.82) contrast(1.06);
     }
 
-    h1 {
-      font-family: "Playfair Display", Georgia, serif;
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    p {
-      margin-bottom: 8px;
-      font-size: 14px;
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background: radial-gradient(circle at 78% 42%, rgba(255, 255, 255, 0.08), transparent 26%);
+      opacity: 0.44;
     }
 
     a {
-      color: #111;
-      text-decoration: underline;
-      text-underline-offset: 2px;
+      color: var(--text);
+      text-decoration: none;
     }
 
-    a:hover { opacity: 0.5; }
+    a:hover {
+      color: #fff;
+    }
 
-    .section { margin-top: 28px; }
+    .page {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      padding: 30px 36px 34px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      overflow: hidden;
+    }
+
+    header,
+    footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      font-size: 13px;
+      font-weight: 650;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    nav a {
+      color: var(--muted);
+    }
+
+    nav a:hover {
+      color: var(--text);
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 720px) minmax(240px, 360px);
+      align-items: end;
+      gap: 56px;
+      padding: 11vh 0 9vh;
+    }
+
+    .eyebrow {
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      max-width: 680px;
+      font-size: 58px;
+      line-height: 0.96;
+      font-weight: 700;
+      letter-spacing: 0;
+      margin-bottom: 22px;
+    }
+
+    .statement {
+      max-width: 520px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.62;
+    }
+
+    .work {
+      justify-self: end;
+      width: min(100%, 340px);
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+    }
 
     .section-title {
+      color: var(--quiet);
       font-size: 11px;
-      font-weight: 600;
+      font-weight: 650;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #999;
-      margin-bottom: 8px;
+      margin-bottom: 13px;
     }
 
-    .values {
+    .projects {
+      list-style: none;
+    }
+
+    .projects li {
+      border-bottom: 1px solid rgba(245, 245, 240, 0.11);
+    }
+
+    .projects a {
       display: flex;
-      flex-wrap: wrap;
-      gap: 2px 14px;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 11px 0;
+      color: var(--text);
     }
 
-    .values span { font-size: 14px; }
-
-    .values span::before {
-      content: "/ ";
-      color: #ccc;
+    .projects span {
+      color: var(--quiet);
+      font-size: 12px;
+      white-space: nowrap;
     }
 
-    .projects { list-style: none; }
-
-    .projects li { margin-bottom: 4px; }
-
-    .projects li a {
-      font-weight: 500;
-      font-size: 14px;
+    footer {
+      color: var(--quiet);
+      font-size: 12px;
     }
 
-    .projects li span {
-      color: #888;
-      font-size: 13px;
+    .footer-links {
+      display: flex;
+      gap: 18px;
     }
 
-    .links { list-style: none; }
-
-    .links li { display: inline; font-size: 14px; }
-
-    .links li::after {
-      content: " · ";
-      color: #ccc;
+    .footer-links a {
+      color: var(--quiet);
     }
 
-    .links li:last-child::after { content: ""; }
+    .footer-links a:hover {
+      color: var(--text);
+    }
 
-    .footer {
-      margin-top: 28px;
-      font-size: 11px;
-      color: #ccc;
+    @media (max-width: 820px) {
+      body {
+        overflow: auto;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        background:
+          linear-gradient(180deg, rgba(5, 5, 5, 0.88) 0%, rgba(5, 5, 5, 0.72) 46%, rgba(5, 5, 5, 0.96) 100%),
+          url("assets/home-earth-limb.jpg") 62% center / cover no-repeat;
+      }
+
+      .page {
+        min-height: 100svh;
+        padding: 24px 22px 28px;
+        overflow-x: hidden;
+      }
+
+      header,
+      footer {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      nav {
+        flex-wrap: wrap;
+        gap: 14px 18px;
+      }
+
+      main {
+        grid-template-columns: 1fr;
+        gap: 44px;
+        padding: 14vh 0 7vh;
+        min-width: 0;
+      }
+
+      .eyebrow {
+        max-width: 260px;
+        font-size: 11px;
+        line-height: 1.5;
+      }
+
+      h1 {
+        font-size: 44px;
+      }
+
+      .statement {
+        font-size: 15px;
+      }
+
+      .work {
+        justify-self: stretch;
+        width: 100%;
+      }
+
+      .projects a {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .projects span {
+        white-space: normal;
+      }
+    }
+
+    @media (max-width: 460px) {
+      h1 {
+        font-size: 37px;
+      }
     }
   </style>
 </head>
 <body>
-  <main>
-    <h1>Sense Wang</h1>
+  <div class="page">
+    <header>
+      <a class="brand" href="/">Sense Wang</a>
+      <nav aria-label="Primary navigation">
+        <a href="writing/">Writing</a>
+        <a href="will/">Will</a>
+        <a href="https://github.com/haosenwang1018">GitHub</a>
+        <a href="https://x.com/Sense_1018">X</a>
+      </nav>
+    </header>
 
-    <p>Drop-out. Geeker. Builder.</p>
+    <main>
+      <section class="hero" aria-label="Mission">
+        <p class="eyebrow">AI Systems / Space Intelligence / Civilization</p>
+        <h1>Build great works.<br>Do extraordinary things.</h1>
+        <p class="statement">
+          I build AI infrastructure and agent systems for a future where intelligence
+          expands human capability beyond Earth.
+        </p>
+      </section>
 
-    <p>
-      I build things with AI, ship fast, and iterate.
-      Currently contributing to open-source AI infrastructure and agent systems.
-    </p>
+      <section class="work" aria-label="Selected work">
+        <div class="section-title">Selected Work</div>
+        <ul class="projects">
+          <li><a href="https://github.com/Conway-Research/automaton">Automaton <span>Autonomous AI</span></a></li>
+          <li><a href="https://github.com/HKUDS/nanobot">Nanobot <span>OpenClaw runtime</span></a></li>
+          <li><a href="https://github.com/openclaw/openclaw">OpenClaw <span>Personal AI</span></a></li>
+          <li><a href="https://github.com/karpathy/autoresearch">Autoresearch <span>Research agents</span></a></li>
+        </ul>
+      </section>
+    </main>
 
-    <div class="section">
-      <div class="section-title">Values</div>
-      <div class="values">
-        <span>Speed</span>
-        <span>Execution</span>
-        <span>Taste</span>
-        <span>Ambition</span>
-        <span>Iteration</span>
-        <span>Scrappiness</span>
-        <span>AI-powered</span>
+    <footer>
+      <span>Sense Wang — 2026</span>
+      <div class="footer-links">
+        <a href="mailto:wanghaosen1018@gmail.com">Email</a>
+        <a href="https://sensewang.com">sensewang.com</a>
       </div>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Believe</div>
-      <p>Build things that benefit humanity and civilization.</p>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Coolest Projects I've Contributed To</div>
-      <ul class="projects">
-        <li>
-          <a href="https://github.com/Conway-Research/automaton">Automaton</a>
-          <span>— the first AI that can earn, replicate, and evolve on its own</span>
-        </li>
-        <li>
-          <a href="https://github.com/HKUDS/nanobot">Nanobot</a>
-          <span>— ultra-lightweight OpenClaw runtime</span>
-        </li>
-        <li>
-          <a href="https://github.com/openclaw/openclaw">OpenClaw</a>
-          <span>— your personal AI assistant, any OS, any platform</span>
-        </li>
-        <li>
-          <a href="https://github.com/karpathy/autoresearch">Autoresearch</a>
-          <span>— AI agents running research autonomously</span>
-        </li>
-      </ul>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Links</div>
-      <ul class="links">
-        <li><a href="writing/">Writing</a></li>
-        <li><a href="will/">Will</a></li>
-        <li><a href="https://github.com/haosenwang1018">GitHub</a></li>
-        <li><a href="https://x.com/Sense_1018">Twitter</a></li>
-        <li><a href="mailto:wanghaosen1018@gmail.com">Email</a></li>
-      </ul>
-    </div>
-
-    <div class="footer">Sense Wang &mdash; 2026</div>
-  </main>
+    </footer>
+  </div>
 </body>
 </html>
