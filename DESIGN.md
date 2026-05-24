@@ -125,7 +125,7 @@ It should feel serious, final, and alive. It should have the gravity of a privat
 
 ### Current Direction
 
-The will page uses a real Apollo lunar surface image. The moon element is intentionally present because the content mentions bringing intelligence into space and deep-space capability. It should feel like terrain, mission, and frontier, not a decorative moon symbol.
+The will page uses a real Apollo full-moon image. The moon element is intentionally present because the content mentions bringing intelligence into space and deep-space capability. The Moon should appear as a complete celestial body, not as dirty surface texture, a decorative icon, or an abstract sci-fi motif.
 
 The first screen should make these lines unavoidable:
 

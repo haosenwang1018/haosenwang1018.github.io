@@ -10,8 +10,8 @@
 
 ## `will-lunar-surface.jpg`
 
-- Source: NASA image `AS16-121-19449`
-- Original URL: https://upload.wikimedia.org/wikipedia/commons/0/01/Lunar_Surface_%28AS16-121-19449%29.jpg
-- Reference page: https://commons.wikimedia.org/wiki/File:Lunar_Surface_(AS16-121-19449).jpg
-- License/status: Public domain NASA Apollo 16 image
-- Local processing: resized to 2200px wide and compressed for the will page background
+- Source: NASA Apollo 11 image `AS11-44-6667`
+- Original URL: https://upload.wikimedia.org/wikipedia/commons/8/81/AS11-44-6667_-_Full_Moon_Photographed_From_Apollo_11_Spacecraft.jpg
+- Reference page: https://commons.wikimedia.org/wiki/File:AS11-44-6667_-_Full_Moon_Photographed_From_Apollo_11_Spacecraft.jpg
+- License/status: Public domain NASA image
+- Local processing: compressed for the will page background

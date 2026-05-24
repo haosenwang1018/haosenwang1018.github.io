@@ -38,10 +38,10 @@
       inset: 0;
       z-index: 0;
       background:
-        linear-gradient(90deg, rgba(5, 5, 5, 0.96) 0%, rgba(5, 5, 5, 0.78) 44%, rgba(5, 5, 5, 0.24) 100%),
-        linear-gradient(0deg, rgba(5, 5, 5, 0.92) 0%, rgba(5, 5, 5, 0.26) 44%, rgba(5, 5, 5, 0.78) 100%),
-        url("../assets/will-lunar-surface.jpg") right bottom / cover no-repeat;
-      filter: saturate(0) contrast(1.16) brightness(0.78);
+        linear-gradient(90deg, rgba(5, 5, 5, 0.98) 0%, rgba(5, 5, 5, 0.86) 42%, rgba(5, 5, 5, 0.34) 100%),
+        linear-gradient(0deg, rgba(5, 5, 5, 0.94) 0%, rgba(5, 5, 5, 0.2) 50%, rgba(5, 5, 5, 0.72) 100%),
+        url("../assets/will-lunar-surface.jpg") right 7vw center / clamp(420px, 42vw, 680px) auto no-repeat;
+      filter: saturate(0) contrast(1.05) brightness(0.9);
     }
 
     body::after {
@@ -50,8 +50,8 @@
       inset: 0;
       z-index: 1;
       pointer-events: none;
-      background: radial-gradient(circle at 82% 22%, rgba(255, 255, 255, 0.08), transparent 28%);
-      opacity: 0.5;
+      background: radial-gradient(circle at 82% 50%, rgba(255, 255, 255, 0.08), transparent 30%);
+      opacity: 0.36;
     }
 
     a,
@@ -259,8 +259,9 @@
     @media (max-width: 900px) {
       body::before {
         background:
-          linear-gradient(180deg, rgba(5, 5, 5, 0.84) 0%, rgba(5, 5, 5, 0.72) 42%, rgba(5, 5, 5, 0.96) 100%),
-          url("../assets/will-lunar-surface.jpg") 68% bottom / cover no-repeat;
+          linear-gradient(180deg, rgba(5, 5, 5, 0.76) 0%, rgba(5, 5, 5, 0.84) 38%, rgba(5, 5, 5, 0.98) 100%),
+          linear-gradient(90deg, rgba(5, 5, 5, 0.7) 0%, rgba(5, 5, 5, 0.16) 58%, rgba(5, 5, 5, 0.72) 100%),
+          url("../assets/will-lunar-surface.jpg") center 84px / min(82vw, 520px) auto no-repeat;
       }
 
       .page {
