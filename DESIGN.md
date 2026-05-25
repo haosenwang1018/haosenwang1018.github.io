@@ -81,7 +81,7 @@ The homepage is the public front door. It should feel like a mission cover, not 
 
 ### Current Direction
 
-The homepage uses a real ISS Earth-limb image. This avoids an obvious moon/rocket cliche while giving the page orbital depth. The image is pushed behind black overlays so the primary experience remains text.
+The homepage uses a large, slowly rotating 3D Moon built from NASA CGI Moon Kit texture and displacement maps. The Moon sits on the right side and is intentionally cropped so only part of the body is visible. This makes it feel like a massive celestial presence rather than a small decorative circle.
 
 The homepage message is intentionally short:
 
@@ -114,6 +114,7 @@ expands human capability beyond Earth.
 - Resume-like sections
 - Colorful value tags
 - Decorative moon, stars, rockets, or planets
+- Small complete moon icons or static circular moon stickers
 - Marketing hero layout with split cards
 - Anything that feels like a personal website template
 
