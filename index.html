@@ -422,7 +422,7 @@
       function render() {
         const delta = Math.min(clock.getDelta(), 0.05);
         if (!reduceMotion.matches) {
-          moon.rotation.y += delta * 0.007;
+          moon.rotation.y += delta * 0.014;
         }
         renderer.render(scene, camera);
         frameId = window.requestAnimationFrame(render);
