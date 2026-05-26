@@ -51,11 +51,11 @@
     .moon-fallback {
       background: url("assets/will-lunar-surface.jpg") right -18vw center / min(86vw, 920px) auto no-repeat;
       filter: saturate(0) contrast(1.08) brightness(0.72);
-      opacity: 0.72;
+      opacity: 0;
     }
 
-    .moon-stage.is-ready + .moon-fallback {
-      opacity: 0;
+    .moon-stage.is-fallback + .moon-fallback {
+      opacity: 0.72;
     }
 
     .background-vignette {
@@ -414,9 +414,9 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         renderer.setSize(width, height, false);
 
-        const radius = width <= 820 ? 2.62 : Math.min(3.2, Math.max(2.64, frustumWidth * 0.27));
+        const radius = width <= 820 ? 2.92 : Math.min(3.72, Math.max(2.96, frustumWidth * 0.31));
         moon.scale.setScalar(radius);
-        moon.position.set(frustumWidth / 2 + radius * (width <= 820 ? 0.12 : 0.1), width <= 820 ? 0.74 : -0.02, 0);
+        moon.position.set(frustumWidth / 2 + radius * (width <= 820 ? 0.16 : 0.14), width <= 820 ? 0.74 : -0.02, 0);
       }
 
       function render() {
@@ -438,6 +438,7 @@
         window.cancelAnimationFrame(frameId);
       });
     } catch (error) {
+      document.querySelector(".moon-stage")?.classList.add("is-fallback");
       console.warn("3D Moon fallback active:", error);
     }
   </script>
