@@ -303,6 +303,7 @@
     <header>
       <a class="brand" href="/">Sense Wang</a>
       <nav aria-label="Primary navigation">
+        <a href="works/">Works</a>
         <a href="writing/">Writing</a>
         <a href="will/">Will</a>
         <a href="https://github.com/haosenwang1018">GitHub</a>
@@ -323,10 +324,11 @@
       <section class="work" aria-label="Selected work">
         <div class="section-title">Selected Work</div>
         <ul class="projects">
+          <li><a href="works/">OSS Contribution Factory <span>Autonomous OSS</span></a></li>
+          <li><a href="https://sensewang.com/haosen-works/">Works Demo Reel <span>Portfolio demos</span></a></li>
           <li><a href="https://github.com/Conway-Research/automaton">Automaton <span>Autonomous AI</span></a></li>
           <li><a href="https://github.com/HKUDS/nanobot">Nanobot <span>OpenClaw runtime</span></a></li>
           <li><a href="https://github.com/openclaw/openclaw">OpenClaw <span>Personal AI</span></a></li>
-          <li><a href="https://github.com/karpathy/autoresearch">Autoresearch <span>Research agents</span></a></li>
         </ul>
       </section>
     </main>
@@ -346,12 +348,23 @@
       const stage = document.querySelector(".moon-stage");
       const canvas = document.getElementById("moon-canvas");
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-      const renderer = new THREE.WebGLRenderer({
-        canvas,
+      const contextAttributes = {
         alpha: true,
         antialias: true,
         powerPreference: "high-performance"
+      };
+      const gl =
+        canvas.getContext("webgl2", contextAttributes) ||
+        canvas.getContext("webgl", contextAttributes);
+
+      if (!gl) {
+        throw new Error("WebGL unavailable");
+      }
+
+      const renderer = new THREE.WebGLRenderer({
+        canvas,
+        context: gl,
+        ...contextAttributes
       });
       renderer.setClearColor(0x000000, 0);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -437,9 +450,8 @@
       window.addEventListener("pagehide", () => {
         window.cancelAnimationFrame(frameId);
       });
-    } catch (error) {
+    } catch {
       document.querySelector(".moon-stage")?.classList.add("is-fallback");
-      console.warn("3D Moon fallback active:", error);
     }
   </script>
 </body>

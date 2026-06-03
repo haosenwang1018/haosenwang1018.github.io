@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Works — Sense Wang</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --text: #f5f5f0;
+      --muted: rgba(245, 245, 240, 0.66);
+      --quiet: rgba(245, 245, 240, 0.43);
+      --line: rgba(245, 245, 240, 0.18);
+      --black: #050505;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--black);
+    }
+
+    body {
+      min-height: 100vh;
+      color: var(--text);
+      background: var(--black);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.58;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(5, 5, 5, 0.98) 0%, rgba(5, 5, 5, 0.84) 46%, rgba(5, 5, 5, 0.48) 100%),
+        linear-gradient(0deg, rgba(5, 5, 5, 0.98) 0%, rgba(5, 5, 5, 0.36) 54%, rgba(5, 5, 5, 0.84) 100%),
+        url("../assets/home-earth-limb.jpg") right top / min(90vw, 1280px) auto no-repeat;
+      filter: saturate(0) contrast(1.08) brightness(0.72);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: #fff;
+    }
+
+    video {
+      display: block;
+      width: 100%;
+      background: #000;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      padding: 30px 36px 44px;
+    }
+
+    header,
+    footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      font-size: 13px;
+      font-weight: 650;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    nav a {
+      color: var(--muted);
+    }
+
+    nav a:hover {
+      color: var(--text);
+    }
+
+    main {
+      padding: 13vh 0 0;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 720px) minmax(280px, 420px);
+      align-items: end;
+      gap: clamp(44px, 7vw, 104px);
+      min-height: 62vh;
+      padding-bottom: 9vh;
+    }
+
+    .eyebrow,
+    .section-title {
+      color: var(--quiet);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 720px;
+      margin: 18px 0 22px;
+      font-size: clamp(54px, 8vw, 104px);
+      line-height: 0.9;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+
+    .statement {
+      max-width: 610px;
+      color: var(--muted);
+      font-size: clamp(16px, 1.7vw, 20px);
+      line-height: 1.55;
+    }
+
+    .mission-links {
+      align-self: stretch;
+      display: grid;
+      align-content: end;
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+    }
+
+    .mission-links a {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(245, 245, 240, 0.11);
+      font-weight: 620;
+    }
+
+    .mission-links span {
+      color: var(--quiet);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .feature {
+      display: grid;
+      grid-template-columns: minmax(0, 1.04fr) minmax(320px, 0.58fr);
+      gap: 34px;
+      align-items: end;
+      padding: 56px 0 72px;
+      border-top: 1px solid var(--line);
+    }
+
+    .feature-copy h2,
+    .video-section h2 {
+      margin-top: 13px;
+      font-size: clamp(36px, 5vw, 72px);
+      line-height: 0.92;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+
+    .feature-copy p,
+    .video-section > p {
+      max-width: 620px;
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.65;
+    }
+
+    .video-frame {
+      border: 1px solid var(--line);
+      background: #000;
+    }
+
+    .video-frame video {
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      opacity: 0.9;
+    }
+
+    .feature-meta {
+      display: grid;
+      gap: 14px;
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+    }
+
+    .feature-meta div {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 13px;
+      border-bottom: 1px solid rgba(245, 245, 240, 0.11);
+    }
+
+    .feature-meta dt {
+      color: var(--quiet);
+      font-size: 11px;
+      font-weight: 650;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .feature-meta dd {
+      margin: 0;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .video-section {
+      padding: 72px 0 36px;
+      border-top: 1px solid var(--line);
+    }
+
+    .video-list {
+      margin-top: 42px;
+    }
+
+    .work-row {
+      display: grid;
+      grid-template-columns: minmax(220px, 0.42fr) minmax(0, 0.8fr);
+      gap: 28px;
+      align-items: start;
+      padding: 28px 0;
+      border-top: 1px solid rgba(245, 245, 240, 0.13);
+    }
+
+    .work-row:first-child {
+      border-top-color: var(--line);
+    }
+
+    .work-row h3 {
+      font-size: clamp(24px, 3vw, 42px);
+      line-height: 0.98;
+      font-weight: 700;
+      letter-spacing: 0;
+      margin-bottom: 12px;
+    }
+
+    .work-row p {
+      color: var(--muted);
+      max-width: 420px;
+    }
+
+    .work-row .meta {
+      margin-top: 14px;
+      color: var(--quiet);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .work-row video {
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+      opacity: 0.88;
+      border: 1px solid var(--line);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .actions a {
+      color: var(--muted);
+      border-bottom: 1px solid currentColor;
+      padding-bottom: 3px;
+    }
+
+    .actions a:hover {
+      color: var(--text);
+    }
+
+    footer {
+      margin-top: 70px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+      color: var(--quiet);
+      font-size: 12px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 18px;
+    }
+
+    @media (max-width: 900px) {
+      body::before {
+        background:
+          linear-gradient(180deg, rgba(5, 5, 5, 0.72) 0%, rgba(5, 5, 5, 0.9) 46%, rgba(5, 5, 5, 1) 100%),
+          url("../assets/home-earth-limb.jpg") right top / min(150vw, 980px) auto no-repeat;
+      }
+
+      .page {
+        padding: 24px 22px 32px;
+      }
+
+      header,
+      footer {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      nav {
+        flex-wrap: wrap;
+        gap: 14px 18px;
+      }
+
+      main {
+        padding-top: 12vh;
+      }
+
+      .hero,
+      .feature,
+      .work-row {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        min-height: auto;
+      }
+
+      .mission-links {
+        align-content: start;
+      }
+
+      .work-row {
+        gap: 20px;
+      }
+
+      .feature-meta dd {
+        max-width: 200px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      h1 {
+        font-size: 48px;
+      }
+
+      .mission-links a,
+      .feature-meta div {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .feature-meta dd {
+        max-width: none;
+        text-align: left;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <a class="brand" href="../">Sense Wang</a>
+      <nav aria-label="Primary navigation">
+        <a href="../">Home</a>
+        <a href="../writing/">Writing</a>
+        <a href="../will/">Will</a>
+        <a href="https://github.com/haosenwang1018">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero" aria-label="Works mission">
+        <div>
+          <p class="eyebrow">Works / Agents / Open Source</p>
+          <h1>Make the work visible.</h1>
+          <p class="statement">
+            These are the demos worth showing: autonomous open-source contribution,
+            browser-agent security, document conversion, agent runtime reliability,
+            memory infrastructure, browser transport, trading agents, and CLI tooling.
+          </p>
+        </div>
+        <div class="mission-links" aria-label="Works links">
+          <a href="https://sensewang.com/haosen-works/">Full demo site <span>Launch page</span></a>
+          <a href="https://sensewang.com/haosen-works/demos/oss-factory/">OSS factory live <span>Flagship</span></a>
+          <a href="https://sensewang.com/haosen-works/demos/works-console/">Works console <span>26 branches</span></a>
+        </div>
+      </section>
+
+      <section class="feature" aria-label="OSS Contribution Factory">
+        <a class="video-frame" href="https://sensewang.com/haosen-works/demos/oss-factory/" aria-label="Open OSS Contribution Factory demo">
+          <video autoplay muted loop playsinline poster="https://sensewang.com/haosen-works/assets/screens/oss-factory-desktop.png">
+            <source src="https://sensewang.com/haosen-works/assets/videos/oss-contribution-factory-demo.webm" type="video/webm">
+            <source src="https://sensewang.com/haosen-works/assets/videos/oss-contribution-factory-demo.mp4" type="video/mp4">
+          </video>
+        </a>
+        <div class="feature-copy">
+          <p class="section-title">Flagship</p>
+          <h2>OSS Contribution Factory</h2>
+          <p>
+            An agentic workflow for scouting real issues, reproducing the boundary,
+            patching narrowly, verifying with regression evidence, and creating a
+            fork PR only after safety gates pass.
+          </p>
+          <dl class="feature-meta">
+            <div>
+              <dt>Loop</dt>
+              <dd>Issue → Repro → Patch → Test → Fork PR</dd>
+            </div>
+            <div>
+              <dt>Proof</dt>
+              <dd>Recorded demo, live console, and explicit safety gates</dd>
+            </div>
+            <div>
+              <dt>Why it matters</dt>
+              <dd>It turns engineering taste into repeatable open-source contribution.</dd>
+            </div>
+          </dl>
+          <div class="actions">
+            <a href="https://sensewang.com/haosen-works/demos/oss-factory/">Open live demo</a>
+            <a href="https://github.com/haosenwang1018/haosen-works">GitHub repo</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="video-section" aria-label="Demo videos">
+        <p class="section-title">Demo videos</p>
+        <h2>Different systems need different evidence.</h2>
+        <p>
+          The full demo hub carries the heavier visual presentation. This page keeps
+          the personal site austere: video proof, direct links, and enough context to
+          understand what each work contributes.
+        </p>
+
+        <div class="video-list">
+          <article class="work-row">
+            <div>
+              <h3>Works Demo Console</h3>
+              <p>Twenty-six local branches across seven open-source repos, organized by impact, verification, and demo value.</p>
+              <div class="meta">portfolio-reel / 26 works / 25 with test evidence</div>
+              <div class="actions">
+                <a href="https://sensewang.com/haosen-works/demos/works-console/">Open console</a>
+              </div>
+            </div>
+            <video controls preload="metadata" poster="https://sensewang.com/haosen-works/assets/screens/works-console-desktop.png">
+              <source src="https://sensewang.com/haosen-works/assets/videos/works-demo-reel.webm" type="video/webm">
+              <source src="https://sensewang.com/haosen-works/assets/videos/works-demo-reel.mp4" type="video/mp4">
+            </video>
+          </article>
+
+          <article class="work-row">
+            <div>
+              <h3>Browser Security Sentinel</h3>
+              <p>Restricted browsing rejects data: and blob: bypasses while preserving normal allowed-domain behavior.</p>
+              <div class="meta">browser-use / fix/restrict-data-blob-urls</div>
+            </div>
+            <video controls preload="metadata">
+              <source src="https://sensewang.com/haosen-works/assets/videos/browser-security.mp4" type="video/mp4">
+            </video>
+          </article>
+
+          <article class="work-row">
+            <div>
+              <h3>Document Conversion Lab</h3>
+              <p>Mixed scanned and text PDFs route each page through the right extraction path.</p>
+              <div class="meta">microsoft/markitdown / fix/1791-ocr-mixed-scanned-pages</div>
+            </div>
+            <video controls preload="metadata">
+              <source src="https://sensewang.com/haosen-works/assets/videos/document-lab.mp4" type="video/mp4">
+            </video>
+          </article>
+
+          <article class="work-row">
+            <div>
+              <h3>Agent Runtime Orbit</h3>
+              <p>Skill indexing detects symlink cycles before a long-running agent gets trapped.</p>
+              <div class="meta">NousResearch/hermes-agent / fix/18809-skill-utils-symlink-cycle</div>
+            </div>
+            <video controls preload="metadata">
+              <source src="https://sensewang.com/haosen-works/assets/videos/agent-orbit.mp4" type="video/mp4">
+            </video>
+          </article>
+
+          <article class="work-row">
+            <div>
+              <h3>Memory Retrieval Field</h3>
+              <p>Free-form memories get text indexing semantics instead of tag-like lookup behavior.</p>
+              <div class="meta">mem0ai/mem0 / fix/valkey-memory-text-index</div>
+            </div>
+            <video controls preload="metadata">
+              <source src="https://sensewang.com/haosen-works/assets/videos/memory-field.mp4" type="video/mp4">
+            </video>
+          </article>
+
+          <article class="work-row">
+            <div>
+              <h3>Transport Blueprint</h3>
+              <p>Heavy DevTools payloads get an explicit WebSocket max-payload path.</p>
+              <div class="meta">puppeteer/puppeteer / fix/connect-max-payload</div>
+            </div>
+            <video controls preload="metadata">
+              <source src="https://sensewang.com/haosen-works/assets/videos/transport-blueprint.mp4" type="video/mp4">
+            </video>
+          </article>
+
+          <article class="work-row">
+            <div>
+              <h3>Trading Agent Risk Room</h3>
+              <p>Provider options become model-aware before a financial workflow starts.</p>
+              <div class="meta">TradingAgents / fix/831-anthropic-haiku-effort</div>
+            </div>
+            <video controls preload="metadata">
+              <source src="https://sensewang.com/haosen-works/assets/videos/trading-risk.mp4" type="video/mp4">
+            </video>
+          </article>
+
+          <article class="work-row">
+            <div>
+              <h3>CLI Runtime Blackbox</h3>
+              <p>Session retention sweeps global project roots instead of only the active workspace.</p>
+              <div class="meta">google-gemini/gemini-cli / fix/session-retention-global-sweep</div>
+            </div>
+            <video controls preload="metadata">
+              <source src="https://sensewang.com/haosen-works/assets/videos/cli-runtime.mp4" type="video/mp4">
+            </video>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Sense Wang — 2026</span>
+      <div class="footer-links">
+        <a href="mailto:wanghaosen1018@gmail.com">Email</a>
+        <a href="https://sensewang.com">sensewang.com</a>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

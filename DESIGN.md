@@ -177,6 +177,7 @@ If added:
 
 - Keep homepage and will page visually aligned.
 - Keep writing pages quieter and more essay-like, but they may evolve separately.
+- Keep the works page austere and evidence-led: video proof, direct links, sparse language, and no startup-style cards or badges.
 - Keep all space imagery local and documented.
 - Prefer one strong image per page over multiple visual motifs.
 - If a new design element is added, ask whether it increases mission gravity or merely adds decoration.
