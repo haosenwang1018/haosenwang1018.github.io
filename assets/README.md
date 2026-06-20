@@ -8,6 +8,62 @@
 - License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
 - Local processing: rendered page 1 from local PDF and cropped to the Figure 1 method/results panel
 
+## `td-mpc-figure-2-told-training.png`
+
+- Source: Figure 2 from `Temporal Difference Learning for Model Predictive Control`, Hansen, Wang, and Su, ICML 2022
+- Original URL: https://arxiv.org/abs/2203.04955
+- Reference page: https://www.nicklashansen.com/td-mpc/
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 4 from local PDF at 220 dpi and cropped to the TOLD training diagram
+
+## `td-mpc-figure-3-dmcontrol.png`
+
+- Source: Figure 3 from `Temporal Difference Learning for Model Predictive Control`, Hansen, Wang, and Su, ICML 2022
+- Original URL: https://arxiv.org/abs/2203.04955
+- Reference page: https://www.nicklashansen.com/td-mpc/
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 6 from local PDF at 220 dpi and cropped to the DMControl task learning curves
+
+## `td-mpc-table-1-pixels.png`
+
+- Source: Table 1 from `Temporal Difference Learning for Model Predictive Control`, Hansen, Wang, and Su, ICML 2022
+- Original URL: https://arxiv.org/abs/2203.04955
+- Reference page: https://www.nicklashansen.com/td-mpc/
+- License/status: Paper table used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 7 from local PDF at 220 dpi and cropped to the image-based DMControl 100k benchmark table
+
+## `td-mpc-figure-4-pixels.png`
+
+- Source: Figure 4 from `Temporal Difference Learning for Model Predictive Control`, Hansen, Wang, and Su, ICML 2022
+- Original URL: https://arxiv.org/abs/2203.04955
+- Reference page: https://www.nicklashansen.com/td-mpc/
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 7 from local PDF at 220 dpi and cropped to the image-based DMControl learning curves
+
+## `td-mpc-figure-5-meta-world.png`
+
+- Source: Figure 5 from `Temporal Difference Learning for Model Predictive Control`, Hansen, Wang, and Su, ICML 2022
+- Original URL: https://arxiv.org/abs/2203.04955
+- Reference page: https://www.nicklashansen.com/td-mpc/
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 8 from local PDF at 220 dpi and cropped to the Meta-World and multi-modal RL plots
+
+## `td-mpc-figure-6-budget.png`
+
+- Source: Figure 6 from `Temporal Difference Learning for Model Predictive Control`, Hansen, Wang, and Su, ICML 2022
+- Original URL: https://arxiv.org/abs/2203.04955
+- Reference page: https://www.nicklashansen.com/td-mpc/
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 8 from local PDF at 220 dpi and cropped to the variable computational budget plots
+
+## `td-mpc-figure-10-latent-objective.png`
+
+- Source: Appendix Figure 10 from `Temporal Difference Learning for Model Predictive Control`, Hansen, Wang, and Su, ICML 2022
+- Original URL: https://arxiv.org/abs/2203.04955
+- Reference page: https://www.nicklashansen.com/td-mpc/
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 15 from local PDF at 220 dpi and cropped to the latent dynamics objective ablation
+
 ## `home-earth-limb.jpg`
 
 - Source: NASA image `iss072e724819`

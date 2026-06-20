@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TD-MPC：世界模型不必还原世界 — Sense Wang</title>
+  <title>TD-MPC: A World Model for Action — Sense Wang</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600&amp;display=swap" rel="stylesheet">
@@ -25,7 +25,7 @@
       width: 100%;
       margin: 0 auto;
       padding: 72px 20px 112px;
-      overflow: hidden;
+      overflow: visible;
     }
 
     nav {
@@ -113,6 +113,42 @@
       margin-bottom: 28px;
     }
 
+    .article-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin: -18px 0 34px;
+    }
+
+    .language-switch {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .language-switch button {
+      border: 0;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+      color: #999;
+      cursor: pointer;
+      font-family: "Source Serif 4", "Songti SC", "Noto Serif CJK SC", Georgia, serif;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      line-height: 1.5;
+      padding: 0 0 3px;
+      text-transform: uppercase;
+    }
+
+    .language-switch button[aria-pressed="true"] {
+      border-color: #111;
+      color: #111;
+    }
+
+    .version[hidden] {
+      display: none;
+    }
+
     .dek {
       color: #444;
       font-size: 19px;
@@ -123,6 +159,12 @@
 
     figure {
       margin: 38px 0;
+    }
+
+    figure.wide {
+      width: min(980px, calc(100vw - 40px));
+      margin-left: 50%;
+      transform: translateX(-50%);
     }
 
     figure img {
@@ -166,6 +208,273 @@
 <body>
   <main>
     <nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+    <div class="article-toolbar">
+      <div class="language-switch" aria-label="Language">
+        <button type="button" data-lang-button="en" aria-pressed="true">English</button>
+        <button type="button" data-lang-button="zh" aria-pressed="false">中文</button>
+      </div>
+    </div>
+
+    <article class="version" data-lang-panel="en" lang="en">
+      <h1>TD-MPC: A World Model for Action</h1>
+      <div class="meta">June 2026</div>
+
+      <p class="dek">
+        TD-MPC makes a useful turn in model-based RL: it moves the world model's job from reconstructing every visible detail to predicting the parts that matter for action.
+      </p>
+
+      <p>
+        The entry point of TD-MPC is an old problem in model-based RL. If an agent wants to evaluate the future before acting, it needs an internal model. A more complete model looks more reliable for planning, while computation and model error both grow with the planning horizon.
+      </p>
+
+      <p>
+        The paper compresses that problem into a concrete interface: if an agent wants to imagine the future before acting, what kind of world model does it actually need?
+      </p>
+
+      <p>
+        The natural answer is to build the most complete model possible. Given the current state and an action, it should predict the next image, the next state, and every changing detail in the environment. This sounds reasonable. In continuous control, it is often too expensive.
+      </p>
+
+      <p>
+        A walking robot is surrounded by details: floor texture, shadows, background colors, pixel noise, and body details irrelevant to the task. Training a model to reproduce all of them spends capacity on information the controller may never use. Planning then calls the model repeatedly. A small one-step error can become a larger rollout error after several imagined steps.
+      </p>
+
+      <p>
+        TD-MPC makes a direct judgment: for an acting agent, the important test for a world model is whether it helps choose better actions.
+      </p>
+
+      <h2>The Old Problem Of Long-Horizon Planning</h2>
+
+      <p>
+        A simple route in reinforcement learning is to avoid explicit environment modeling and learn a policy through trial and error. Given a state, the policy outputs an action. SAC-like model-free methods live in this family. They are relatively simple and stable, while their sample efficiency can be poor.
+      </p>
+
+      <p>
+        Model-based RL takes another route. The agent first learns a model, then tries actions inside that model. It can ask:
+      </p>
+
+      <pre><code>if I execute action a, what will happen over the next few steps?</code></pre>
+
+      <p>
+        This is model predictive control, or MPC. The procedure is fixed: at each time step, look ahead for a short horizon, evaluate many candidate action sequences, choose the sequence with the highest predicted return, and execute only its first action. At the next observation, plan again.
+      </p>
+
+      <p>
+        This mechanism fits continuous control well. The action can be joint torque, velocity, direction, or another continuous vector, instead of a discrete button such as left, right, or jump. Humanoid and Dog locomotion tasks have high-dimensional action spaces, where pure trial-and-error learning can be slow.
+      </p>
+
+      <p>
+        MPC also has a clear failure mode. A short horizon can be myopic. A long horizon is expensive, and errors in the learned model accumulate. TD-MPC's central compromise is simple: use the model for the near future, and use a value function for the far future.
+      </p>
+
+      <figure>
+        <img src="../../assets/td-mpc-figure-1.png" alt="TD-MPC overview figure from the paper showing latent model rollouts, reward, value, and benchmark curves">
+        <figcaption>
+          Figure 1 from the TD-MPC paper. The top diagram is the method in miniature: encode observation into latent state, perform model rollouts, score them with reward and value, then execute an action. The bottom plots show the paper's headline Humanoid and Dog locomotion results.
+        </figcaption>
+      </figure>
+
+      <h2>Short-Term Model, Long-Term Q</h2>
+
+      <p>
+        The name TD-MPC has two parts. MPC handles short-horizon planning. Temporal difference learning trains long-term value estimates.
+      </p>
+
+      <p>
+        Long-term value here is a number produced by a network. More precisely, the paper uses <code>Q(z, a)</code>: given a latent state <code>z</code> and an action <code>a</code>, output the expected long-term reward from that point.
+      </p>
+
+      <p>
+        During inference, TD-MPC encodes the current observation into a latent state <code>z_0</code>. It then samples many candidate action sequences. For each sequence, it repeatedly calls the dynamics model:
+      </p>
+
+      <pre><code>z_0 + a_0 -> z_1
+z_1 + a_1 -> z_2
+z_2 + a_2 -> z_3
+...
+z_H</code></pre>
+
+      <p>
+        This is a model rollout. The robot is still in the real environment; the learned dynamics model is being called several times internally to imagine possible futures. Each candidate trajectory receives a score:
+      </p>
+
+      <pre><code>short-term rewards + terminal Q value</code></pre>
+
+      <p>
+        The first term comes from reward predicted along the short rollout. The second term comes from the Q function at the end of the planning horizon. MPC can therefore avoid rolling out very far while still accounting for long-term return.
+      </p>
+
+      <p>
+        This is the paper's clean interface: model-based planning handles local action details, and TD value learning reconnects the local plan to the long-term objective.
+      </p>
+
+      <h2>TOLD: A Latent Model Built For Acting</h2>
+
+      <p>
+        The model inside TD-MPC is called TOLD: Task-Oriented Latent Dynamics. The name can sound abstract, but the object is a set of neural networks:
+      </p>
+
+      <pre><code>h: observation -> latent state z
+d: z + action -> next z
+R: z + action -> reward
+Q: z + action -> long-term value
+pi: z -> candidate action</code></pre>
+
+      <p>
+        The raw observation can be robot state or image input. Either way, it must become numbers. The network that turns raw input into a latent vector is the encoder, also called the representation network. TD-MPC uses <code>h</code> to encode an observation into <code>z</code>, and planning happens inside that latent representation.
+      </p>
+
+      <p>
+        The key move is that TD-MPC does not require <code>z</code> to reconstruct the full world. It does not train the model to predict the next image or recover every state detail. The latent dynamics is trained through reward prediction, TD value loss, and latent consistency.
+      </p>
+
+      <figure>
+        <img src="../../assets/td-mpc-figure-2-told-training.png" alt="TOLD training diagram from the TD-MPC paper with latent states, dynamics, reward, value, policy, online network, and target network">
+        <figcaption>
+          Figure 2 from the TD-MPC paper. TOLD is trained by rolling forward in latent space: encode the first observation, predict future latent states with <code>d</code>, attach reward/value/policy heads at each latent state, and use target networks for the bootstrapped targets.
+        </figcaption>
+      </figure>
+
+      <p>
+        Read this figure as the training contract. The model is not asked to draw the next camera frame. It is asked to make latent states that support three predictions the planner will actually use: immediate reward, terminal value, and the next latent state. That is where the paper's "task-oriented" claim becomes concrete.
+      </p>
+
+      <p>
+        This changes the objective of the world model. The training signal pushes <code>z</code> toward information that affects reward, value, and planning. For Humanoid walking, posture, velocity, and falling matter. Background texture exists in the world, yet it is mostly a burden for the current task.
+      </p>
+
+      <p>
+        This leaves an important question: how much generality does a task-oriented representation lose? If the reward changes, or the task changes, can the same latent still be reused? TD-MPC's answer is engineering-first: make the current task strong. The tradeoff works, and it creates room for later world-model work.
+      </p>
+
+      <h2>What Makes TD-MPC's World Model Different</h2>
+
+      <p>
+        A common intuition for world models is reconstruction-oriented: a model understands the world when it can predict future observations. TD-MPC is closer to control-oriented modeling: the model's main responsibility is to support action selection.
+      </p>
+
+      <blockquote class="note">
+        <div class="note-title">Terminology</div>
+        <p>
+          <code>reconstruction-oriented</code> training is organized around reconstruction: compress the observation into a latent state, then recover the image or full state from that latent. Its standard is reconstruction quality: how faithful the recovery is.
+        </p>
+        <p>
+          <code>control-oriented</code> training is organized around action. The latent state only needs to help predict reward, value, and the next latent state so MPC can choose a better action. Its standard is action quality: how good the selected action is in the environment.
+        </p>
+      </blockquote>
+
+      <p>
+        This resembles MuZero in spirit. MuZero also organizes its model around a planning interface: representation, reward, value, and policy. TD-MPC brings that style into high-dimensional continuous action spaces such as Dog and Humanoid locomotion.
+      </p>
+
+      <h2>What The Experiments Actually Test</h2>
+
+      <p>
+        The experiments are an interface stress test. They ask whether TD-MPC survives several pressures at once: state-based control, image-based control, sparse rewards, goal-conditioned manipulation, high-dimensional actions, multi-task learning, multi-modal input, and limited planning compute. The paper reports 92 continuous-control tasks across DMControl and Meta-World.
+      </p>
+
+      <p>
+        The first evidence block is state-based DMControl. The comparison is useful because the baselines attack the problem from different sides: SAC is model-free, LOOP augments SAC with a learned model, MPC:sim plans with a ground-truth simulator, and the TD-MPC ablations remove either the latent model or the latent consistency regularizer.
+      </p>
+
+      <figure class="wide">
+        <img src="../../assets/td-mpc-figure-3-dmcontrol.png" alt="DMControl learning curves from the TD-MPC paper comparing TD-MPC with SAC, LOOP, MPC sim, and ablations across 15 tasks">
+        <figcaption>
+          Figure 3 from the paper. Each small plot is one DMControl task. The red curve is TD-MPC; blue is SAC; orange is LOOP; the black dashed line is MPC with a ground-truth simulator. The informative pattern is where the gains are largest: tasks with more complex dynamics such as Quadruped and Acrobot.
+        </figcaption>
+      </figure>
+
+      <p>
+        This figure is the main empirical support for the method story. If the latent model were only a cheap reconstruction shortcut, it would be hard to explain why it helps more on tasks where local planning matters. The ablation curves also matter: removing the latent structure or the consistency regularizer weakens performance, which supports the claim that the latent rollout objective is doing real work.
+      </p>
+
+      <p>
+        The image-based setting is a stricter test. Here, TD-MPC receives pixels instead of compact simulator state, but it still does not train a reconstruction model. The 100k benchmark table is useful because several baselines are specialized for pixels, while TD-MPC keeps the same control-oriented modeling principle.
+      </p>
+
+      <figure class="wide">
+        <img src="../../assets/td-mpc-table-1-pixels.png" alt="Table 1 from the TD-MPC paper showing image-based DMControl 100k returns across SAC, CURL, DrQ, PlaNet, Dreamer, MuZero, EfficientZero, and TD-MPC">
+        <figcaption>
+          Table 1 from the paper. The rows are image-based DMControl 100k tasks. TD-MPC is competitive with pixel-specialized baselines on several tasks, and performs strongly on Finger Spin and Walker Walk while avoiding the action discretization used by MuZero-style methods.
+        </figcaption>
+      </figure>
+
+      <figure class="wide">
+        <img src="../../assets/td-mpc-figure-4-pixels.png" alt="Image-based DMControl learning curves from the TD-MPC paper comparing TD-MPC with CURL, DrQ, DrQ-v2, and Dreamer-v2">
+        <figcaption>
+          Figure 4 from the paper. The longer image-based benchmark shows that TD-MPC's competitiveness extends beyond the 100k-step setting and remains visible on harder pixel-control tasks, including Walker and Quadruped variants.
+        </figcaption>
+      </figure>
+
+      <p>
+        Meta-World and multi-modal control test a different question: does the reward-centric latent representation still help outside pure locomotion? In the top row below, TD-MPC improves success rate on 50 goal-conditioned manipulation tasks and on MT10 multi-task learning. In the bottom row, the multi-modal version uses proprioception plus an egocentric camera; the blind variant keeps only proprioception and falls behind.
+      </p>
+
+      <figure>
+        <img src="../../assets/td-mpc-figure-5-meta-world.png" alt="Meta-World and multi-modal RL curves from the TD-MPC paper comparing TD-MPC, SAC, MPC sim, and a blind TD-MPC variant">
+        <figcaption>
+          Figure 5 from the paper. Top: Meta-World success rate. Bottom: multi-modal locomotion with proprioception plus camera input. This is the paper's evidence that TOLD can use different input modalities while keeping the same latent planning interface.
+        </figcaption>
+      </figure>
+
+      <p>
+        The compute-budget experiment is small, but it is conceptually important. MPC has a knob at inference time: how many model steps and optimization iterations should the agent spend before acting? TD-MPC improves as planning budget increases, while the learned policy prior alone is weaker than planning.
+      </p>
+
+      <figure>
+        <img src="../../assets/td-mpc-figure-6-budget.png" alt="Variable computational budget plots from the TD-MPC paper showing Quadruped Walk return as planning horizon and CEM iterations vary">
+        <figcaption>
+          Figure 6 from the paper. Left varies the planning horizon; right varies CEM iterations. The orange star marks the default setting. The gray cross is the learned policy without full planning. This figure is the cleanest evidence for the paper's claim that more planning compute can translate into better control.
+        </figcaption>
+      </figure>
+
+      <p>
+        The strongest ablation for the world-model claim is the latent dynamics objective. The paper compares no regularization, reconstruction loss, contrastive loss, and latent state consistency. Reconstruction and contrastive objectives help over no regularization, but the proposed latent consistency objective is the most consistent across the 15 DMControl tasks.
+      </p>
+
+      <figure class="wide">
+        <img src="../../assets/td-mpc-figure-10-latent-objective.png" alt="Latent dynamics objective ablation from the TD-MPC appendix comparing no regularization, reconstruction, contrastive loss, and latent state consistency">
+        <figcaption>
+          Figure 10 from the paper appendix. This ablation is the empirical version of the paper's modeling claim: the most stable objective aligns the latent model with future latent consistency, reward, and value. Direct reconstruction is weaker in this comparison.
+        </figcaption>
+      </figure>
+
+      <p>
+        Put together, the experiments support a narrower and stronger claim than "world models help RL." TD-MPC shows that, for continuous control, a task-oriented latent model can be good enough for short-horizon planning, and a terminal value function can cover the rest of the return. The remaining weakness is also visible in the plots: exploration-heavy tasks such as Finger Turn Hard are still difficult, and task-oriented representations may not transfer cleanly when the reward or dynamics regime changes.
+      </p>
+
+      <h2>Open Questions: The Cost Of Task-Oriented World Models</h2>
+
+      <p>
+        TD-MPC's core assumption can be written as a testable interface: latent rollout predicts short-term rewards, terminal Q estimates return beyond the planning window, and MPC chooses actions using their combined score. That interface moves the world-model evaluation standard from reconstruction quality to action quality.
+      </p>
+
+      <p>
+        The first risk is representation sufficiency. The training objective is pulled by the current task's reward and value, so the latent state tends to preserve variables that are useful for the current task. In Humanoid walking, discarding background texture is usually good. After task changes, reward rewrites, or contact dynamics entering a new regime, a discarded variable may become necessary state information.
+      </p>
+
+      <p>
+        The second risk is regime mixing. TD-MPC uses one unified latent dynamics model, while real physical systems often have discontinuous regimes. A foot touching the ground and a foot leaving the ground follow different transition dynamics. A hand hitting an object and a hand moving through free space do as well. A single dynamics model may average these modes. PRISM-WM pushes in a related direction by using MoE dynamics to explicitly decompose hybrid dynamics.
+      </p>
+
+      <p>
+        The third risk is horizon decomposition. TD-MPC splits the future into two parts: short-term model rollout and long-term terminal Q. This is effective in continuous control, but it assumes that the latent state at the end of the short rollout contains enough information for the Q function to estimate the long-term objective. If long-term success depends on variables lost during the early rollout, terminal value can become overly optimistic.
+      </p>
+
+      <p>
+        Later world-model work can inherit this evaluation style and push on three pressure points: whether the representation is sufficient, whether latent dynamics can express multiple transition regimes, and whether terminal value can reliably cover the future beyond the planning window.
+      </p>
+
+      <h2>Sources</h2>
+      <ol class="references">
+        <li><a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control</a>, Hansen, Wang, and Su, ICML 2022.</li>
+        <li><a href="https://www.nicklashansen.com/td-mpc/">TD-MPC project page</a>, including videos and benchmark summaries.</li>
+        <li><a href="https://www.nature.com/articles/s41586-020-03051-4">MuZero: Mastering Atari, Go, Chess and Shogi by Planning with a Learned Model</a>, Schrittwieser et al., Nature 2020.</li>
+      </ol>
+    </article>
+
+    <article class="version" data-lang-panel="zh" lang="zh-CN" hidden>
 
     <h1>TD-MPC：世界模型不必还原世界</h1>
     <div class="meta">June 2026</div>
@@ -221,7 +530,7 @@
     <figure>
       <img src="../../assets/td-mpc-figure-1.png" alt="TD-MPC overview figure from the paper showing latent model rollouts, reward, value, and benchmark curves">
       <figcaption>
-        Figure 1 from the TD-MPC paper. The top diagram is the method in miniature: encode observation into latent state, perform model rollouts, score them with reward and value, then execute an action. The bottom plots show the paper's headline Humanoid and Dog locomotion results.
+        TD-MPC 论文 Figure 1。上半部分是方法的缩略图：把 observation 编码成 latent state，在 learned model 里 rollout，用 reward 和 value 打分，再执行 action。下半部分是 Humanoid 和 Dog locomotion 上的代表性结果。
       </figcaption>
     </figure>
 
@@ -279,6 +588,17 @@ pi: z -> candidate action</code></pre>
       关键在于，TD-MPC 不要求 <code>z</code> 能重建完整世界。它不让模型预测下一张图片，也不要求它还原所有 state 细节。它只用 reward prediction、TD value loss 和 latent consistency 去训练这个 latent dynamics。
     </p>
 
+    <figure>
+      <img src="../../assets/td-mpc-figure-2-told-training.png" alt="TOLD training diagram from the TD-MPC paper with latent states, dynamics, reward, value, policy, online network, and target network">
+      <figcaption>
+        TD-MPC 论文 Figure 2。TOLD 的训练是在 latent space 里展开：先编码第一帧 observation，再用 <code>d</code> 预测后续 latent state，并在每个 latent state 上接 reward、value 和 policy 预测头；bootstrapped targets 来自 target network。
+      </figcaption>
+    </figure>
+
+    <p>
+      这张图可以当成 TOLD 的训练契约来看。模型没有被要求画出下一张相机图像，它被要求产出 planning 会用到的三类预测：即时 reward、terminal value、下一个 latent state。这就是 <code>task-oriented</code> 这个词落到数学和训练目标里的地方。
+    </p>
+
     <p>
       这就改变了 world model 的目标。训练目标会把 <code>z</code> 推向那些会影响 reward、value、planning 的信息。对于 Humanoid 走路，身体姿态、速度、是否会摔倒很重要；背景纹理在真实世界里存在，却是当前任务里的负担。
     </p>
@@ -307,16 +627,80 @@ pi: z -> candidate action</code></pre>
       这和 MuZero 有一点相似。MuZero 的模型也围绕 planning 接口组织：representation、reward、value 和 policy。TD-MPC 把这个思路带进高维 action space 的机器人运动，例如 Dog 和 Humanoid 这类连续控制任务。
     </p>
 
+    <h2>实验到底在检验什么</h2>
+
     <p>
-      论文里最显眼的结果是 Dog 和 Humanoid。项目页强调，TD-MPC 能在 1M environment steps 内解决高维 Humanoid 和 Dog locomotion 任务；Dog 任务有 38 维连续动作空间，而 SAC 在这些任务上学不到有意义的行为。
+      这篇论文的实验是一组接口压力测试。它在检验 TD-MPC 这个接口能不能同时扛住几类压力：state-based control、image-based control、sparse reward、goal-conditioned manipulation、高维连续 action、多任务学习、多模态输入，以及有限 planning compute。论文一共评估了 DMControl 和 Meta-World 里的 92 个连续控制任务。
     </p>
 
     <p>
-      实验范围超过这几个视频任务。作者还在 DMControl 和 Meta-World 上做了系统评估，比较 SAC、LOOP、带 ground-truth simulator 的 MPC，以及去掉关键组件的 TD-MPC ablation。指标主要看两件事：学得多快，也就是 sample efficiency；最终能到多高，也就是 asymptotic performance。
+      第一块证据是 state-based DMControl。这个比较有用，是因为几个 baseline 分别代表不同路线：SAC 是 model-free；LOOP 是在 SAC 上加 learned model；MPC:sim 是直接用 ground-truth simulator 做 planning；TD-MPC 的 ablation 则分别去掉 latent model 或 latent consistency regularizer。
+    </p>
+
+    <figure class="wide">
+      <img src="../../assets/td-mpc-figure-3-dmcontrol.png" alt="DMControl learning curves from the TD-MPC paper comparing TD-MPC with SAC, LOOP, MPC sim, and ablations across 15 tasks">
+      <figcaption>
+        论文 Figure 3。每个小图是一个 DMControl 任务。红线是 TD-MPC，蓝线是 SAC，橙线是 LOOP，黑色虚线是用真实 simulator 的 MPC。最值得看的位置，是复杂动力学任务上的提升，例如 Quadruped 和 Acrobot。
+      </figcaption>
+    </figure>
+
+    <p>
+      这张图是方法主张的核心实验证据。如果 latent model 只是一个便宜的 reconstruction shortcut，它很难解释为什么在更需要局部 planning 的任务上提升更大。Ablation 曲线也重要：去掉 latent 结构或 consistency regularizer 后，性能会变弱，这说明 latent rollout objective 是有效组件。
     </p>
 
     <p>
-      这套实验要建立一个判断：TD-MPC 可以在一组连续控制任务上作为强 baseline。尤其是当 action space 变大、model-free 方法很慢时，短期 planning 加 terminal value 的结构开始显得很自然。
+      image-based 设置更严格。这里 TD-MPC 的输入是 pixels，已经脱离 compact simulator state，但它仍然没有训练 reconstruction model。100k benchmark 的表格很有价值，因为里面不少 baseline 是专门为 pixel RL 调过的；TD-MPC 仍然坚持 control-oriented 的 modeling principle。
+    </p>
+
+    <figure class="wide">
+      <img src="../../assets/td-mpc-table-1-pixels.png" alt="Table 1 from the TD-MPC paper showing image-based DMControl 100k returns across SAC, CURL, DrQ, PlaNet, Dreamer, MuZero, EfficientZero, and TD-MPC">
+      <figcaption>
+        论文 Table 1。行是 image-based DMControl 100k 任务，列是 model-free、model-based 和 TD-MPC。TD-MPC 在多个 pixel task 上接近或超过专门调过的 pixel baseline，在 Finger Spin 和 Walker Walk 上尤其强，并且不需要像 MuZero 类方法那样离散化 action space。
+      </figcaption>
+    </figure>
+
+    <figure class="wide">
+      <img src="../../assets/td-mpc-figure-4-pixels.png" alt="Image-based DMControl learning curves from the TD-MPC paper comparing TD-MPC with CURL, DrQ, DrQ-v2, and Dreamer-v2">
+      <figcaption>
+        论文 Figure 4。更长的 image-based benchmark 说明 TD-MPC 的竞争力能延续到更长训练预算；数据量变大后，它在更难的 pixel-control 任务上仍然能和 DrQ-v2、Dreamer-v2 等方法竞争。
+      </figcaption>
+    </figure>
+
+    <p>
+      Meta-World 和 multi-modal control 检验的是另一件事：这种 reward-centric latent representation 离开纯 locomotion 后还管不管用。下图上半部分是 50 个 goal-conditioned manipulation tasks 和 MT10 多任务学习；下半部分是 proprioception 加 egocentric camera 的多模态 locomotion。只保留 proprioception 的 blind 版本明显弱很多。
+    </p>
+
+    <figure>
+      <img src="../../assets/td-mpc-figure-5-meta-world.png" alt="Meta-World and multi-modal RL curves from the TD-MPC paper comparing TD-MPC, SAC, MPC sim, and a blind TD-MPC variant">
+      <figcaption>
+        论文 Figure 5。上半部分是 Meta-World success rate；下半部分是多模态 locomotion。它说明 TOLD 可以接收不同输入模态，但 planning interface 仍然保持为 latent rollout、reward 和 value。
+      </figcaption>
+    </figure>
+
+    <p>
+      computational budget 这个实验很小，但概念上很关键。MPC 在 inference time 有一个旋钮：智能体在行动前到底花多少模型步数和优化迭代去规划？TD-MPC 随着 planning budget 增加而变好，而单独使用 learned policy prior 会弱于完整 planning。
+    </p>
+
+    <figure>
+      <img src="../../assets/td-mpc-figure-6-budget.png" alt="Variable computational budget plots from the TD-MPC paper showing Quadruped Walk return as planning horizon and CEM iterations vary">
+      <figcaption>
+        论文 Figure 6。左图改变 planning horizon，右图改变 CEM iterations。橙色星号是默认设置，灰色叉是只用 learned policy、不做完整 planning。它最直接地支持了论文的一个判断：更多 planning compute 可以转化成更好的控制性能。
+      </figcaption>
+    </figure>
+
+    <p>
+      对 world model 主张最硬的一组 ablation，是 latent dynamics objective。论文比较了 no regularization、reconstruction loss、contrastive loss 和 latent state consistency。reconstruction 和 contrastive 都比没有 regularization 更好，但论文提出的 latent consistency 在 15 个 DMControl 任务上最稳定。
+    </p>
+
+    <figure class="wide">
+      <img src="../../assets/td-mpc-figure-10-latent-objective.png" alt="Latent dynamics objective ablation from the TD-MPC appendix comparing no regularization, reconstruction, contrastive loss, and latent state consistency">
+      <figcaption>
+        论文 appendix Figure 10。这组 ablation 是模型主张的经验版本：latent model 最稳定的训练方式，是围绕未来 latent consistency、reward 和 value 来学。直接 reconstruction 在这里不如 latent consistency 稳定。
+      </figcaption>
+    </figure>
+
+    <p>
+      合起来看，这套实验支持的是一个更窄的判断：在连续控制里，一个 task-oriented latent model 可以足够支撑短期 planning，再用 terminal value function 估计规划窗口之外的 return。弱点也能从图里看到：Finger Turn Hard 这种 exploration-heavy task 仍然困难；如果 reward 或 dynamics regime 变了，task-oriented representation 还能不能复用，也还没有完全解决。
     </p>
 
     <h2>开放问题：task-oriented world model 的代价</h2>
@@ -334,7 +718,7 @@ pi: z -> candidate action</code></pre>
     </p>
 
     <p>
-      第三处风险来自 horizon decomposition。TD-MPC 把未来拆成两段：短期交给 model rollout，远期交给 terminal Q。这个分解在连续控制里很有效，但它也假设短期 rollout 末端的 latent state 已经包含足够信息，让 Q function 可以接住长期目标。如果长期成功依赖早期 rollout 没有保留下来的变量，terminal value 会产生偏乐观的估计。
+      第三处风险来自 horizon decomposition。TD-MPC 把未来拆成两段：短期交给 model rollout，远期交给 terminal Q。这个分解在连续控制里很有效，但它也假设短期 rollout 末端的 latent state 已经包含足够信息，让 Q function 可以用于估计长期目标。如果长期成功依赖早期 rollout 没有保留下来的变量，terminal value 会产生偏乐观的估计。
     </p>
 
     <p>
@@ -347,6 +731,37 @@ pi: z -> candidate action</code></pre>
       <li><a href="https://www.nicklashansen.com/td-mpc/">TD-MPC project page</a>, including videos and benchmark summaries.</li>
       <li><a href="https://www.nature.com/articles/s41586-020-03051-4">MuZero: Mastering Atari, Go, Chess and Shogi by Planning with a Learned Model</a>, Schrittwieser et al., Nature 2020.</li>
     </ol>
+    </article>
   </main>
+
+  <script>
+    const languageKey = "writing-language";
+    const titles = {
+      en: "TD-MPC: A World Model for Action — Sense Wang",
+      zh: "TD-MPC：世界模型不必还原世界 — Sense Wang"
+    };
+    const buttons = Array.from(document.querySelectorAll("[data-lang-button]"));
+    const panels = Array.from(document.querySelectorAll("[data-lang-panel]"));
+
+    function setLanguage(lang) {
+      buttons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.langButton === lang));
+      });
+
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.langPanel !== lang;
+      });
+
+      document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+      document.title = titles[lang];
+      localStorage.setItem(languageKey, lang);
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => setLanguage(button.dataset.langButton));
+    });
+
+    setLanguage(localStorage.getItem(languageKey) === "zh" ? "zh" : "en");
+  </script>
 </body>
 </html>
