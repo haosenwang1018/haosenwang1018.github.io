@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TD-MPC：世界模型不必还原世界 — Sense Wang</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600&amp;display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: "Source Serif 4", "Songti SC", "Noto Serif CJK SC", Georgia, serif;
+      color: #111;
+      background: #fff;
+      line-height: 1.78;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    main {
+      max-width: 760px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 72px 20px 112px;
+      overflow: hidden;
+    }
+
+    nav {
+      margin-bottom: 52px;
+      font-size: 13px;
+    }
+
+    h1 {
+      font-family: "Playfair Display", "Songti SC", Georgia, serif;
+      font-size: 42px;
+      line-height: 1.12;
+      font-weight: 700;
+      margin-bottom: 14px;
+      max-width: 720px;
+      overflow-wrap: break-word;
+    }
+
+    h2 {
+      font-family: "Playfair Display", "Songti SC", Georgia, serif;
+      font-size: 25px;
+      line-height: 1.28;
+      margin: 56px 0 14px;
+    }
+
+    p {
+      margin-bottom: 17px;
+    }
+
+    a {
+      color: #111;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    a:hover { opacity: 0.55; }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.88em;
+    }
+
+    pre {
+      background: #fafafa;
+      border: 1px solid #ececec;
+      color: #333;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 24px 0;
+      overflow-x: auto;
+      padding: 18px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .note {
+      border-left: 3px solid #111;
+      color: #333;
+      font-size: 16px;
+      line-height: 1.72;
+      margin: 28px 0 30px;
+      padding: 2px 0 2px 18px;
+    }
+
+    .note p {
+      margin-bottom: 10px;
+    }
+
+    .note p:last-child {
+      margin-bottom: 0;
+    }
+
+    .note-title {
+      color: #777;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .meta {
+      color: #999;
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+
+    .dek {
+      color: #444;
+      font-size: 19px;
+      line-height: 1.6;
+      max-width: 690px;
+      margin-bottom: 44px;
+    }
+
+    figure {
+      margin: 38px 0;
+    }
+
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid #eee;
+      background: #fff;
+    }
+
+    figcaption {
+      color: #777;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 10px;
+    }
+
+    .references {
+      color: #555;
+      font-size: 15px;
+      margin-left: 22px;
+    }
+
+    .references li {
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    @media (max-width: 560px) {
+      main {
+        margin: 0;
+        max-width: 390px;
+        padding-top: 48px;
+      }
+      h1 { font-size: 31px; }
+      body { font-size: 16px; }
+      .dek { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+    <h1>TD-MPC：世界模型不必还原世界</h1>
+    <div class="meta">June 2026</div>
+
+    <p class="dek">
+      一篇关于 model-based RL 的论文有一个真正有意思的转向：它把 world model 从“预测世界长什么样”，推向“预测什么对行动有用”。
+    </p>
+
+    <p>
+      TD-MPC 的入口是 model-based RL 里一个老问题：智能体如果要在行动前评估未来，需要一个内部模型；模型越完整，规划看起来越可靠，但计算和误差也会一起变大。
+    </p>
+
+    <p>
+      这篇论文把问题压到一个更具体的接口：如果一个智能体想在行动前先想象未来，它到底需要一个什么样的 world model？
+    </p>
+
+    <p>
+      一个自然的答案是：模型越完整越好。给它当前状态和动作，它应该预测下一帧图像、下一时刻状态、环境里所有会变化的东西。这个答案听起来很合理，也很诱人。问题是，在连续控制里，这个答案往往太贵。
+    </p>
+
+    <p>
+      机器人走路时，世界里有很多细节：地面纹理、阴影、背景颜色、像素噪声、和任务无关的身体细节。如果一个模型被训练去还原所有这些东西，它会消耗大量 capacity。更麻烦的是，planning 会把模型连续调用多步。一步预测错一点，rollout 之后误差会逐步放大。
+    </p>
+
+    <p>
+      TD-MPC 的判断很直接：world model 不必先成为一个完整的世界重建器。对一个要行动的智能体来说，真正重要的是这个模型能不能帮助它选择更好的动作。
+    </p>
+
+    <h2>从长远规划的老问题开始</h2>
+
+    <p>
+      强化学习里有一条最朴素的路线：不显式建模环境，只靠试错学一个 policy。给定状态，policy 输出动作。SAC 这类 model-free 方法就属于这个大方向。它们简单、稳定，但样本效率常常很低。
+    </p>
+
+    <p>
+      另一条路线是 model-based。智能体先学一个模型，再在模型里试动作。它可以先问：
+    </p>
+
+    <pre><code>如果执行动作 a，未来几步会发生什么？</code></pre>
+
+    <p>
+      这就是 model predictive control，简称 MPC。MPC 的流程很固定：每个时刻短暂地往前看几步，试很多候选动作序列，选预测回报最高的那一条，然后只执行第一步。下一时刻拿到新的 observation 后，再重新规划。
+    </p>
+
+    <p>
+      这个机制很适合连续控制，因为动作从“左、右、跳”这种离散按钮，变成关节力矩、速度、方向这些连续数值。Humanoid 或 Dog locomotion 这种任务，action space 可以很高维，直接靠 model-free 试错会很慢。
+    </p>
+
+    <p>
+      MPC 的问题也很清楚。它如果只看未来几步，就容易短视；如果看很远，计算又太贵，而且 learned model 的误差会累积。TD-MPC 的核心折中就在这里：近处用模型仔细算，远处用 value function 估。
+    </p>
+
+    <figure>
+      <img src="../../assets/td-mpc-figure-1.png" alt="TD-MPC overview figure from the paper showing latent model rollouts, reward, value, and benchmark curves">
+      <figcaption>
+        Figure 1 from the TD-MPC paper. The top diagram is the method in miniature: encode observation into latent state, perform model rollouts, score them with reward and value, then execute an action. The bottom plots show the paper's headline Humanoid and Dog locomotion results.
+      </figcaption>
+    </figure>
+
+    <h2>短期靠模型，长期靠 Q</h2>
+
+    <p>
+      TD-MPC 的名字可以拆成两半。MPC 负责短期 planning。Temporal difference learning 负责学习长期价值。
+    </p>
+
+    <p>
+      这里的长期价值很具体：它是一个网络输出的数字。论文里更准确地说是 <code>Q(z, a)</code>：输入一个 latent state <code>z</code> 和一个 action <code>a</code>，输出从这里开始预计还能拿到多少长期 reward。
+    </p>
+
+    <p>
+      推理时，TD-MPC 会从当前 observation 得到一个 latent state <code>z_0</code>。然后它采样很多条候选动作序列，对每条序列反复调用 dynamics model：
+    </p>
+
+    <pre><code>z_0 + a_0 -> z_1
+z_1 + a_1 -> z_2
+z_2 + a_2 -> z_3
+...
+z_H</code></pre>
+
+    <p>
+      这就是 model rollout。rollout 在这里指模型内部的未来展开：机器人还停在真实环境里，dynamics model 被连续调用几步。每条候选轨迹都会得到一个分数：
+    </p>
+
+    <pre><code>short-term rewards + terminal Q value</code></pre>
+
+    <p>
+      前半部分来自短期 rollout 中预测到的 reward。后半部分来自短期规划末端的 Q function。这样，MPC 不需要一直规划到很远，也不至于完全短视。
+    </p>
+
+    <p>
+      这也是这篇论文最干净的接口：model-based planning 负责局部动作细节，TD value learning 负责把长期目标接回来。
+    </p>
+
+    <h2>TOLD：一个为行动服务的 latent model</h2>
+
+    <p>
+      TD-MPC 里的模型叫 TOLD，Task-Oriented Latent Dynamics。这个名字容易显得抽象，但它具体就是一组神经网络：
+    </p>
+
+    <pre><code>h: observation -> latent state z
+d: z + action -> next z
+R: z + action -> reward
+Q: z + action -> long-term value
+pi: z -> candidate action</code></pre>
+
+    <p>
+      原始 observation 可能是机器人状态，也可能是图像。它们最终都要变成数字。把原始输入变成 latent vector 的网络叫 encoder，也可以叫 representation network。TD-MPC 用 <code>h</code> 把 observation 编码成 <code>z</code>，然后所有 planning 都在这个 latent 表示上发生。
+    </p>
+
+    <p>
+      关键在于，TD-MPC 不要求 <code>z</code> 能重建完整世界。它不让模型预测下一张图片，也不要求它还原所有 state 细节。它只用 reward prediction、TD value loss 和 latent consistency 去训练这个 latent dynamics。
+    </p>
+
+    <p>
+      这就改变了 world model 的目标。训练目标会把 <code>z</code> 推向那些会影响 reward、value、planning 的信息。对于 Humanoid 走路，身体姿态、速度、是否会摔倒很重要；背景纹理在真实世界里存在，却是当前任务里的负担。
+    </p>
+
+    <p>
+      这里有一个很值得继续追问的地方：task-oriented representation 会不会牺牲通用性？如果 reward 改了，任务改了，这个 latent 还能复用吗？TD-MPC 的回答偏工程：先把当前任务做强。这个取舍很有效，但也给后面的工作留下了空间。
+    </p>
+
+    <h2>TD-MPC 的 world model 特殊在哪里</h2>
+
+    <p>
+      很多 world model 的直觉是 reconstruction-oriented：模型越能预测未来 observation，就越懂世界。TD-MPC 更接近 control-oriented：模型的主要职责是支持行动选择。
+    </p>
+
+    <blockquote class="note">
+      <div class="note-title">Terminology</div>
+      <p>
+        <code>reconstruction-oriented</code> 的训练目标是重建：把 observation 压成 latent state，再从 latent state 还原图像或完整状态。它关心的是 reconstruction quality，也就是还原得像不像。
+      </p>
+      <p>
+        <code>control-oriented</code> 的训练目标围绕行动：latent state 只要能帮助预测 reward、value 和下一步状态，再让 MPC 选出更好的 action。它关心的是 action quality，也就是选出来的动作最后好不好。
+      </p>
+    </blockquote>
+
+    <p>
+      这和 MuZero 有一点相似。MuZero 的模型也围绕 planning 接口组织：representation、reward、value 和 policy。TD-MPC 把这个思路带进高维 action space 的机器人运动，例如 Dog 和 Humanoid 这类连续控制任务。
+    </p>
+
+    <p>
+      论文里最显眼的结果是 Dog 和 Humanoid。项目页强调，TD-MPC 能在 1M environment steps 内解决高维 Humanoid 和 Dog locomotion 任务；Dog 任务有 38 维连续动作空间，而 SAC 在这些任务上学不到有意义的行为。
+    </p>
+
+    <p>
+      实验范围超过这几个视频任务。作者还在 DMControl 和 Meta-World 上做了系统评估，比较 SAC、LOOP、带 ground-truth simulator 的 MPC，以及去掉关键组件的 TD-MPC ablation。指标主要看两件事：学得多快，也就是 sample efficiency；最终能到多高，也就是 asymptotic performance。
+    </p>
+
+    <p>
+      这套实验要建立一个判断：TD-MPC 可以在一组连续控制任务上作为强 baseline。尤其是当 action space 变大、model-free 方法很慢时，短期 planning 加 terminal value 的结构开始显得很自然。
+    </p>
+
+    <h2>开放问题：task-oriented world model 的代价</h2>
+
+    <p>
+      TD-MPC 的核心假设可以写成一个可检验接口：latent rollout 负责短期 reward，terminal Q 负责规划窗口之外的 return，MPC 用两者合成的分数选择动作。这个接口把 world model 的评价标准从 reconstruction quality 移到 action quality。
+    </p>
+
+    <p>
+      第一处风险来自 representation sufficiency。训练目标一直由当前任务的 reward 和 value 牵引，latent state 会倾向于保留当前任务能用上的变量。在 Humanoid 走路里，背景纹理被剪掉通常是好事；任务切换、reward 改写、接触动力学进入新 regime 之后，被剪掉的变量可能正好变成下一阶段需要的状态信息。
+    </p>
+
+    <p>
+      第二处风险来自 regime mixing。TD-MPC 使用一个统一的 latent dynamics model，可真实物理经常呈现多个不连续 regime。脚接触地面和离开地面，手碰到物体和没碰到物体，对应不同的转移动力学。一个单一 dynamics model 可能会把这些模式平均掉。PRISM-WM 对应的推进方向，是用 MoE dynamics 显式分解 hybrid dynamics。
+    </p>
+
+    <p>
+      第三处风险来自 horizon decomposition。TD-MPC 把未来拆成两段：短期交给 model rollout，远期交给 terminal Q。这个分解在连续控制里很有效，但它也假设短期 rollout 末端的 latent state 已经包含足够信息，让 Q function 可以接住长期目标。如果长期成功依赖早期 rollout 没有保留下来的变量，terminal value 会产生偏乐观的估计。
+    </p>
+
+    <p>
+      后续 world model 工作可以直接继承这个评价方式，并在三个压力点上推进：representation 是否足够、latent dynamics 是否能表达多 regime 转移、terminal value 是否能稳定补上规划窗口之外的未来。
+    </p>
+
+    <h2>Sources</h2>
+    <ol class="references">
+      <li><a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control</a>, Hansen, Wang, and Su, ICML 2022.</li>
+      <li><a href="https://www.nicklashansen.com/td-mpc/">TD-MPC project page</a>, including videos and benchmark summaries.</li>
+      <li><a href="https://www.nature.com/articles/s41586-020-03051-4">MuZero: Mastering Atari, Go, Chess and Shogi by Planning with a Learned Model</a>, Schrittwieser et al., Nature 2020.</li>
+    </ol>
+  </main>
+</body>
+</html>

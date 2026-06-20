@@ -1,5 +1,13 @@
 # Assets
 
+## `td-mpc-figure-1.png`
+
+- Source: Figure 1 from `Temporal Difference Learning for Model Predictive Control`, Hansen, Wang, and Su, ICML 2022
+- Original URL: https://arxiv.org/abs/2203.04955
+- Reference page: https://www.nicklashansen.com/td-mpc/
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 1 from local PDF and cropped to the Figure 1 method/results panel
+
 ## `home-earth-limb.jpg`
 
 - Source: NASA image `iss072e724819`
