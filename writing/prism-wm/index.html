@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PRISM-WM：世界模型不能把接触平均掉</title>
-  <meta name="description" content="一篇关于 PRISM-WM、TD-MPC、latent dynamics、hybrid systems 和 long-horizon rollout fidelity 的技术拆解。">
+  <title>PRISM-WM: A World Model Should Not Average Contact Away — Sense Wang</title>
+  <meta name="description" content="A technical breakdown of PRISM-WM, TD-MPC-style latent dynamics, hybrid systems, orthogonalized MoE, and long-horizon rollout fidelity.">
   <script>
     window.MathJax = {
       tex: {
@@ -668,6 +668,42 @@
       margin-bottom: 28px;
     }
 
+    .article-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin: -18px 0 34px;
+    }
+
+    .language-switch {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .language-switch button {
+      border: 0;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+      color: #999;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      line-height: 1.5;
+      padding: 0 0 3px;
+      text-transform: uppercase;
+    }
+
+    .language-switch button[aria-pressed="true"] {
+      border-color: #111;
+      color: #111;
+    }
+
+    .version[hidden] {
+      display: none;
+    }
+
     .deck,
     .dek {
       color: #444;
@@ -918,6 +954,440 @@
   <main>
     <nav class="site-nav"><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
 
+    <div class="article-toolbar">
+      <div class="language-switch" aria-label="Language">
+        <button type="button" data-lang-button="en" aria-pressed="true">English</button>
+        <button type="button" data-lang-button="zh" aria-pressed="false">中文</button>
+      </div>
+    </div>
+
+    <article class="version" data-lang-panel="en" lang="en">
+      <h1>PRISM-WM: A World Model Should Not Average Contact Away</h1>
+      <div class="meta">June 2026</div>
+      <p class="dek">
+        PRISM-WM pushes the question down to the transition function repeatedly called by the planner: this interface has to represent hybrid dynamics, not average contact, sliding, and landing into one smooth curve.
+      </p>
+
+      <section id="prediction-en">
+        <p class="lead">
+          TD-MPC made the world model a much more concrete control interface.
+        </p>
+        <p>
+          The model does not need to reconstruct the whole world. It needs to provide useful futures before the agent acts: the current observation is encoded into a latent state, the planner tests candidate action sequences in that latent space, and reward/value models score the imagined trajectories.
+        </p>
+        <p>The pressure falls on the prediction interface that the planner calls repeatedly.</p>
+
+        <div class="math-panel" aria-label="Transition function equation">
+          <p class="math-label">transition function</p>
+          \[
+            \hat z_{t+1}=d_\theta(z_t,a_t)
+          \]
+        </div>
+
+        <p>
+          This function answers a simple question: if the model is currently at latent state <span class="sym">zₜ</span> and tries action <span class="sym">aₜ</span>, what should the next latent state be?
+        </p>
+        <p>A rollout is not one prediction. Starting from the current <span class="sym">zₜ</span>, the planner evaluates candidate action sequences by calling the dynamics model again and again.</p>
+
+        <div class="math-panel" aria-label="Latent rollout chain">
+          <p class="math-label">latent rollout</p>
+          \[
+            \begin{aligned}
+            (z_t,a_t) &\xrightarrow{d_\theta} \hat z_{t+1} \\
+            (\hat z_{t+1},a_{t+1}) &\xrightarrow{d_\theta} \hat z_{t+2} \\
+            (\hat z_{t+2},a_{t+2}) &\xrightarrow{d_\theta} \hat z_{t+3} \\
+            &\cdots
+            \end{aligned}
+          \]
+        </div>
+
+        <p>
+          Each candidate trajectory is scored by the reward model and the terminal value. The planner picks the best trajectory, executes only the first action, and replans at the next step.
+        </p>
+        <p>
+          The question lands here: if <span class="sym">dθ</span> smooths over the physical regime switches that matter for control, what exactly is the planner trusting when it rolls out futures?
+        </p>
+      </section>
+
+      <section id="contact-en">
+        <h2>Contact Is Not A Smooth Curve</h2>
+        <p>
+          Robotic locomotion, jumping, obstacle avoidance, and manipulation are not governed by one smooth function.
+        </p>
+        <p>
+          A foot before ground contact follows one kind of dynamics. The same foot after impact follows another. An object before grasping is one state; after grasping, contact forces, friction, and constraints change the system. The paper calls these systems hybrid systems: continuous motion interrupted by discrete regime switches.
+        </p>
+
+        <div class="note">
+          <p class="note-title">Terminology</p>
+          <div class="note-body">
+            <p>Here, regime means a local dynamics mode. A foot in the air, a foot in ground contact, and a grasped object follow different local rules; a regime switch is the transition between those modes.</p>
+          </div>
+        </div>
+
+        <p>The TD-MPC / TD-MPC2-style latent world models compared by PRISM-WM often use one monolithic MLP for the transition.</p>
+
+        <div class="math-panel" aria-label="Monolithic MLP transition">
+          <p class="math-label">monolithic transition baseline</p>
+          \[
+            (z_t,a_t)\rightarrow \mathrm{MLP}\rightarrow \hat z_{t+1}
+          \]
+        </div>
+
+        <div class="note">
+          <p class="note-title">monolithic MLP</p>
+          <div class="note-body">
+            <p>Monolithic means a single unified network: all states and actions are handled by the same MLP. MLP means multilayer perceptron, the standard fully connected neural network. Here it refers to the monolithic TD-MPC2 / MLP baseline in the PRISM-WM paper, not to a separate paper named "standard latent world model."</p>
+            <p>A useful first approximation: an MLP maps one fixed-length vector to another. Here, it maps <span class="sym">(zₜ, aₜ)</span> to the next latent state. LLMs also use MLPs: a Transformer block usually contains attention plus an MLP / FFN.</p>
+          </div>
+        </div>
+
+        <p>
+          In principle, this MLP can approximate a complex function. In practice, it can learn an averaged version of several incompatible regimes. Stance and flight, sticking and sliding, support force and friction residual can all get mixed into one continuous map. The error may look tolerable for one-step prediction. For planning, it compounds: every extra imagined step asks the planner to trust the same smoothed dynamics again.
+        </p>
+
+        <div class="term-grid" aria-label="Physical contact terms">
+          <div class="term">
+            <b>stance</b>
+            <span>The support phase. A foot is in contact with the ground and carries load.</span>
+          </div>
+          <div class="term">
+            <b>flight</b>
+            <span>The airborne phase. A foot has left the ground and receives no support force.</span>
+          </div>
+          <div class="term">
+            <b>sticking</b>
+            <span>A contact state with little or no relative sliding, close to static friction.</span>
+          </div>
+          <div class="term">
+            <b>sliding</b>
+            <span>A contact state where the contact point moves along the surface, entering kinetic friction.</span>
+          </div>
+          <div class="term">
+            <b>support force</b>
+            <span>The reaction force from the ground on the foot or body. It determines whether the robot can stand, jump, land, or recover balance.</span>
+          </div>
+          <div class="term">
+            <b>friction residual</b>
+            <span>The remaining change that friction or sliding has to explain after the main motion has been modeled; in PRISM-WM, it corresponds to friction-related components in latent residual dynamics.</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="boundary-en">
+        <h2>What TD-MPC Keeps, And What PRISM-WM Changes</h2>
+        <p>
+          That is PRISM-WM's entry point. TD-MPC already solves the first compression problem: do not reconstruct every observation detail; learn a task-oriented latent state useful for control. PRISM-WM asks the second question: if the <span class="sym">dθ</span> repeatedly called by the planner is still one monolithic continuous function, will it average away the boundaries of hybrid dynamics?
+        </p>
+        <p>At this point, the TD-MPC / PRISM-WM boundary needs to be made explicit. In TD-MPC, the model is TOLD: Task-Oriented Latent Dynamics. It contains at least these interfaces.</p>
+
+        <table class="interface-table">
+          <thead>
+            <tr>
+              <th>Interface</th>
+              <th>Role</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>zₜ = hθ(oₜ)</td>
+              <td>Encode the current observation into a task-oriented latent state.</td>
+            </tr>
+            <tr>
+              <td>ẑₜ₊₁ = dθ(zₜ, aₜ)</td>
+              <td>Predict the next latent state from the current latent state and action.</td>
+            </tr>
+            <tr>
+              <td>r̂ₜ = Rθ(zₜ, aₜ)</td>
+              <td>Predict the immediate reward.</td>
+            </tr>
+            <tr>
+              <td>terminal value Vθ</td>
+              <td>Estimate remaining return from the predicted terminal latent state after an H-step rollout.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>
+          Here θ is the usual notation for learnable neural-network parameters. hθ is the encoder / representation network; zₜ is the latent state at time t; aₜ is the action at time t. The planner is not the world model itself. It is the algorithm that uses the world model to search over action sequences. Strictly, the world model is also not identical to the transition function; the transition function is the part that most directly predicts the future.
+        </p>
+        <p>
+          PRISM-WM therefore does not reject TD-MPC. It keeps the encoder that produces zₜ, the planner that rolls out in latent space, and the reward/value models that score trajectories. It changes the parameterization of dθ, replacing a single monolithic MLP with gated, orthogonalized expert residual dynamics.
+        </p>
+
+        <figure>
+          <div class="figure-frame">
+            <img src="../../assets/prism-wm/prism-wm-pipeline.png" alt="PRISM-WM architecture diagram">
+          </div>
+          <figcaption>Figure from the released PRISM-WM project assets. The model replaces a single transition MLP with a gated mixture of expert residual dynamics, then aggregates orthogonalized residual directions into ẑₜ₊₁.</figcaption>
+        </figure>
+      </section>
+
+      <section id="mechanism-en">
+        <h2>The Interface PRISM-WM Changes</h2>
+        <p>PRISM-WM's core equation is short.</p>
+
+        <div class="math-panel" aria-label="PRISM-WM residual dynamics">
+          <p class="math-label">gated residual update</p>
+          \[
+            \hat z_{t+1}=z_t+\sum_{k=1}^{K}w_{t,k}v_k(x_t)
+          \]
+        </div>
+
+        <p>Read it piece by piece:</p>
+        <ul class="claim-list">
+          <li><b>zₜ</b><span>The current latent state.</span></li>
+          <li><b>aₜ</b><span>The candidate action.</span></li>
+          <li><b>xₜ</b><span>Usually the concatenation of zₜ and aₜ.</span></li>
+          <li><b>wₜ,ₖ</b><span>How much the kth expert is used at this step.</span></li>
+          <li><b>vₖ(xₜ)</b><span>The residual direction proposed by the kth expert under the current context.</span></li>
+        </ul>
+
+        <div class="note">
+          <p class="note-title">Routing weights</p>
+          <div class="note-body">
+            <p>The gating network can be read as a small routing network. It looks at the current context, usually the latent state and action, and gives each expert a raw score sₜ,ₖ.</p>
+            \[
+              w_{t,k}=\frac{\exp(s_{t,k})}{\sum_{j=1}^{K}\exp(s_{t,j})},
+              \qquad
+              \sum_{k=1}^{K}w_{t,k}=1
+            \]
+            <p>Softmax turns those raw scores into non-negative weights that sum to 1. So wₜ,ₖ has a direct meaning: how much the model should trust the kth expert for this step. The weight is not the prediction itself; the actual change direction is vₖ(xₜ).</p>
+          </div>
+        </div>
+
+        <p>PRISM-WM changes the dynamics function from one MLP into a composition of local dynamics primitives.</p>
+
+        <div class="math-panel" aria-label="PRISM-WM gated experts">
+          <p class="math-label">gate + experts</p>
+          \[
+            \begin{aligned}
+            (z_t,a_t)&\xrightarrow{\mathrm{gate}}\{w_{t,k}\}_{k=1}^{K} \\
+            &\xrightarrow{\mathrm{experts}}\sum_{k=1}^{K}w_{t,k}v_k(x_t)\rightarrow \hat z_{t+1}
+            \end{aligned}
+          \]
+        </div>
+
+        <p>
+          The gate is not meant to explicitly name "left foot support" or "right foot in flight." The paper is careful about this: after Gram-Schmidt orthogonalization, an expert should not be forced into a one-to-one interpretation as a physical event. A better reading is that the experts provide non-redundant directions in latent residual space. Physical modes are represented by how the gate combines these directions.
+        </p>
+        <p>
+          PRISM-WM does not hand-write one expert per contact state. It learns a composable residual basis and lets the current <span class="sym">(zₜ, aₜ)</span> decide how to mix it.
+        </p>
+      </section>
+
+      <section id="orthogonal-en">
+        <h2>Why MoE Alone Is Not Enough</h2>
+        <p>
+          Replacing one MLP with multiple experts does not automatically solve the problem.
+        </p>
+        <p>
+          If all experts learn the same function, the MoE is only a larger MLP. It has more parameters, while the regimes remain entangled. PRISM-WM adds latent orthogonalization as the key structural bias.
+        </p>
+        <p>In the paper, each expert first outputs a vector uₖ. A stable Gram-Schmidt step turns it into vₖ.</p>
+
+        <div class="math-panel" aria-label="Gram-Schmidt orthogonalization">
+          <p class="math-label">orthogonalized residual basis</p>
+          \[
+            \begin{aligned}
+            \tilde v_k &= u_k - \sum_{i=1}^{k-1}\langle v_i,u_k\rangle v_i \\
+            v_k &= \frac{\tilde v_k}{\lVert \tilde v_k\rVert_2+\epsilon}
+            \end{aligned}
+          \]
+        </div>
+
+        <p>
+          The operation is concrete: later experts subtract the part already explained by earlier basis directions. The resulting vₖ vectors are less likely to collapse into the same direction.
+        </p>
+        <p>
+          This is the taste of the design. The model does not freeze "physical mode" into a label. It gives the dynamics residual a structural preference: explain the future using directions that are not redundant. Contact, sliding, landing, and balance recovery can then appear as changes in gate weights over those basis directions.
+        </p>
+        <p>
+          This distinction explains why the paper emphasizes orthogonalized MoE rather than vanilla MoE. Vanilla MoE increases capacity. Orthogonalization tries to reduce expert redundancy. The former makes the model larger; the latter makes the model more like a decomposition of the dynamics problem.
+        </p>
+      </section>
+
+      <section id="evidence-en">
+        <h2>Evidence: Does It Reduce Rollout Drift?</h2>
+        <p>
+          The most important metric in this paper is long-horizon fidelity. A single reward number only describes control performance at one training point. Horizon-dependent fidelity directly tests the paper's world-model claim.
+        </p>
+        <p>
+          If the story is correct, PRISM-WM does not need to look spectacular at very short horizons. As the rollout horizon grows, the monolithic MLP should drift faster, while the orthogonalized MoE should keep the latent trajectory aligned for longer.
+        </p>
+
+        <figure>
+          <div class="figure-frame">
+            <img src="../../assets/prism-wm/paper-fig8-long-horizon-fidelity.png" alt="PRISM-WM Fig. 8 long horizon fidelity">
+          </div>
+          <figcaption>Figure 8 from the PRISM-WM paper. The left plot compares latent cosine similarity over planning horizons; the red monolithic MLP baseline drops faster as horizon increases. The right plot compares reward-estimation fidelity across model variants.</figcaption>
+        </figure>
+
+        <p>
+          In Fig. 8, the monolithic MLP loses latent cosine similarity more quickly as the horizon increases. MoE and orthogonalized MoE stay more stable. The reward-fidelity plot on the right adds an important nuance: a larger vanilla MoE is not always better, because over-parameterized experts can still learn redundant representations.
+        </p>
+
+        <figure>
+          <div class="figure-frame">
+            <img src="../../assets/prism-wm/paper-fig10-routing-granularity.png" alt="PRISM-WM Fig. 10 routing granularity ablation">
+          </div>
+          <figcaption>Figure 10 from the PRISM-WM paper. Different expert counts are compared up to horizon 30. The paper identifies K=4 as a good tradeoff, while all MoE variants outperform the monolithic baseline in this fidelity metric.</figcaption>
+        </figure>
+
+        <div class="evidence-grid" aria-label="Key empirical results">
+          <div class="evidence">
+            <span class="number">0.531</span>
+            <p>Mean normalized score on DMC-30 for PRISM-WM; the monolithic TD-MPC2 baseline is 0.430.</p>
+          </div>
+          <div class="evidence">
+            <span class="number">26/30</span>
+            <p>The paper reports that PRISM-WM beats the baseline on 26 of 30 tasks.</p>
+          </div>
+          <div class="evidence">
+            <span class="number">11.8%</span>
+            <p>Target return drop in zero-shot sim-to-sim transfer; the monolithic MLP drop is 47.8%.</p>
+          </div>
+          <div class="evidence">
+            <span class="number">0.13 ms</span>
+            <p>Inference latency for K=4 PRISM-WM in Table II, comparable to the monolithic baseline.</p>
+          </div>
+        </div>
+
+        <p>
+          These results support one specific reading: the gain should be evaluated through reduced latent trajectory drift in long-horizon rollout. A capacity-only explanation is not enough. For model-based RL, this is closer to what a world model is used for than a single reward number.
+        </p>
+      </section>
+
+      <section id="takeaway-en">
+        <h2>What The Paper Changes</h2>
+        <p>
+          PRISM-WM concentrates the architectural change on the transition function inside TD-MPC.
+        </p>
+        <p>
+          The planner calls this function repeatedly during rollout. If the function averages away contact modes, reward prediction, value estimation, and action selection all move through the wrong future.
+        </p>
+        <p>
+          The paper therefore gives a concrete standard: if a world model serves a planner, its transition function has to handle contact, sliding, landing, and other dynamics switches. Preserving task-relevant information is not enough; the dynamics structure also has to be right.
+        </p>
+        <p>
+          TD-MPC's pressure was: do not spend capacity reconstructing irrelevant details. PRISM-WM asks the next question: if the model already learns only latent dynamics, can that latent dynamics still average away the physical regimes that planning depends on?
+        </p>
+
+        <ul class="claim-list">
+          <li><b>Repeatedly called object</b><span>The planner relies on dθ at every rollout step.</span></li>
+          <li><b>Core failure mode</b><span>dθ smooths over contact boundaries.</span></li>
+          <li><b>Evidence to inspect</b><span>Long-horizon latent fidelity; one-step reward is not enough.</span></li>
+        </ul>
+      </section>
+
+      <section id="limits-en">
+        <h2>What Remains Unresolved</h2>
+        <h3>Can the number of regimes be discovered automatically?</h3>
+        <p>
+          The main experiments use K=4, and Fig. 10 shows that different expert counts behave differently. The paper also acknowledges that expert count K remains a tuned hyperparameter. A real robot task may not have a fixed number of latent regimes. Flat walking, jumping, grasping, pushing, pulling, and fall recovery do not necessarily share the same complexity.
+        </p>
+
+        <h3>Is a soft mixture enough for hard switching?</h3>
+        <p>
+          PRISM-WM still computes the residual as Σₖ wₖvₖ. This convex-like blend is friendly to stable training, while some hybrid-system transitions can be closer to hard boundaries. The paper leaves composition beyond weighted sum as future work. The real question is whether a soft mixture can express sharp enough contact discontinuities, or whether planning will need something closer to discrete switching.
+        </p>
+
+        <h3>Does the orthogonal basis correspond to physical structure?</h3>
+        <p>
+          The paper does not claim that each expert corresponds to a specific physical event. The orthogonal basis lives in latent residual space, with representation learning between it and real contact labels. It may help the gate learn quasi-discrete switching, but it should not be read as "expert 1 is the left foot, expert 2 is friction."
+        </p>
+
+        <h3>Does the claim survive real robots and partial observability?</h3>
+        <p>
+          The paper includes zero-shot sim-to-sim transfer, but not real-robot deployment. Real systems include sensor noise, occlusion, delay, soft contact, actuation error, and hidden variables. Whether an orthogonal basis can still isolate useful uncertainty under those conditions is a real open question.
+        </p>
+
+        <h3>Implementation and reproduction caveat</h3>
+        <p>
+          The public code does contain the MoE dynamics and reward path: <code>use_moe=true</code> switches into <code>MoEBlock</code>, and <code>use_orthogonal=true</code> enters the orthogonalization path. Small real-environment ablations can run.
+        </p>
+        <p>
+          Those checks are still not a paper-level benchmark reproduction. In a one-seed, 100k-step cheetah-run-backwards sanity check I ran, the final rewards were:
+        </p>
+
+        <div class="diagnostic" aria-label="Local diagnostic result">
+          <header>local diagnostic, not a paper reproduction</header>
+          <table>
+            <thead>
+              <tr>
+                <th>variant</th>
+                <th>final reward</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>baseline_mlp</td>
+                <td>388.82</td>
+              </tr>
+              <tr>
+                <td>moe_no_orth</td>
+                <td>388.57</td>
+              </tr>
+              <tr>
+                <td>prism_orth</td>
+                <td>377.97</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          This does not reproduce the direction <code>prism_orth &gt; baseline_mlp</code>. It is better read as a diagnostic signal: the result may need more seeds, longer training, a closer DMC-30 setup, or a deeper implementation audit. One paper-code alignment issue worth checking is whether the MoE auxiliary loss in the current release participates in the gate gradients as intended. That does not refute the paper, but it is a reminder that reading a paper and trusting a release artifact are different acts.
+        </p>
+
+        <figure>
+          <div class="figure-frame">
+            <img src="../../assets/prism-wm/local-cheetah-run-backwards-comparison.png" alt="Local cheetah-run-backwards diagnostic comparison">
+          </div>
+          <figcaption>A one-seed, 100k-step cheetah-run-backwards sanity check. This is not a reproduction of the paper's DMC-30 benchmark; it is only an implementation-level diagnostic signal.</figcaption>
+        </figure>
+      </section>
+
+      <section id="close-en">
+        <h2>What Structure Should A World Model Keep?</h2>
+        <p>
+          TD-MPC says a world model does not need to reconstruct the whole world. PRISM-WM adds the next constraint: it cannot erase the physical structure that changes the value of actions.
+        </p>
+        <p>
+          These two claims are compatible. A task-oriented world model can ignore background texture, shadows, and irrelevant pixels. If it serves a locomotion planner, it must preserve contact, impact, friction, and support, because those structures change which actions are valuable.
+        </p>
+
+        <div class="math-panel" aria-label="Core world model interface">
+          <p class="math-label">the small interface that matters</p>
+          \[
+            \hat z_{t+1}=d_\theta(z_t,a_t)
+          \]
+        </div>
+
+        <p>
+          The planner calls it repeatedly. The value function depends on it. Reward prediction follows it. If this function learns averaged physics, the planner may look sophisticated while optimizing inside the wrong future.
+        </p>
+        <p>
+          That is the most useful part of the paper. It pulls world model back from a large phrase into inspectable mechanisms: whether the transition function expresses hybrid dynamics, whether experts are non-redundant, whether rollout drift is reduced as horizon grows, and whether the gate switches meaningfully under perturbation.
+        </p>
+        <p>
+          For embodied AI, this may matter more than making the model larger. Robots do not move on a smooth mathematical plane. Every step touches the world. If a world model is meant to serve action, it should at least not average contact away.
+        </p>
+      </section>
+
+      <section id="references-en">
+        <h2>Sources</h2>
+        <ul class="links">
+          <li>PRISM-WM paper: <a href="https://arxiv.org/abs/2512.08411">Prismatic World Model: Learning Compositional Dynamics for Planning in Hybrid Systems</a></li>
+          <li>PRISM-WM code / project assets: <a href="https://github.com/SC-Levi/PRISM-WM">SC-Levi/PRISM-WM</a></li>
+          <li>TD-MPC: <a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control</a></li>
+          <li>TD-MPC2: <a href="https://arxiv.org/abs/2310.16828">Scalable, Robust World Models for Continuous Control</a></li>
+          <li>PWM: <a href="https://arxiv.org/abs/2407.02466">Policy Learning with Large World Models</a></li>
+        </ul>
+      </section>
+    </article>
+
+    <article class="version" data-lang-panel="zh" lang="zh-CN" hidden>
     <header class="hero">
       <div class="shell">
         <h1>PRISM-WM：世界模型不能把接触平均掉</h1>
@@ -929,7 +1399,7 @@
     </header>
 
     <div class="shell layout">
-      <article>
+      <div class="article-body">
         <section id="prediction">
           <p class="lead">
             TD-MPC 已经把 world model 从一个很大的愿望，压成了一个更具体的控制接口。
@@ -1348,8 +1818,38 @@
             <li>PWM: <a href="https://arxiv.org/abs/2407.02466">Policy Learning with Large World Models</a></li>
           </ul>
         </section>
-      </article>
+      </div>
     </div>
+    </article>
   </main>
+  <script>
+    const languageKey = "writing-language";
+    const titles = {
+      en: "PRISM-WM: A World Model Should Not Average Contact Away — Sense Wang",
+      zh: "PRISM-WM：世界模型不能把接触平均掉 — Sense Wang"
+    };
+    const buttons = Array.from(document.querySelectorAll("[data-lang-button]"));
+    const panels = Array.from(document.querySelectorAll("[data-lang-panel]"));
+
+    function setLanguage(lang) {
+      buttons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.langButton === lang));
+      });
+
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.langPanel !== lang;
+      });
+
+      document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+      document.title = titles[lang];
+      localStorage.setItem(languageKey, lang);
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => setLanguage(button.dataset.langButton));
+    });
+
+    setLanguage(localStorage.getItem(languageKey) === "zh" ? "zh" : "en");
+  </script>
 </body>
 </html>
