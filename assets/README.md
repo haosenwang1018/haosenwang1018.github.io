@@ -1,5 +1,36 @@
 # Assets
 
+## `prism-wm/prism-wm-pipeline.png`
+
+- Source: PRISM-WM released project asset for the architecture/pipeline diagram
+- Original URL: https://github.com/SC-Levi/PRISM-WM
+- Paper URL: https://arxiv.org/abs/2512.08411
+- License/status: Project/paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: copied from the PRISM-WM technical blog working assets
+
+## `prism-wm/paper-fig8-long-horizon-fidelity.png`
+
+- Source: Figure 8 from `Prismatic World Model: Learning Compositional Dynamics for Planning in Hybrid Systems`
+- Original URL: https://arxiv.org/abs/2512.08411
+- Project page/code: https://github.com/SC-Levi/PRISM-WM
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: cropped from the PRISM-WM arXiv PDF for the technical blog
+
+## `prism-wm/paper-fig10-routing-granularity.png`
+
+- Source: Figure 10 from `Prismatic World Model: Learning Compositional Dynamics for Planning in Hybrid Systems`
+- Original URL: https://arxiv.org/abs/2512.08411
+- Project page/code: https://github.com/SC-Levi/PRISM-WM
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: cropped from the PRISM-WM arXiv PDF for the technical blog
+
+## `prism-wm/local-cheetah-run-backwards-comparison.png`
+
+- Source: Author's local diagnostic run for the PRISM-WM technical blog
+- Related paper URL: https://arxiv.org/abs/2512.08411
+- License/status: Self-generated diagnostic artifact for commentary; not a paper reproduction
+- Local processing: copied from the PRISM-WM technical blog working assets
+
 ## `td-mpc-figure-1.png`
 
 - Source: Figure 1 from `Temporal Difference Learning for Model Predictive Control`, Hansen, Wang, and Su, ICML 2022

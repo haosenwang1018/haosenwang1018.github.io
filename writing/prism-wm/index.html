@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PRISM-WM：世界模型不能把接触平均掉</title>
+  <meta name="description" content="一篇关于 PRISM-WM、TD-MPC、latent dynamics、hybrid systems 和 long-horizon rollout fidelity 的技术拆解。">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [["\\(", "\\)"]],
+        displayMath: [["\\[", "\\]"]],
+        processEscapes: true
+      },
+      svg: { fontCache: "global" }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #111111;
+      --muted: #626262;
+      --soft: #8d8d8d;
+      --line: #e6e6e6;
+      --line-strong: #b8b8b8;
+      --paper: #ffffff;
+      --wash: #f8f8f8;
+      --wash-2: #f1f1f1;
+      --accent: #1d1d1d;
+      --accent-dark: #050505;
+      --accent-quiet: #f5f5f5;
+      --figure-bg: #fafafa;
+      --warn: #8a5a00;
+      --mono: "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif;
+      --serif: ui-serif, "Times New Roman", "Songti SC", "Noto Serif CJK SC", serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--paper);
+      color: var(--ink);
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      font-size: 18px;
+      line-height: 1.78;
+      letter-spacing: 0;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: var(--accent-dark);
+      text-decoration-thickness: 0.08em;
+      text-underline-offset: 0.18em;
+    }
+
+    .shell {
+      width: min(1180px, calc(100% - 40px));
+      max-width: calc(100vw - 40px);
+      margin: 0 auto;
+    }
+
+    .topbar {
+      border-bottom: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .topbar-inner {
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .brand {
+      font-weight: 650;
+      color: var(--ink);
+      letter-spacing: 0.01em;
+      text-decoration: none;
+    }
+
+    .top-links {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      white-space: nowrap;
+    }
+
+    .top-links a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .hero {
+      padding: 72px 0 42px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--accent-dark);
+      font-size: 13px;
+      font-weight: 720;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 940px;
+      font-size: clamp(38px, 6vw, 72px);
+      line-height: 1.04;
+      letter-spacing: 0;
+      font-weight: 780;
+      overflow-wrap: anywhere;
+    }
+
+    .deck {
+      margin: 24px 0 0;
+      max-width: 780px;
+      font-size: clamp(20px, 2.2vw, 25px);
+      line-height: 1.62;
+      color: #343434;
+      overflow-wrap: break-word;
+    }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 28px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .meta-row span {
+      border: 1px solid var(--line);
+      border-radius: 0;
+      padding: 5px 10px;
+      background: transparent;
+    }
+
+    .thesis {
+      margin-top: 42px;
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 1px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+
+    .thesis-card {
+      background: var(--wash);
+      padding: 22px 24px;
+    }
+
+    .thesis-card b {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--accent-dark);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .thesis-card p {
+      margin: 0;
+      color: #2b2b2b;
+      font-size: 17px;
+      line-height: 1.68;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 780px);
+      gap: 64px;
+      align-items: start;
+      padding: 54px 0 90px;
+    }
+
+    .toc {
+      position: sticky;
+      top: 84px;
+      font-size: 14px;
+      color: var(--muted);
+      border-left: 1px solid var(--line);
+      padding-left: 18px;
+    }
+
+    .toc-title {
+      margin: 0 0 12px;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .toc a {
+      display: block;
+      padding: 7px 0;
+      color: var(--muted);
+      text-decoration: none;
+      line-height: 1.35;
+    }
+
+    .toc a:hover {
+      color: var(--accent-dark);
+    }
+
+    article {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    section {
+      margin: 0 0 56px;
+    }
+
+    h2 {
+      margin: 0 0 20px;
+      font-size: clamp(28px, 3vw, 42px);
+      line-height: 1.18;
+      letter-spacing: 0;
+      font-weight: 760;
+    }
+
+    h3 {
+      margin: 34px 0 12px;
+      font-size: 22px;
+      line-height: 1.35;
+      letter-spacing: 0;
+      font-weight: 720;
+    }
+
+    p {
+      margin: 0 0 18px;
+      overflow-wrap: break-word;
+    }
+
+    .lead {
+      font-size: 20px;
+      color: #303030;
+      line-height: 1.74;
+    }
+
+    .sym {
+      font-family: var(--serif);
+      font-size: 1.02em;
+      white-space: nowrap;
+    }
+
+    .math-panel {
+      margin: 28px 0 30px;
+      padding: 22px 22px 18px;
+      border-top: 1px solid var(--line-strong);
+      border-bottom: 1px solid var(--line-strong);
+      background: linear-gradient(180deg, #fff, #fafafa);
+      overflow-x: auto;
+    }
+
+    .math-label {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 680;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .math-panel mjx-container[jax="SVG"][display="true"] {
+      margin: 0;
+      font-size: 112%;
+    }
+
+    .note {
+      margin: 28px 0 32px;
+      padding: 18px 0;
+      display: grid;
+      grid-template-columns: 142px minmax(0, 1fr);
+      gap: 22px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: transparent;
+      color: #444;
+    }
+
+    .note-title {
+      margin: 3px 0 0;
+      font-weight: 720;
+      color: var(--accent-dark);
+      font-size: 13px;
+      line-height: 1.45;
+      letter-spacing: 0.04em;
+    }
+
+    .note-body {
+      min-width: 0;
+    }
+
+    .note-body p {
+      margin: 0 0 12px;
+      font-size: 16px;
+      line-height: 1.72;
+    }
+
+    .note-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    .note-body mjx-container[jax="SVG"][display="true"] {
+      margin: 10px 0 12px;
+      font-size: 100%;
+    }
+
+    .term-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      margin: 24px 0 30px;
+      background: var(--line);
+      border: 1px solid var(--line);
+    }
+
+    .term {
+      background: var(--wash);
+      padding: 16px 18px;
+      min-height: 112px;
+    }
+
+    .term b {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--accent-dark);
+      font-size: 15px;
+    }
+
+    .term span {
+      display: block;
+      color: #444;
+      font-size: 15px;
+      line-height: 1.58;
+    }
+
+    .interface-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 24px 0 28px;
+      font-size: 16px;
+      background: #fff;
+    }
+
+    .interface-table th,
+    .interface-table td {
+      border-bottom: 1px solid var(--line);
+      padding: 14px 12px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .interface-table th {
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-weight: 720;
+    }
+
+    .interface-table td:first-child {
+      width: 38%;
+      font-family: var(--serif);
+      white-space: nowrap;
+      color: #222;
+    }
+
+    figure {
+      margin: 34px 0 36px;
+    }
+
+    .figure-frame {
+      border: 1px solid var(--line);
+      background: var(--figure-bg);
+      padding: 16px;
+    }
+
+    .figure-frame img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    figcaption {
+      margin-top: 11px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.62;
+    }
+
+    .evidence-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      margin: 24px 0 30px;
+      border: 1px solid var(--line);
+      background: var(--line);
+    }
+
+    .evidence {
+      background: var(--wash);
+      padding: 20px 20px 18px;
+    }
+
+    .evidence .number {
+      display: block;
+      margin-bottom: 7px;
+      font-family: var(--serif);
+      font-size: 30px;
+      line-height: 1;
+      color: var(--accent-dark);
+      font-weight: 700;
+    }
+
+    .evidence p {
+      margin: 0;
+      color: #414141;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .claim-list {
+      margin: 22px 0 0;
+      padding: 0;
+      list-style: none;
+      border-top: 1px solid var(--line);
+    }
+
+    .claim-list li {
+      padding: 15px 0;
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 20px;
+    }
+
+    .claim-list b {
+      color: var(--accent-dark);
+      font-size: 15px;
+    }
+
+    .claim-list span {
+      color: #303030;
+    }
+
+    .diagnostic {
+      margin: 28px 0;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .diagnostic header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--wash-2);
+      font-weight: 720;
+    }
+
+    .diagnostic table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+
+    .diagnostic th,
+    .diagnostic td {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .diagnostic tr:last-child td {
+      border-bottom: none;
+    }
+
+    .diagnostic td:last-child,
+    .diagnostic th:last-child {
+      text-align: right;
+      font-family: var(--mono);
+    }
+
+    .links {
+      margin: 34px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .links li {
+      border-top: 1px solid var(--line);
+      padding: 13px 0;
+      font-size: 15px;
+    }
+
+    .footer-note {
+      margin-top: 64px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 980px) {
+      .shell {
+        width: calc(100% - 28px);
+        max-width: 780px;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+
+      .toc {
+        position: static;
+        border-left: none;
+        border-bottom: 1px solid var(--line);
+        padding: 0 0 18px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 20px;
+      }
+
+      .toc-title {
+        grid-column: 1 / -1;
+      }
+
+      .thesis,
+      .term-grid,
+      .evidence-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        font-size: 17px;
+        line-height: 1.74;
+      }
+
+      .hero {
+        padding: 46px 0 34px;
+      }
+
+      .top-links {
+        display: none;
+      }
+
+      .layout {
+        padding-top: 34px;
+      }
+
+      .toc {
+        grid-template-columns: 1fr;
+      }
+
+      .claim-list li {
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
+
+      .note {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 16px 0;
+      }
+
+      .interface-table {
+        font-size: 15px;
+        display: block;
+        overflow-x: auto;
+      }
+
+      .interface-table td:first-child {
+        white-space: normal;
+      }
+
+      h1 {
+        font-size: 34px;
+        line-height: 1.14;
+      }
+
+      .deck {
+        font-size: 19px;
+      }
+
+      .meta-row span {
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <a class="brand" href="../">Sense Wang · Technical Notes</a>
+      <nav class="top-links" aria-label="Article links">
+        <a href="#mechanism">机制</a>
+        <a href="#evidence">证据</a>
+        <a href="#limits">问题</a>
+        <a href="#references">参考</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <header class="hero">
+      <div class="shell">
+        <p class="eyebrow">Paper Breakdown · World Models · Model-Based RL</p>
+        <h1>PRISM-WM：世界模型不能把接触平均掉</h1>
+        <p class="deck">
+          PRISM-WM 把问题压到 planner 反复调用的 transition function 上：这个接口需要适合 hybrid dynamics；接触、滑动、落地这些切换不能被一个单体 MLP 平均成同一条光滑曲线。
+        </p>
+        <div class="meta-row">
+          <span>PRISM-WM</span>
+          <span>TD-MPC / TD-MPC2</span>
+          <span>latent dynamics</span>
+          <span>long-horizon fidelity</span>
+        </div>
+        <div class="thesis" aria-label="Article thesis">
+          <div class="thesis-card">
+            <b>本文的核心判断</b>
+            <p>如果 world model 要服务 planner，关键接口落在 rollout 里反复被调用的 dynamics update；图像重建是另一类问题。</p>
+          </div>
+          <div class="thesis-card">
+            <b>PRISM-WM 的改动</b>
+            <p>保留 TD-MPC 的 latent planning 框架，改写 transition function：从单个 MLP 变成 gated、orthogonalized expert residual dynamics。</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="shell layout">
+      <aside class="toc" aria-label="Table of contents">
+        <p class="toc-title">Reading Map</p>
+        <a href="#prediction">预测接口</a>
+        <a href="#contact">接触模式</a>
+        <a href="#boundary">TD-MPC 边界</a>
+        <a href="#mechanism">PRISM-WM 机制</a>
+        <a href="#orthogonal">为什么要正交</a>
+        <a href="#evidence">证据</a>
+        <a href="#takeaway">改变了什么</a>
+        <a href="#limits">仍然没解决的问题</a>
+      </aside>
+
+      <article>
+        <section id="prediction">
+          <p class="lead">
+            TD-MPC 已经把 world model 从一个很大的愿望，压成了一个更具体的控制接口。
+          </p>
+          <p>
+            它不要求模型还原整个世界。它只要求模型在行动前提供有用的未来：当前 observation 被编码成 latent state，planner 在这个 latent space 里测试候选动作序列，reward model 和 value model 给这些 imagined trajectories 打分。
+          </p>
+          <p>这条链里最脆弱的是被 planner 反复调用的预测接口。</p>
+
+          <div class="math-panel" aria-label="Transition function equation">
+            <p class="math-label">transition function</p>
+            \[
+              \hat z_{t+1}=d_\theta(z_t,a_t)
+            \]
+          </div>
+
+          <p>
+            这个函数回答的问题很直接：如果模型现在处在 latent state <span class="sym">zₜ</span>，并且尝试动作 <span class="sym">aₜ</span>，下一步 latent state 应该变成什么？
+          </p>
+          <p>rollout 不是只预测一步。planner 会从当前 <span class="sym">zₜ</span> 开始，拿一串候选动作反复调用 dynamics model。</p>
+
+          <div class="math-panel" aria-label="Latent rollout chain">
+            <p class="math-label">latent rollout</p>
+            \[
+              \begin{aligned}
+              (z_t,a_t) &\xrightarrow{d_\theta} \hat z_{t+1} \\
+              (\hat z_{t+1},a_{t+1}) &\xrightarrow{d_\theta} \hat z_{t+2} \\
+              (\hat z_{t+2},a_{t+2}) &\xrightarrow{d_\theta} \hat z_{t+3} \\
+              &\cdots
+              \end{aligned}
+            \]
+          </div>
+
+          <p>
+            每条候选 trajectory 都会被 reward model 和 terminal value 评分。planner 选分数最高的一条，只执行第一步，然后下个时刻重新规划。
+          </p>
+          <p>
+            问题就落在这里：如果 <span class="sym">dθ</span> 本身把物理世界里最关键的模式切换抹平了，planner 反复调用它时，到底在相信什么？
+          </p>
+        </section>
+
+        <section id="contact">
+          <h2>接触不是一条光滑曲线</h2>
+          <p>
+            机器人走路、跳跃、避障、抓取时，物理不是单一的平滑函数。
+          </p>
+          <p>
+            脚还没碰地是一种动力学；脚刚踩到地面又是另一种动力学。物体还没被抓住是一种状态；抓住之后，接触力、摩擦、约束都会改变。论文把这类系统称为 hybrid systems：连续运动中夹着离散的 regime switch。
+          </p>
+
+          <div class="note">
+            <p class="note-title">术语注</p>
+            <div class="note-body">
+              <p>这里的 regime 可以理解成“动力学模式”。脚在空中、脚踩到地面、物体被抓住，分别遵循不同的局部动力学；regime switch 就是系统在这些模式之间切换。</p>
+            </div>
+          </div>
+
+          <p>PRISM-WM 对比的 TD-MPC / TD-MPC2 这类 latent world model，通常用一个 monolithic MLP 来学 transition。</p>
+
+          <div class="math-panel" aria-label="Monolithic MLP transition">
+            <p class="math-label">monolithic transition baseline</p>
+            \[
+              (z_t,a_t)\rightarrow \mathrm{MLP}\rightarrow \hat z_{t+1}
+            \]
+          </div>
+
+          <div class="note">
+            <p class="note-title">monolithic MLP</p>
+            <div class="note-body">
+              <p>monolithic 指“单体式”：所有状态和动作都交给同一个 MLP 处理；MLP 是多层感知机，也就是常见的全连接神经网络。这里对应 PRISM-WM 论文里的 monolithic TD-MPC2 / MLP baseline，不是一篇单独叫“普通 latent world model”的论文。</p>
+              <p>MLP 可以先理解成“固定长度向量到固定长度向量的函数拟合器”。在这里，它输入 <span class="sym">(zₜ, aₜ)</span>，输出下一步 latent state。LLM 里也有 MLP：Transformer block 通常是 attention + MLP / FFN。</p>
+            </div>
+          </div>
+
+          <p>
+            这个 MLP 理论上可以拟合复杂函数，但实践里容易学成一个平均态。它会把 stance 和 flight、sticking 和 sliding、support force 和 friction residual 混在同一个连续函数里。对一步预测来说，这个错误可能还不明显；对 planner 来说，问题会被放大。planner 每多往前想一步，就多信一次这个被平滑过的 dynamics。
+          </p>
+
+          <div class="term-grid" aria-label="Physical contact terms">
+            <div class="term">
+              <b>stance</b>
+              <span>支撑相。脚接触地面并承重，身体可以从地面获得支撑力。</span>
+            </div>
+            <div class="term">
+              <b>flight</b>
+              <span>腾空相。脚离开地面，没有来自地面的支撑力。</span>
+            </div>
+            <div class="term">
+              <b>sticking</b>
+              <span>粘着接触。接触点基本不发生相对滑动，近似静摩擦状态。</span>
+            </div>
+            <div class="term">
+              <b>sliding</b>
+              <span>滑动接触。接触点沿表面发生相对运动，摩擦进入滑动状态。</span>
+            </div>
+            <div class="term">
+              <b>support force</b>
+              <span>支撑力。地面对脚或身体的反作用力，决定能不能站住、跳起、落地和恢复平衡。</span>
+            </div>
+            <div class="term">
+              <b>friction residual</b>
+              <span>摩擦残差。主要运动之外仍需由摩擦/滑动解释的变化；在 PRISM-WM 语境里，对应 latent residual dynamics 里和水平摩擦相关的成分。</span>
+            </div>
+          </div>
+        </section>
+
+        <section id="boundary">
+          <h2>TD-MPC 保留什么，PRISM-WM 改什么</h2>
+          <p>
+            这就是 PRISM-WM 的切入点。TD-MPC 已经解决了第一层压缩：不要重建所有 observation，只学习对控制有用的 task-oriented latent state。PRISM-WM 追问第二层：如果 planner 反复调用的 <span class="sym">dθ</span> 仍然是一个单体连续函数，它会不会把 hybrid dynamics 的边界平均掉？
+          </p>
+          <p>到这里，需要把 TD-MPC 和 PRISM-WM 的边界确定好。TD-MPC 里的这套模型叫 TOLD，Task-Oriented Latent Dynamics。它至少包含几组接口。</p>
+
+          <table class="interface-table">
+            <thead>
+              <tr>
+                <th>接口</th>
+                <th>作用</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>zₜ = hθ(oₜ)</td>
+                <td>把当前 observation 编成 task-oriented latent state</td>
+              </tr>
+              <tr>
+                <td>ẑₜ₊₁ = dθ(zₜ, aₜ)</td>
+                <td>根据当前 latent state 和动作预测下一步 latent state</td>
+              </tr>
+              <tr>
+                <td>r̂ₜ = Rθ(zₜ, aₜ)</td>
+                <td>预测这一步的 reward</td>
+              </tr>
+              <tr>
+                <td>terminal value Vθ</td>
+                <td>在 H-step rollout 末端，用预测 latent state 估计剩余 return</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p>
+            这里的 θ 是神经网络参数的常用记号。hθ 是 encoder / representation network；zₜ 是 t 时刻的 latent state；aₜ 是 t 时刻的动作。planner 不是 world model 本身，它是使用 world model 搜索动作序列的算法。严格说，world model 也不等于 transition function；transition function 是其中最像“预测未来”的部分。
+          </p>
+          <p>
+            所以 PRISM-WM 没有否定 TD-MPC；它对 TD-MPC 提出一个更具体的判断：TD-MPC 的接口可以保留，问题不在于回到原始 observation reconstruction，也不在于推翻 MPC + value bootstrapping。PRISM-WM 保留 encoder 产生 zₜ、planner 做 latent rollout、reward/value 给 trajectory 打分这套框架；它改的是 dθ 的参数化方式，把单个 monolithic MLP 换成 gated、orthogonalized 的 expert residual dynamics。
+          </p>
+
+          <figure>
+            <div class="figure-frame">
+              <img src="../../assets/prism-wm/prism-wm-pipeline.png" alt="PRISM-WM architecture diagram">
+            </div>
+            <figcaption>图：PRISM-WM 架构图，来自官方项目资产。它把单一 transition MLP 换成 gated mixture of experts：gate 负责给不同 expert 分配权重，expert 预测 residual dynamics，最后聚合成下一步 latent state。</figcaption>
+          </figure>
+        </section>
+
+        <section id="mechanism">
+          <h2>PRISM-WM 改了哪个接口</h2>
+          <p>PRISM-WM 的核心公式很短。</p>
+
+          <div class="math-panel" aria-label="PRISM-WM residual dynamics">
+            <p class="math-label">gated residual update</p>
+            \[
+              \hat z_{t+1}=z_t+\sum_{k=1}^{K}w_{t,k}v_k(x_t)
+            \]
+          </div>
+
+          <p>逐个读：</p>
+          <ul class="claim-list">
+            <li><b>zₜ</b><span>当前 latent state。</span></li>
+            <li><b>aₜ</b><span>候选动作。</span></li>
+            <li><b>xₜ</b><span>通常由 zₜ 和 aₜ 拼起来。</span></li>
+            <li><b>wₜ,ₖ</b><span>第 k 个 expert 在当前这一步被采用多少。</span></li>
+            <li><b>vₖ(xₜ)</b><span>第 k 个 expert 对当前 context 输出的 residual direction。</span></li>
+          </ul>
+
+          <div class="note">
+            <p class="note-title">路由权重</p>
+            <div class="note-body">
+              <p>gating network 可以先理解成一个小的路由网络。它读取当前 context，也就是这一步的 latent state 和动作组合，先给每个 expert 打一个原始分数 sₜ,ₖ。</p>
+              \[
+                w_{t,k}=\frac{\exp(s_{t,k})}{\sum_{j=1}^{K}\exp(s_{t,j})},
+                \qquad
+                \sum_{k=1}^{K}w_{t,k}=1
+              \]
+              <p>softmax 的作用是把这些原始分数变成一组非负权重，并且让它们加起来等于 1。于是 wₜ,ₖ 就有了很直观的含义：当前这一步，模型应该多相信第 k 个 expert。</p>
+              <p>注意，wₜ,ₖ 本身不是预测结果。真正提出变化方向的是 vₖ(xₜ)；wₜ,ₖ 只是乘在这个方向前面的系数。某个权重大，它对应的 expert 就对下一步 latent state 影响更大。</p>
+            </div>
+          </div>
+
+          <p>所以 PRISM-WM 把 dynamics function 从一个单独的 MLP，改成一组 local dynamics primitives 的组合。</p>
+
+          <div class="math-panel" aria-label="PRISM-WM gated experts">
+            <p class="math-label">gate + experts</p>
+            \[
+              \begin{aligned}
+              (z_t,a_t)&\xrightarrow{\mathrm{gate}}\{w_{t,k}\}_{k=1}^{K} \\
+              &\xrightarrow{\mathrm{experts}}\sum_{k=1}^{K}w_{t,k}v_k(x_t)\rightarrow \hat z_{t+1}
+              \end{aligned}
+            \]
+          </div>
+
+          <p>
+            gate 的工作不是显式识别“左脚支撑”或“右脚腾空”。论文也提醒过，经过 Gram-Schmidt 后的 expert 不应该被强行解释成一一对应的物理事件。它更像是在 latent residual space 里提供一组不重复的方向。真正的物理模式由 gate 在这些方向上的组合来表达。
+          </p>
+          <p>
+            换句话说，PRISM-WM 没有给每种接触状态手写一个专家。它让模型自己学一组可组合的 residual basis，然后让当前 <span class="sym">(zₜ, aₜ)</span> 决定怎么混合。
+          </p>
+        </section>
+
+        <section id="orthogonal">
+          <h2>为什么只加 MoE 还不够</h2>
+          <p>
+            直接把一个 MLP 换成多个 expert，并不自动解决问题。
+          </p>
+          <p>
+            如果几个 expert 学到的是同一种函数，MoE 只是更大的 MLP。参数变多了，但 regime 没有真正分开。PRISM-WM 加的关键约束是 latent orthogonalization。
+          </p>
+          <p>论文里做法是：每个 expert 先输出一个向量 uₖ，然后用稳定版 Gram-Schmidt 把它变成 vₖ。</p>
+
+          <div class="math-panel" aria-label="Gram-Schmidt orthogonalization">
+            <p class="math-label">orthogonalized residual basis</p>
+            \[
+              \begin{aligned}
+              \tilde v_k &= u_k - \sum_{i=1}^{k-1}\langle v_i,u_k\rangle v_i \\
+              v_k &= \frac{\tilde v_k}{\lVert \tilde v_k\rVert_2+\epsilon}
+              \end{aligned}
+            \]
+          </div>
+
+          <p>
+            这一步的作用很具体：让后来的 expert 输出减掉已经被前面 basis 解释过的部分。最后得到的 vₖ 更不容易挤到同一个方向上。
+          </p>
+          <p>
+            这个设计的品味在于，它没有把“物理模式”写死成标签。它只是给 dynamics residual 加了一个结构偏置：请尽量用不重复的方向解释未来变化。接触、滑动、落地、恢复平衡这些模式，理论上可以通过 gate 的权重变化在这些 basis 上组合出来。
+          </p>
+          <p>
+            这个区别也解释了论文为什么强调 orthogonalized MoE。vanilla MoE 能增加 capacity；orthogonalization 试图减少 expert redundancy。前者让模型更大，后者让模型更像在分解问题。
+          </p>
+        </section>
+
+        <section id="evidence">
+          <h2>证据：它到底有没有减少 rollout drift</h2>
+          <p>
+            这篇论文最值得看的指标是 long-horizon fidelity。单点 reward 只能说明某个训练时刻的控制表现；horizon 拉长后的 fidelity，才直接对应这篇论文对 world model 的判断。
+          </p>
+          <p>
+            如果 PRISM-WM 的故事成立，模型在短 horizon 上未必显得惊艳，但随着 rollout horizon 变长，monolithic MLP 应该更快漂掉；orthogonalized MoE 应该更能保持 latent trajectory 的方向一致性。
+          </p>
+
+          <figure>
+            <div class="figure-frame">
+              <img src="../../assets/prism-wm/paper-fig8-long-horizon-fidelity.png" alt="PRISM-WM Fig. 8 long horizon fidelity">
+            </div>
+            <figcaption>图：PRISM-WM 论文 Fig. 8。左图比较不同 rollout horizon 下的 latent cosine similarity；红色 monolithic MLP baseline 随 horizon 增长掉得更快。右图比较不同模型变体的 reward-estimation fidelity。</figcaption>
+          </figure>
+
+          <p>
+            在 Fig. 8 里，monolithic MLP 的 latent cosine similarity 随着 horizon 增长下降更明显；MoE 和 orthogonalized MoE 保持得更稳。右边的 reward fidelity 也在提醒一个细节：更大的 vanilla MoE 不一定更好，因为 over-parameterized experts 可能学到 redundant representations。
+          </p>
+
+          <figure>
+            <div class="figure-frame">
+              <img src="../../assets/prism-wm/paper-fig10-routing-granularity.png" alt="PRISM-WM Fig. 10 routing granularity ablation">
+            </div>
+            <figcaption>图：PRISM-WM 论文 Fig. 10。它比较不同 expert 数量在 horizon 30 以内的 latent fidelity。论文把 K=4 作为效果和开销之间的主要折中。</figcaption>
+          </figure>
+
+          <div class="evidence-grid" aria-label="Key empirical results">
+            <div class="evidence">
+              <span class="number">0.531</span>
+              <p>DMC-30 上 PRISM-WM 的 mean normalized score；monolithic TD-MPC2 是 0.430。</p>
+            </div>
+            <div class="evidence">
+              <span class="number">26/30</span>
+              <p>论文报告 PRISM-WM 在 30 个任务中的 26 个超过 baseline。</p>
+            </div>
+            <div class="evidence">
+              <span class="number">11.8%</span>
+              <p>zero-shot sim-to-sim transfer 里 PRISM-WM 的 target return drop；monolithic MLP 是 47.8%。</p>
+            </div>
+            <div class="evidence">
+              <span class="number">0.13 ms</span>
+              <p>Table II 中 K=4 PRISM-WM 的推理延迟，和 monolithic baseline 同量级。</p>
+            </div>
+          </div>
+
+          <p>
+            这些结果共同支撑一个判断：PRISM-WM 的收益应看 long-horizon rollout 里的 latent trajectory drift 下降；单纯容量增加解释不了全部现象。对 model-based RL 来说，这比单点 reward 更贴近 world model 的用途。
+          </p>
+        </section>
+
+        <section id="takeaway">
+          <h2>这篇论文真正改变了什么</h2>
+          <p>
+            PRISM-WM 把改动集中在 TD-MPC 的 transition function 上。
+          </p>
+          <p>
+            这个函数会被 planner 在 rollout 里反复调用；一旦它把接触模式平均掉，后面的 reward prediction、value estimate 和 action selection 都会沿着错误的未来走。
+          </p>
+          <p>
+            所以这篇论文提出了一个很具体的世界模型判断标准：world model 要服务 planner，transition function 就不能把接触、滑动、落地这些动力学切换平均成同一个连续函数。只保留 task-relevant information 不够；dynamics 的结构也要对。
+          </p>
+          <p>
+            TD-MPC 的问题意识是：别把 capacity 浪费在重建无关细节上。PRISM-WM 接着往下问：如果已经只学 latent dynamics，但这个 latent dynamics 把物理模式平均掉了，planner 仍然会被误导。
+          </p>
+
+          <ul class="claim-list">
+            <li><b>被反复调用的对象</b><span>planner 在每次 rollout 中都依赖 dθ。</span></li>
+            <li><b>核心 failure mode</b><span>dθ 把 contact boundary 平滑掉。</span></li>
+            <li><b>应看的证据</b><span>long-horizon latent fidelity；单点 reward 不够。</span></li>
+          </ul>
+        </section>
+
+        <section id="limits">
+          <h2>仍然没解决的问题</h2>
+          <h3>regime 数量能否自动发现</h3>
+          <p>
+            论文主实验用 K=4，Fig. 10 也说明不同 K 的表现有差异。原文 limitations 也承认，expert count K 仍然是手调超参。更深的问题不是“K 怎么调”，而是一个真实机器人任务到底有多少 latent regimes，模型能不能自己发现。平地走、跳跃、抓取、推拉、摔倒恢复，接触结构不会固定在一个常数上。
+          </p>
+
+          <h3>soft mixture 是否足够表达硬切换</h3>
+          <p>
+            PRISM-WM 最后仍然用 Σₖ wₖvₖ 得到 residual。这个 convex-like blend 对稳定训练很友好，但 hybrid systems 的某些切换可能更接近硬边界。原文也把 beyond weighted sum 写进 future work。真正的问题是：soft mixture 能不能表达足够尖锐的 contact discontinuity，还是需要更接近 discrete switching 的 composition function？
+          </p>
+
+          <h3>orthogonal basis 是否真的对应物理结构</h3>
+          <p>
+            论文没有把每个 expert 宣称为某个具体物理事件，甚至明确说 orthogonal experts 不会一一对应真实物理事件。orthogonal basis 是 latent residual space 的结构约束，和真实接触标签之间还隔着一层表示学习。它可以帮助 gate 学出 quasi-discrete switching，但不能直接读成“专家 1 是左脚，专家 2 是摩擦”。这里最值得继续追问的是：模型学到的是物理分解，还是一个在 DMC / MuJoCo 上好用的 latent geometry？
+          </p>
+
+          <h3>真实机器人和 partial observability 下是否仍成立</h3>
+          <p>
+            论文做了 zero-shot sim-to-sim transfer，但这还不是 real robot。真实系统里有传感噪声、遮挡、延迟、软接触、执行误差，很多关键变量并不完全可观测。原文也把 real-world robotics 和 partial observability 写进 future work。PRISM-WM 的 orthogonal basis 能不能在这种更脏的观测条件下继续隔离 uncertainty，是它能否从 simulator result 走向 embodied world model 的关键。
+          </p>
+
+          <h3>实现和复现 caveat</h3>
+          <p>
+            公开代码里确实有 MoE dynamics / reward path，<code>use_moe=true</code> 会切到 <code>MoEBlock</code>，<code>use_orthogonal=true</code> 会进入 orthogonalization 路径，小规模真实环境 ablation 也能跑通。
+          </p>
+          <p>
+            但这些还不是 paper-level benchmark reproduction。我做过一个 cheetah-run-backwards 的 100k-step 单 seed sanity check，final reward 是：
+          </p>
+
+          <div class="diagnostic" aria-label="Local diagnostic result">
+            <header>local diagnostic, not a paper reproduction</header>
+            <table>
+              <thead>
+                <tr>
+                  <th>variant</th>
+                  <th>final reward</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>baseline_mlp</td>
+                  <td>388.82</td>
+                </tr>
+                <tr>
+                  <td>moe_no_orth</td>
+                  <td>388.57</td>
+                </tr>
+                <tr>
+                  <td>prism_orth</td>
+                  <td>377.97</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            这组结果没有复现 <code>prism_orth &gt; baseline_mlp</code> 的方向。它更像一个诊断信号：也许需要更多 seed、更长训练、更贴近论文的 DMC-30 setting，或者更细的 implementation audit。尤其值得继续检查的是 paper-code alignment：当前 release 里 MoE auxiliary loss 看起来可能没有按预期参与 gate 的梯度更新。这不推翻论文，但它提醒我们，读 paper 和信 release artifact 是两件不同的事。
+          </p>
+
+          <figure>
+            <div class="figure-frame">
+              <img src="../../assets/prism-wm/local-cheetah-run-backwards-comparison.png" alt="Local cheetah-run-backwards diagnostic comparison">
+            </div>
+            <figcaption>图：一个 100k-step、single-seed 的 cheetah-run-backwards sanity check。这不是论文 DMC-30 benchmark 的复现，只能作为实现层面的诊断信号。</figcaption>
+          </figure>
+        </section>
+
+        <section id="close">
+          <h2>世界模型要保留什么结构</h2>
+          <p>
+            TD-MPC 给出的判断是：world model 不必还原整个世界。PRISM-WM 接着补上另一句：world model 不能把行动相关的物理结构抹掉。
+          </p>
+          <p>
+            这两个判断并不冲突。一个 task-oriented world model 可以不关心背景纹理、阴影和无关像素；但如果它要服务 locomotion planner，它就必须关心接触、冲击、摩擦和支撑这些会改变未来动作价值的结构。
+          </p>
+
+          <div class="math-panel" aria-label="Core world model interface">
+            <p class="math-label">the small interface that matters</p>
+            \[
+              \hat z_{t+1}=d_\theta(z_t,a_t)
+            \]
+          </div>
+
+          <p>
+            planner 反复调用它。value function 依赖它。reward prediction 也跟着它走。这个函数如果学成平均物理，后面的规划看起来再精致，也是在错误的未来里优化。
+          </p>
+          <p>
+            这就是这篇论文最有用的地方。它把 world model 从“理解世界”的大词拉回到可检查的机制：transition function 是否能表达 hybrid dynamics，expert 是否真的不重复，rollout drift 是否随 horizon 被压住，gate 是否在扰动时发生有意义的切换。
+          </p>
+          <p>
+            对 embodied AI 来说，这可能比一个更大的模型还重要。机器人不是在光滑的数学平面上移动。它每一步都在接触世界。世界模型如果想服务行动，至少不能把接触平均掉。
+          </p>
+        </section>
+
+        <section id="references">
+          <h2>参考资料</h2>
+          <ul class="links">
+            <li>PRISM-WM paper: <a href="https://arxiv.org/abs/2512.08411">Prismatic World Model: Learning Compositional Dynamics for Planning in Hybrid Systems</a></li>
+            <li>PRISM-WM code / project assets: <a href="https://github.com/SC-Levi/PRISM-WM">SC-Levi/PRISM-WM</a></li>
+            <li>TD-MPC: <a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control</a></li>
+            <li>TD-MPC2: <a href="https://arxiv.org/abs/2310.16828">Scalable, Robust World Models for Continuous Control</a></li>
+            <li>PWM: <a href="https://arxiv.org/abs/2407.02466">Policy Learning with Large World Models</a></li>
+          </ul>
+        </section>
+      </article>
+    </div>
+  </main>
+</body>
+</html>
