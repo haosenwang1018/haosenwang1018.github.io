@@ -40,6 +40,62 @@
 - License/status: Paper figures used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
 - Local processing: rendered page 8 from the arXiv PDF and cropped to the ablation and gap-generalization figures
 
+## `cosmos-policy/figure-1-overview.jpg`
+
+- Source: Figure 1 from `Cosmos Policy: Fine-Tuning Video Models for Visuomotor Control and Planning`, Kim et al., arXiv 2026
+- Original URL: https://arxiv.org/abs/2601.16163
+- Project page: https://research.nvidia.com/labs/dir/cosmos-policy/
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: extracted from the arXiv PDF embedded image for the Cosmos Policy technical blog
+
+## `cosmos-policy/figure-2-latent-injection.jpg`
+
+- Source: Figure 2 from `Cosmos Policy: Fine-Tuning Video Models for Visuomotor Control and Planning`, Kim et al., arXiv 2026
+- Original URL: https://arxiv.org/abs/2601.16163
+- Project page: https://research.nvidia.com/labs/dir/cosmos-policy/
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: extracted from the arXiv PDF embedded image and resized for web display
+
+## `cosmos-policy/figure-12-joint-objectives.jpg`
+
+- Source: Appendix Figure 12 from `Cosmos Policy: Fine-Tuning Video Models for Visuomotor Control and Planning`, Kim et al., arXiv 2026
+- Original URL: https://arxiv.org/abs/2601.16163
+- Project page: https://research.nvidia.com/labs/dir/cosmos-policy/
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: extracted from the arXiv PDF embedded image and resized for web display
+
+## `cosmos-policy/tables-1-2-benchmarks.png`
+
+- Source: Tables 1 and 2 from `Cosmos Policy: Fine-Tuning Video Models for Visuomotor Control and Planning`, Kim et al., arXiv 2026
+- Original URL: https://arxiv.org/abs/2601.16163
+- Project page: https://research.nvidia.com/labs/dir/cosmos-policy/
+- License/status: Paper tables used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 8 from the arXiv PDF and cropped to the LIBERO and RoboCasa benchmark tables
+
+## `cosmos-policy/figure-4-aloha.jpg`
+
+- Source: Figure 4 from `Cosmos Policy: Fine-Tuning Video Models for Visuomotor Control and Planning`, Kim et al., arXiv 2026
+- Original URL: https://arxiv.org/abs/2601.16163
+- Project page: https://research.nvidia.com/labs/dir/cosmos-policy/
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: extracted from the arXiv PDF embedded image and resized for web display
+
+## `cosmos-policy/figure-7-planning.jpg`
+
+- Source: Figure 7 from `Cosmos Policy: Fine-Tuning Video Models for Visuomotor Control and Planning`, Kim et al., arXiv 2026
+- Original URL: https://arxiv.org/abs/2601.16163
+- Project page: https://research.nvidia.com/labs/dir/cosmos-policy/
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: extracted from the arXiv PDF embedded image for the Cosmos Policy technical blog
+
+## `cosmos-policy/table-5-ablation.png`
+
+- Source: Table 5 from `Cosmos Policy: Fine-Tuning Video Models for Visuomotor Control and Planning`, Kim et al., arXiv 2026
+- Original URL: https://arxiv.org/abs/2601.16163
+- Project page: https://research.nvidia.com/labs/dir/cosmos-policy/
+- License/status: Paper table used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 22 from the arXiv PDF and cropped to the RoboCasa ablation and latency table
+
 ## `prism-wm/prism-wm-pipeline.png`
 
 - Source: PRISM-WM released project asset for the architecture/pipeline diagram

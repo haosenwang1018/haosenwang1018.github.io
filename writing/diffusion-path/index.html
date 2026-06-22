@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A technical essay on diffusion models as iterative denoising, score estimation, latent-space generation, guidance, video diffusion, and the connection to Cosmos Policy.">
+  <title>Diffusion: Learning a Path from Noise to Data - Sense Wang</title>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [["\\(", "\\)"]],
+        displayMath: [["\\[", "\\]"]]
+      },
+      chtml: { scale: 0.96 }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      color: #111;
+      background: #fff;
+      line-height: 1.78;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    main {
+      max-width: 760px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 72px 20px 112px;
+      overflow: visible;
+    }
+
+    nav {
+      margin-bottom: 52px;
+      font-size: 13px;
+    }
+
+    h1 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 42px;
+      line-height: 1.12;
+      font-weight: 700;
+      margin-bottom: 14px;
+      max-width: 730px;
+      overflow-wrap: break-word;
+    }
+
+    h2 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 25px;
+      line-height: 1.28;
+      margin: 56px 0 14px;
+    }
+
+    h3 {
+      font-size: 18px;
+      line-height: 1.4;
+      margin: 32px 0 10px;
+    }
+
+    p {
+      margin-bottom: 17px;
+    }
+
+    a {
+      color: #111;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    a:hover { opacity: 0.55; }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.88em;
+    }
+
+    pre {
+      background: #fafafa;
+      border: 1px solid #ececec;
+      color: #333;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      margin: 24px 0;
+      overflow-x: auto;
+      padding: 18px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    table {
+      border-collapse: collapse;
+      font-size: 14px;
+      line-height: 1.55;
+      margin: 26px 0 30px;
+      width: 100%;
+    }
+
+    th, td {
+      border-bottom: 1px solid #e8e8e8;
+      padding: 10px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #555;
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .meta {
+      color: #999;
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+
+    .article-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin: -18px 0 34px;
+    }
+
+    .language-switch {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .language-switch button {
+      border: 0;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+      color: #999;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      line-height: 1.5;
+      padding: 0 0 3px;
+      text-transform: uppercase;
+    }
+
+    .language-switch button[aria-pressed="true"] {
+      border-color: #111;
+      color: #111;
+    }
+
+    .version[hidden] {
+      display: none;
+    }
+
+    .dek {
+      color: #444;
+      font-size: 19px;
+      line-height: 1.6;
+      max-width: 690px;
+      margin-bottom: 44px;
+    }
+
+    .math-panel {
+      border-top: 1px solid #e8e8e8;
+      border-bottom: 1px solid #e8e8e8;
+      color: #222;
+      margin: 28px 0 30px;
+      padding: 18px 0;
+      overflow-x: auto;
+    }
+
+    .note {
+      border-left: 3px solid #111;
+      color: #333;
+      font-size: 16px;
+      line-height: 1.72;
+      margin: 28px 0 30px;
+      padding: 2px 0 2px 18px;
+    }
+
+    .note-title {
+      color: #777;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .schematic {
+      margin: 34px 0 36px;
+      width: min(980px, calc(100vw - 40px));
+      margin-left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .schematic svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid #eee;
+      background: #fff;
+    }
+
+    .caption {
+      color: #777;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 10px;
+    }
+
+    .references {
+      color: #555;
+      font-size: 15px;
+      margin-left: 22px;
+    }
+
+    .references li {
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    @media (max-width: 560px) {
+      main {
+        margin: 0;
+        max-width: 390px;
+        padding-top: 48px;
+      }
+      h1 { font-size: 31px; }
+      body { font-size: 16px; }
+      .dek { font-size: 18px; }
+      table { font-size: 13px; }
+      th, td { padding: 9px 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+    <div class="article-toolbar">
+      <div class="language-switch" aria-label="Language">
+        <button type="button" data-lang-button="en" aria-pressed="true">English</button>
+        <button type="button" data-lang-button="zh" aria-pressed="false">中文</button>
+      </div>
+    </div>
+
+    <article class="version" data-lang-panel="en" lang="en">
+      <h1>Diffusion: Learning a Path from Noise to Data</h1>
+      <div class="meta">June 2026</div>
+
+      <p class="dek">
+        Diffusion models convert generation into a sequence of denoising problems. The model does not memorize a direct jump from random noise to a finished image, video, action, or latent state. It learns local corrections along a path where structure gradually appears.
+      </p>
+
+      <p>
+        The useful mental model starts with an object \(x_0\) sampled from the data distribution. For an image model, \(x_0\) may be pixels. For Stable Diffusion or Cosmos-style video models, \(x_0\) may be a compressed latent tensor. For a robot policy, it can even include action or value slots, as long as those variables have been represented as continuous tensors.
+      </p>
+
+      <p>
+        Diffusion is the generative mechanism applied to that representation. The representation says what the model operates on; diffusion says how the model learns to generate it.
+      </p>
+
+      <div class="note">
+        <div class="note-title">Core Split</div>
+        Representation answers: what is \(x\)? Pixels, VAE latents, video latents, audio latents, action vectors, or a mixed latent sequence. Diffusion answers: how do we move from noise back to samples from the data distribution?
+      </div>
+
+      <div class="schematic">
+        <svg viewBox="0 0 980 310" role="img" aria-label="Diffusion forward noising and reverse denoising path">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#111"></path>
+            </marker>
+          </defs>
+          <rect x="28" y="58" width="148" height="74" fill="#fff" stroke="#111"></rect>
+          <text x="102" y="90" text-anchor="middle" font-size="17" font-weight="650">data</text>
+          <text x="102" y="115" text-anchor="middle" font-size="14" fill="#666">x0</text>
+          <line x1="184" y1="95" x2="790" y2="95" stroke="#111" stroke-width="1.4" marker-end="url(#arrow)"></line>
+          <text x="486" y="72" text-anchor="middle" font-size="14" fill="#666">known forward noising process</text>
+          <circle cx="282" cy="95" r="27" fill="#fafafa" stroke="#d8d8d8"></circle>
+          <circle cx="398" cy="95" r="27" fill="#f3f3f3" stroke="#d8d8d8"></circle>
+          <circle cx="514" cy="95" r="27" fill="#ececec" stroke="#d8d8d8"></circle>
+          <circle cx="630" cy="95" r="27" fill="#e3e3e3" stroke="#d8d8d8"></circle>
+          <rect x="804" y="58" width="148" height="74" fill="#f7f7f7" stroke="#111"></rect>
+          <text x="878" y="90" text-anchor="middle" font-size="17" font-weight="650">noise</text>
+          <text x="878" y="115" text-anchor="middle" font-size="14" fill="#666">xT</text>
+
+          <line x1="804" y1="218" x2="198" y2="218" stroke="#111" stroke-width="1.4" marker-end="url(#arrow)"></line>
+          <text x="486" y="250" text-anchor="middle" font-size="14" fill="#666">learned reverse denoising process</text>
+          <rect x="804" y="181" width="148" height="74" fill="#f7f7f7" stroke="#111"></rect>
+          <text x="878" y="213" text-anchor="middle" font-size="17" font-weight="650">noise</text>
+          <text x="878" y="238" text-anchor="middle" font-size="14" fill="#666">sample start</text>
+          <circle cx="702" cy="218" r="27" fill="#e3e3e3" stroke="#d8d8d8"></circle>
+          <circle cx="586" cy="218" r="27" fill="#ececec" stroke="#d8d8d8"></circle>
+          <circle cx="470" cy="218" r="27" fill="#f3f3f3" stroke="#d8d8d8"></circle>
+          <circle cx="354" cy="218" r="27" fill="#fafafa" stroke="#d8d8d8"></circle>
+          <rect x="28" y="181" width="148" height="74" fill="#fff" stroke="#111"></rect>
+          <text x="102" y="213" text-anchor="middle" font-size="17" font-weight="650">sample</text>
+          <text x="102" y="238" text-anchor="middle" font-size="14" fill="#666">x0</text>
+        </svg>
+        <div class="caption">The forward path is fixed and cheap to sample from. The reverse path is learned. Generation runs the reverse path from noise back to data-like structure.</div>
+      </div>
+
+      <h2>The Forward Process Destroys Structure</h2>
+
+      <p>
+        The first half of a diffusion model is deliberately simple. Take a clean sample \(x_0\), choose a noise level \(t\), and corrupt the sample with Gaussian noise. The usual DDPM notation writes this as:
+      </p>
+
+      <div class="math-panel">
+        \[
+        q(x_t \mid x_0) =
+        \mathcal{N}
+        \left(
+        \sqrt{\bar{\alpha}_t}x_0,\,
+        (1-\bar{\alpha}_t)I
+        \right)
+        \]
+      </div>
+
+      <p>
+        Early noise levels preserve most of the sample. Late noise levels wash out the sample until it is close to a Gaussian. The model is given examples of many partially corrupted samples. Each example asks the same local question: from this noisy point, what correction points back toward clean data?
+      </p>
+
+      <p>
+        This design turns a hard density modeling problem into many supervised denoising tasks. The training data supplies \(x_0\). The noise process supplies \(x_t\). The target can be the clean sample, the noise that was added, a velocity parameterization, or the score. The common form used in many explanations predicts the noise:
+      </p>
+
+      <div class="math-panel">
+        \[
+        \mathcal{L}(\theta)=
+        \mathbb{E}_{x_0,\epsilon,t}
+        \left[
+        \left\|
+        \epsilon -
+        \epsilon_\theta(x_t,t,c)
+        \right\|^2
+        \right],
+        \qquad
+        x_t =
+        \sqrt{\bar{\alpha}_t}x_0+
+        \sqrt{1-\bar{\alpha}_t}\epsilon
+        \]
+      </div>
+
+      <p>
+        The condition \(c\) may be a class label, text embedding, image prompt, camera state, language instruction, or robot task description. Conditioning gives the denoiser a reason to choose one part of the data distribution over another.
+      </p>
+
+      <h2>The Model Learns a Local Direction</h2>
+
+      <p>
+        There are several equivalent ways to describe the learned object. A DDPM implementation often says the network predicts noise. A score-based paper says the network estimates \(\nabla_x \log p_t(x)\), the direction in noisy space where probability density increases. An engineering implementation may call the same network a denoiser.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>What it predicts</th>
+            <th>Why it matters</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Denoiser</td>
+            <td>A cleaner version of a corrupted sample</td>
+            <td>Directly matches the intuition of iterative refinement.</td>
+          </tr>
+          <tr>
+            <td>Noise predictor</td>
+            <td>The Gaussian noise component added to the sample</td>
+            <td>Gives a simple MSE training target in many DDPM-style systems.</td>
+          </tr>
+          <tr>
+            <td>Score model</td>
+            <td>The gradient of the log density at a noise level</td>
+            <td>Connects diffusion to probability flows, SDEs, and Langevin sampling.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        These names emphasize different mathematical views. For intuition, the important fact is that the model does not need to solve the whole generation problem in one pass. It only needs to make a useful local prediction at a chosen noise level.
+      </p>
+
+      <h2>Sampling Repeats the Correction</h2>
+
+      <p>
+        Training samples a noisy point and asks for a correction. Sampling starts with noise and repeats correction many times. Each step calls the same network with a different noise level:
+      </p>
+
+      <pre><code>x_T ~ Normal(0, I)
+for t = T ... 1:
+  correction = denoiser(x_t, t, condition)
+  x_{t-1} = sampler_step(x_t, correction, t)
+return x_0</code></pre>
+
+      <p>
+        The sampler is an algorithm wrapped around the denoising network. It decides step sizes, noise schedules, stochasticity, and numerical integration details. This is why diffusion papers can share the same broad training idea but differ in samplers, schedules, parameterizations, and speed-quality tradeoffs. Karras et al.'s EDM paper is valuable because it separates many of these design choices that are often tangled together.
+      </p>
+
+      <p>
+        Slow sampling comes from this repeated network evaluation. The same property also gives diffusion its strength: a high-dimensional sample is assembled through many smaller corrections, with conditioning injected at every correction.
+      </p>
+
+      <h2>Latent Diffusion Moves the Same Mechanism</h2>
+
+      <p>
+        Pixel diffusion applies the noising and denoising process directly to pixel arrays. Latent diffusion first trains an autoencoder, then applies diffusion to the compressed representation:
+      </p>
+
+      <div class="math-panel">
+        \[
+        z_0 = E(x_0), \qquad
+        \hat{x}_0 = D(z_0)
+        \]
+      </div>
+
+      <div class="math-panel">
+        \[
+        z_t =
+        \sqrt{\bar{\alpha}_t}z_0+
+        \sqrt{1-\bar{\alpha}_t}\epsilon,
+        \qquad
+        \epsilon_\theta(z_t,t,c)\approx \epsilon
+        \]
+      </div>
+
+      <p>
+        The generative mechanism stays the same. The space changes. The model denoises \(z_t\) instead of \(x_t\), and the decoder maps the final latent back to pixels. This is the main reason Stable Diffusion can be much cheaper than pixel-space diffusion for high-resolution images. The model works in a smaller, perceptually meaningful space.
+      </p>
+
+      <div class="note">
+        <div class="note-title">Why Latent And Diffusion Coexist</div>
+        Latent is the representation. Diffusion is the process run over that representation. A latent diffusion model is a diffusion model whose noisy variable is a latent tensor rather than raw pixels.
+      </div>
+
+      <h2>Guidance Makes Generation Conditional</h2>
+
+      <p>
+        Text-to-image systems need the sample to obey a condition. Early systems used classifier guidance: a separate classifier supplies a gradient that pushes the sample toward a label. Classifier-free guidance trains a model that can run both with and without a condition, then amplifies the difference between conditional and unconditional predictions at sampling time.
+      </p>
+
+      <div class="math-panel">
+        \[
+        \epsilon_{\text{guided}} =
+        \epsilon_\theta(x_t,t,\varnothing)
+        +
+        w\left[
+        \epsilon_\theta(x_t,t,c) -
+        \epsilon_\theta(x_t,t,\varnothing)
+        \right]
+        \]
+      </div>
+
+      <p>
+        The guidance scale \(w\) changes how strongly the condition shapes the trajectory. Higher guidance often improves prompt adherence and can damage diversity or naturalness. This is the same tradeoff seen across generative systems: stronger control can narrow the distribution the sampler explores.
+      </p>
+
+      <h2>Video Adds Time To The Sample</h2>
+
+      <p>
+        Video diffusion expands the denoised object from an image to a spatiotemporal tensor. The sample now has frame, height, width, and channel dimensions. The model must preserve visual detail and maintain temporal coherence. A single bad correction can create flicker, identity drift, or motion that looks locally plausible and globally wrong.
+      </p>
+
+      <p>
+        This is why video diffusion papers spend so much effort on temporal attention, 3D VAEs, frame conditioning, windowed attention, cascades, and training curricula. The denoising idea is still recognizable. The sample being denoised has become a short world trajectory.
+      </p>
+
+      <h2>The Cosmos Policy Connection</h2>
+
+      <p>
+        Cosmos Policy becomes easier to place after the representation/process split. The paper starts from a pretrained video latent diffusion model. Its native object is a sequence of video latent frames. The control trick is to insert robot variables into that same sequence:
+      </p>
+
+      <pre><code>current observation latent
+-> action chunk latent slot
+-> future observation latent
+-> value latent slot</code></pre>
+
+      <p>
+        The latent sequence is the representation interface. Diffusion denoising is the mechanism that fills missing slots. Conditioning masks decide which slots are visible and which slots are targets. With one mask the model behaves like a policy; with another it behaves like a world model; with another it predicts value.
+      </p>
+
+      <p>
+        Cosmos Policy does not require diffusion to be a picture-only algorithm. It relies on the fact that diffusion can denoise continuous tensors. Once action and value have been encoded as latent-shaped tensors, the same denoising machinery can generate them beside future video latents.
+      </p>
+
+      <h2>What Diffusion Gives Up</h2>
+
+      <p>
+        Diffusion pays for quality with repeated computation. Every generated sample requires many network calls unless the model is distilled or the sampler is aggressively shortened. Latent diffusion reduces the size of the denoised variable, but it still keeps an iterative sampling loop.
+      </p>
+
+      <p>
+        Diffusion also makes generation depend on the geometry of noise levels. The model can be strong at some noise ranges and weak at others. Schedules, preconditioning, parameterization, and solver choices become part of model quality. The clean conceptual story hides a large engineering surface.
+      </p>
+
+      <p>
+        The final limitation is control. Guidance, conditioning, masks, and value functions can steer the sample, but they do not guarantee that the generated object is causally correct. In video and robotics, visual plausibility and action-relevant correctness can separate. Cosmos Policy is interesting precisely because it tests whether a video diffusion prior can be turned into an action interface rather than only a visual generator.
+      </p>
+
+      <h2>Sources</h2>
+      <ol class="references">
+        <li><a href="https://arxiv.org/abs/2006.11239">Denoising Diffusion Probabilistic Models</a>, Ho, Jain, and Abbeel, NeurIPS 2020.</li>
+        <li><a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models/">What are Diffusion Models?</a>, Lilian Weng.</li>
+        <li><a href="https://huggingface.co/blog/annotated-diffusion">The Annotated Diffusion Model</a>, Hugging Face.</li>
+        <li><a href="https://yang-song.net/blog/2021/score/">Generative Modeling by Estimating Gradients of the Data Distribution</a>, Yang Song.</li>
+        <li><a href="https://sander.ai/2022/01/31/diffusion.html">Diffusion models are autoencoders</a>, Sander Dieleman.</li>
+        <li><a href="https://sander.ai/2023/07/20/perspectives.html">Perspectives on diffusion</a>, Sander Dieleman.</li>
+        <li><a href="https://arxiv.org/abs/2112.10752">High-Resolution Image Synthesis with Latent Diffusion Models</a>, Rombach et al., CVPR 2022.</li>
+        <li><a href="https://lilianweng.github.io/posts/2024-04-12-diffusion-video/">Diffusion Models for Video Generation</a>, Lilian Weng.</li>
+        <li><a href="https://arxiv.org/abs/2601.16163">Cosmos Policy: Fine-Tuning Video Models for Visuomotor Control and Planning</a>, Kim et al., arXiv 2026.</li>
+      </ol>
+    </article>
+
+    <article class="version" data-lang-panel="zh" lang="zh-CN" hidden>
+      <h1>Diffusion：从噪声到数据的一条路径</h1>
+      <div class="meta">June 2026</div>
+
+      <p class="dek">
+        Diffusion model 把生成任务拆成一串 denoising problem。模型不需要一次性从随机噪声跳到完整图像、视频、action 或 latent state；它学习的是沿着一条路径做局部修正，让结构逐步出现。
+      </p>
+
+      <p>
+        一个可用的理解方式从 \(x_0\) 开始。\(x_0\) 来自 data distribution。图像模型里，\(x_0\) 可以是 pixels；Stable Diffusion 或 Cosmos 风格的视频模型里，\(x_0\) 可以是压缩后的 latent tensor；机器人策略里，它甚至可以包含 action 或 value slots，只要这些变量已经被表示成连续 tensor。
+      </p>
+
+      <p>
+        Diffusion 是施加在这个表示上的生成机制。representation 决定模型操作的对象；diffusion 决定模型如何生成这个对象。
+      </p>
+
+      <div class="note">
+        <div class="note-title">Core Split</div>
+        Representation 回答：\(x\) 是什么？pixels、VAE latents、video latents、audio latents、action vectors，或者一条混合 latent sequence。Diffusion 回答：如何从 noise 回到 data distribution 里的样本？
+      </div>
+
+      <div class="schematic">
+        <svg viewBox="0 0 980 310" role="img" aria-label="Diffusion forward noising and reverse denoising path">
+          <defs>
+            <marker id="arrow-zh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#111"></path>
+            </marker>
+          </defs>
+          <rect x="28" y="58" width="148" height="74" fill="#fff" stroke="#111"></rect>
+          <text x="102" y="90" text-anchor="middle" font-size="17" font-weight="650">data</text>
+          <text x="102" y="115" text-anchor="middle" font-size="14" fill="#666">x0</text>
+          <line x1="184" y1="95" x2="790" y2="95" stroke="#111" stroke-width="1.4" marker-end="url(#arrow-zh)"></line>
+          <text x="486" y="72" text-anchor="middle" font-size="14" fill="#666">known forward noising process</text>
+          <circle cx="282" cy="95" r="27" fill="#fafafa" stroke="#d8d8d8"></circle>
+          <circle cx="398" cy="95" r="27" fill="#f3f3f3" stroke="#d8d8d8"></circle>
+          <circle cx="514" cy="95" r="27" fill="#ececec" stroke="#d8d8d8"></circle>
+          <circle cx="630" cy="95" r="27" fill="#e3e3e3" stroke="#d8d8d8"></circle>
+          <rect x="804" y="58" width="148" height="74" fill="#f7f7f7" stroke="#111"></rect>
+          <text x="878" y="90" text-anchor="middle" font-size="17" font-weight="650">noise</text>
+          <text x="878" y="115" text-anchor="middle" font-size="14" fill="#666">xT</text>
+
+          <line x1="804" y1="218" x2="198" y2="218" stroke="#111" stroke-width="1.4" marker-end="url(#arrow-zh)"></line>
+          <text x="486" y="250" text-anchor="middle" font-size="14" fill="#666">learned reverse denoising process</text>
+          <rect x="804" y="181" width="148" height="74" fill="#f7f7f7" stroke="#111"></rect>
+          <text x="878" y="213" text-anchor="middle" font-size="17" font-weight="650">noise</text>
+          <text x="878" y="238" text-anchor="middle" font-size="14" fill="#666">sample start</text>
+          <circle cx="702" cy="218" r="27" fill="#e3e3e3" stroke="#d8d8d8"></circle>
+          <circle cx="586" cy="218" r="27" fill="#ececec" stroke="#d8d8d8"></circle>
+          <circle cx="470" cy="218" r="27" fill="#f3f3f3" stroke="#d8d8d8"></circle>
+          <circle cx="354" cy="218" r="27" fill="#fafafa" stroke="#d8d8d8"></circle>
+          <rect x="28" y="181" width="148" height="74" fill="#fff" stroke="#111"></rect>
+          <text x="102" y="213" text-anchor="middle" font-size="17" font-weight="650">sample</text>
+          <text x="102" y="238" text-anchor="middle" font-size="14" fill="#666">x0</text>
+        </svg>
+        <div class="caption">Forward path 是固定过程，采样很便宜；reverse path 由模型学习。生成时，从 noise 出发沿 reverse path 回到 data-like structure。</div>
+      </div>
+
+      <h2>Forward Process 负责破坏结构</h2>
+
+      <p>
+        Diffusion model 的前半部分非常简单。取一个 clean sample \(x_0\)，选一个 noise level \(t\)，用 Gaussian noise 污染它。DDPM 常用的写法是：
+      </p>
+
+      <div class="math-panel">
+        \[
+        q(x_t \mid x_0) =
+        \mathcal{N}
+        \left(
+        \sqrt{\bar{\alpha}_t}x_0,\,
+        (1-\bar{\alpha}_t)I
+        \right)
+        \]
+      </div>
+
+      <p>
+        较小的 noise level 保留大部分样本结构。较大的 noise level 会让样本越来越接近 Gaussian。模型在训练时看到许多 partially corrupted samples。每个训练样本都在问同一个局部问题：从这个 noisy point 出发，哪个 correction 能指向 clean data？
+      </p>
+
+      <p>
+        这个设计把高维 density modeling 拆成许多 supervised denoising tasks。训练数据提供 \(x_0\)，noise process 提供 \(x_t\)。target 可以是 clean sample、被加入的 noise、velocity parameterization，或者 score。许多 DDPM 风格解释使用 noise prediction：
+      </p>
+
+      <div class="math-panel">
+        \[
+        \mathcal{L}(\theta)=
+        \mathbb{E}_{x_0,\epsilon,t}
+        \left[
+        \left\|
+        \epsilon -
+        \epsilon_\theta(x_t,t,c)
+        \right\|^2
+        \right],
+        \qquad
+        x_t =
+        \sqrt{\bar{\alpha}_t}x_0+
+        \sqrt{1-\bar{\alpha}_t}\epsilon
+        \]
+      </div>
+
+      <p>
+        condition \(c\) 可以是 class label、text embedding、image prompt、camera state、language instruction，或者 robot task description。conditioning 给 denoiser 一个理由，让它沿着 data distribution 的某一部分去修正。
+      </p>
+
+      <h2>模型学习的是局部方向</h2>
+
+      <p>
+        这个 learned object 有几种等价描述。DDPM 实现常说网络预测 noise。Score-based paper 会说网络估计 \(\nabla_x \log p_t(x)\)，也就是 noisy space 里 probability density 上升的方向。工程实现里，它常被直接叫 denoiser。
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Predicts</th>
+            <th>Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Denoiser</td>
+            <td>corrupted sample 的 cleaner version</td>
+            <td>最贴近 iterative refinement 的直觉。</td>
+          </tr>
+          <tr>
+            <td>Noise predictor</td>
+            <td>被加入的 Gaussian noise component</td>
+            <td>给 DDPM 系统一个简单的 MSE training target。</td>
+          </tr>
+          <tr>
+            <td>Score model</td>
+            <td>某个 noise level 下的 log density gradient</td>
+            <td>连接 probability flow、SDE 和 Langevin sampling。</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        这些名字强调不同数学视角。直觉上最重要的一点是：模型无需一次性解决完整生成问题，它只需要在某个 noise level 上做出一个有用的局部预测。
+      </p>
+
+      <h2>Sampling 反复调用这个修正</h2>
+
+      <p>
+        训练时，模型看到 noisy point，并学习 correction。采样时，从 noise 开始，反复调用同一个 correction。每一步都把当前样本和当前 noise level 交给同一个网络：
+      </p>
+
+      <pre><code>x_T ~ Normal(0, I)
+for t = T ... 1:
+  correction = denoiser(x_t, t, condition)
+  x_{t-1} = sampler_step(x_t, correction, t)
+return x_0</code></pre>
+
+      <p>
+        sampler 是套在 denoising network 外面的算法。它决定 step size、noise schedule、stochasticity 和 numerical integration 细节。这也解释了为什么许多 diffusion papers 共享同一个大训练思想，却在 sampler、schedule、parameterization、speed-quality tradeoff 上差很多。Karras 等人的 EDM paper 很有价值，因为它把这些常被混在一起的设计选择拆开讨论。
+      </p>
+
+      <p>
+        diffusion sampling 慢，原因正是反复 network evaluation。同一个性质也带来它的强项：高维样本由许多小修正逐步组装，conditioning 可以在每一次修正里介入。
+      </p>
+
+      <h2>Latent Diffusion 把同一机制搬到压缩空间</h2>
+
+      <p>
+        Pixel diffusion 直接对 pixel arrays 做 noising 和 denoising。Latent diffusion 先训练 autoencoder，再把 diffusion 放到 compressed representation 上：
+      </p>
+
+      <div class="math-panel">
+        \[
+        z_0 = E(x_0), \qquad
+        \hat{x}_0 = D(z_0)
+        \]
+      </div>
+
+      <div class="math-panel">
+        \[
+        z_t =
+        \sqrt{\bar{\alpha}_t}z_0+
+        \sqrt{1-\bar{\alpha}_t}\epsilon,
+        \qquad
+        \epsilon_\theta(z_t,t,c)\approx \epsilon
+        \]
+      </div>
+
+      <p>
+        生成机制保持不变，空间发生变化。模型 denoise 的对象从 \(x_t\) 换成 \(z_t\)，最后由 decoder 把 latent 还原成 pixels。这就是 Stable Diffusion 比 pixel-space diffusion 更适合高分辨率图像的主要原因：模型工作在更小、更接近感知结构的空间里。
+      </p>
+
+      <div class="note">
+        <div class="note-title">Why Latent And Diffusion Coexist</div>
+        Latent 是 representation。Diffusion 是运行在 representation 上的生成过程。Latent diffusion model 指的是：被加噪、去噪的变量是 latent tensor，而非 raw pixels。
+      </div>
+
+      <h2>Guidance 让生成过程受条件控制</h2>
+
+      <p>
+        Text-to-image 系统需要样本服从 condition。早期方法用 classifier guidance：一个单独 classifier 提供 gradient，把样本推向某个 label。Classifier-free guidance 训练一个既能有条件运行、也能无条件运行的模型，然后在 sampling 时放大 conditional prediction 和 unconditional prediction 的差异。
+      </p>
+
+      <div class="math-panel">
+        \[
+        \epsilon_{\text{guided}} =
+        \epsilon_\theta(x_t,t,\varnothing)
+        +
+        w\left[
+        \epsilon_\theta(x_t,t,c) -
+        \epsilon_\theta(x_t,t,\varnothing)
+        \right]
+        \]
+      </div>
+
+      <p>
+        guidance scale \(w\) 决定 condition 对 trajectory 的塑形强度。更强 guidance 往往提升 prompt adherence，也可能损伤 diversity 或 naturalness。这是很多 generative systems 共有的取舍：更强控制会收窄 sampler 探索的分布。
+      </p>
+
+      <h2>Video 把时间放进样本</h2>
+
+      <p>
+        Video diffusion 把 denoised object 从 image 扩展成 spatiotemporal tensor。样本多了 frame、height、width、channel 这些维度。模型既要保留视觉细节，又要维持 temporal coherence。一次局部修正出现偏差，就可能造成 flicker、identity drift，或者局部合理但全局错误的 motion。
+      </p>
+
+      <p>
+        所以 video diffusion papers 会大量讨论 temporal attention、3D VAE、frame conditioning、windowed attention、cascade 和 training curriculum。denoising idea 仍然清楚，只是被 denoise 的样本变成了一段短 world trajectory。
+      </p>
+
+      <h2>Cosmos Policy 的位置</h2>
+
+      <p>
+        有了 representation/process 这层区分，Cosmos Policy 就更好放置。它从一个 pretrained video latent diffusion model 出发。这个模型原生处理的是一串 video latent frames。论文的 control trick 是把机器人变量插入同一条 sequence：
+      </p>
+
+      <pre><code>current observation latent
+-> action chunk latent slot
+-> future observation latent
+-> value latent slot</code></pre>
+
+      <p>
+        Latent sequence 是 representation interface。Diffusion denoising 是补全 missing slots 的 mechanism。Conditioning masks 决定哪些 slots 可见，哪些 slots 是 target。换一个 mask，模型像 policy；再换一个 mask，模型像 world model；再换一个 mask，模型预测 value。
+      </p>
+
+      <p>
+        Cosmos Policy 依赖的是 diffusion 可以 denoise continuous tensors 这一点。action 和 value 被编码成 latent-shaped tensors 后，就能和 future video latents 一起进入同一个 denoising machinery。
+      </p>
+
+      <h2>Diffusion 付出的代价</h2>
+
+      <p>
+        Diffusion 用重复计算换取生成质量。每个样本都需要多次 network calls，除非模型经过 distillation，或者 sampler 被大幅缩短。Latent diffusion 缩小了被 denoise 的变量，但 iterative sampling loop 仍然存在。
+      </p>
+
+      <p>
+        Diffusion 也让生成质量依赖 noise levels 的几何结构。模型可能在某些 noise ranges 很强，在另一些 noise ranges 较弱。schedule、preconditioning、parameterization 和 solver choice 都会进入最终质量。简洁的概念背后有很大的工程表面。
+      </p>
+
+      <p>
+        最后一处限制是 control。Guidance、conditioning、masks 和 value functions 都能 steer sample，但它们不会自动保证生成对象具有正确因果结构。在 video 和 robotics 里，visual plausibility 与 action-relevant correctness 可能分离。Cosmos Policy 的价值就在这里：它检验 video diffusion prior 是否能被改造成 action interface。
+      </p>
+
+      <h2>Sources</h2>
+      <ol class="references">
+        <li><a href="https://arxiv.org/abs/2006.11239">Denoising Diffusion Probabilistic Models</a>, Ho, Jain, and Abbeel, NeurIPS 2020.</li>
+        <li><a href="https://lilianweng.github.io/posts/2021-07-11-diffusion-models/">What are Diffusion Models?</a>, Lilian Weng.</li>
+        <li><a href="https://huggingface.co/blog/annotated-diffusion">The Annotated Diffusion Model</a>, Hugging Face.</li>
+        <li><a href="https://yang-song.net/blog/2021/score/">Generative Modeling by Estimating Gradients of the Data Distribution</a>, Yang Song.</li>
+        <li><a href="https://sander.ai/2022/01/31/diffusion.html">Diffusion models are autoencoders</a>, Sander Dieleman.</li>
+        <li><a href="https://sander.ai/2023/07/20/perspectives.html">Perspectives on diffusion</a>, Sander Dieleman.</li>
+        <li><a href="https://arxiv.org/abs/2112.10752">High-Resolution Image Synthesis with Latent Diffusion Models</a>, Rombach et al., CVPR 2022.</li>
+        <li><a href="https://lilianweng.github.io/posts/2024-04-12-diffusion-video/">Diffusion Models for Video Generation</a>, Lilian Weng.</li>
+        <li><a href="https://arxiv.org/abs/2601.16163">Cosmos Policy: Fine-Tuning Video Models for Visuomotor Control and Planning</a>, Kim et al., arXiv 2026.</li>
+      </ol>
+    </article>
+  </main>
+
+  <script>
+    const languageKey = "writing-language";
+    const titles = {
+      en: "Diffusion: Learning a Path from Noise to Data - Sense Wang",
+      zh: "Diffusion：从噪声到数据的一条路径 - Sense Wang"
+    };
+    const buttons = Array.from(document.querySelectorAll("[data-lang-button]"));
+    const panels = Array.from(document.querySelectorAll("[data-lang-panel]"));
+
+    function setLanguage(lang) {
+      buttons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.langButton === lang));
+      });
+
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.langPanel !== lang;
+      });
+
+      document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+      document.title = titles[lang];
+      localStorage.setItem(languageKey, lang);
+
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise();
+      }
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => setLanguage(button.dataset.langButton));
+    });
+
+    setLanguage(localStorage.getItem(languageKey) === "zh" ? "zh" : "en");
+  </script>
+</body>
+</html>
