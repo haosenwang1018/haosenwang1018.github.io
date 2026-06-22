@@ -1,5 +1,45 @@
 # Assets
 
+## `puppeteer/figure-2-approach.png`
+
+- Source: Figure 2 from `Hierarchical World Models as Visual Whole-Body Humanoid Controllers`, Hansen et al., ICLR 2025
+- Original URL: https://arxiv.org/abs/2405.18418
+- Project page: https://www.nicklashansen.com/rlpuppeteer
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 3 from the arXiv PDF and cropped to the approach diagram
+
+## `puppeteer/figure-3-command.png`
+
+- Source: Figure 3 and Equation 1 area from `Hierarchical World Models as Visual Whole-Body Humanoid Controllers`, Hansen et al., ICLR 2025
+- Original URL: https://arxiv.org/abs/2405.18418
+- Project page: https://www.nicklashansen.com/rlpuppeteer
+- License/status: Paper figure/equation area used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 4 from the arXiv PDF and cropped to the command/interface area
+
+## `puppeteer/figure-5-learning-curves.png`
+
+- Source: Figure 5 from `Hierarchical World Models as Visual Whole-Body Humanoid Controllers`, Hansen et al., ICLR 2025
+- Original URL: https://arxiv.org/abs/2405.18418
+- Project page: https://www.nicklashansen.com/rlpuppeteer
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 6 from the arXiv PDF and cropped to the learning curves
+
+## `puppeteer/figure-6-human-preference.png`
+
+- Source: Figure 6 from `Hierarchical World Models as Visual Whole-Body Humanoid Controllers`, Hansen et al., ICLR 2025
+- Original URL: https://arxiv.org/abs/2405.18418
+- Project page: https://www.nicklashansen.com/rlpuppeteer
+- License/status: Paper figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 6 from the arXiv PDF and cropped to the human-preference chart
+
+## `puppeteer/figure-8-9-ablation-generalization.png`
+
+- Source: Figures 8 and 9 from `Hierarchical World Models as Visual Whole-Body Humanoid Controllers`, Hansen et al., ICLR 2025
+- Original URL: https://arxiv.org/abs/2405.18418
+- Project page: https://www.nicklashansen.com/rlpuppeteer
+- License/status: Paper figures used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: rendered page 8 from the arXiv PDF and cropped to the ablation and gap-generalization figures
+
 ## `prism-wm/prism-wm-pipeline.png`
 
 - Source: PRISM-WM released project asset for the architecture/pipeline diagram

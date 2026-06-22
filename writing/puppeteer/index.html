@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Puppeteer：把 humanoid 控制拆成两层 world model — Sense Wang</title>
+  <meta name="description" content="Puppeteer 将 visual whole-body humanoid control 拆成低层 MoCap tracking world model 和高层 visual puppeteering world model。">
+  <style>
+    :root {
+      --ink: #111;
+      --muted: #666;
+      --faint: #999;
+      --rule: #e8e8e8;
+      --soft: #f7f7f5;
+      --accent: #8a3d21;
+      --accent-soft: #f6eee9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #fff;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      font-size: 17px;
+      line-height: 1.78;
+      letter-spacing: 0;
+    }
+
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 72px 20px 112px;
+    }
+
+    nav {
+      margin-bottom: 52px;
+      font-size: 13px;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: 42px;
+      line-height: 1.12;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+
+    .meta {
+      margin: 0 0 34px;
+      color: var(--faint);
+      font-size: 14px;
+    }
+
+    .tldr {
+      margin: 0 0 42px;
+      padding: 18px 0 18px 18px;
+      border-left: 2px solid var(--accent);
+      color: #333;
+      font-size: 19px;
+      line-height: 1.62;
+    }
+
+    h2 {
+      margin: 58px 0 18px;
+      font-size: 25px;
+      line-height: 1.28;
+      font-weight: 680;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 18px 0;
+    }
+
+    a {
+      color: var(--ink);
+      text-decoration-color: #aaa;
+      text-underline-offset: 3px;
+    }
+
+    figure {
+      margin: 38px 0;
+    }
+
+    figure img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--rule);
+      background: #fff;
+    }
+
+    figcaption {
+      margin-top: 10px;
+      color: #777;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 28px 0;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    th {
+      color: #333;
+      font-weight: 650;
+    }
+
+    pre {
+      margin: 26px 0;
+      padding: 18px 20px;
+      overflow-x: auto;
+      border: 1px solid var(--rule);
+      background: var(--soft);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    .evidence {
+      margin: 30px 0;
+      padding: 18px 20px;
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      background: #fff;
+    }
+
+    .evidence strong {
+      color: var(--accent);
+      font-weight: 680;
+    }
+
+    .refs {
+      margin-top: 64px;
+      padding-top: 22px;
+      border-top: 1px solid var(--rule);
+      color: #333;
+      font-size: 15px;
+    }
+
+    .refs ul {
+      padding-left: 20px;
+    }
+
+    @media (max-width: 640px) {
+      main {
+        padding: 42px 18px 80px;
+      }
+
+      h1 {
+        font-size: 33px;
+      }
+
+      body {
+        font-size: 16px;
+      }
+
+      .tldr {
+        font-size: 17px;
+      }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+  <h1>Puppeteer：把 humanoid 控制拆成两层 world model</h1>
+  <p class="meta">Paper reading note · ICLR 2025 · Puppeteer / TD-MPC2 / humanoid control</p>
+
+  <p class="tldr"><strong>TL;DR</strong>: Puppeteer 将 visual whole-body humanoid control 拆成两层 TD-MPC2-style world model：低层 tracking agent 用 MoCap 学会把身体端点 reference 变成自然的 joint action，高层 puppeteering agent 用视觉生成这些 reference 来完成下游任务。</p>
+
+  <p>Humanoid 控制的难点经常被写成高维连续控制。这个说法没有错，但它还不够具体。Puppeteer 面对的是一个 56-DoF simulated humanoid：agent 要从视觉里判断 terrain，要保持双足稳定，要处理接触和落地，还要让动作看起来像人，并避免用奇怪姿势刷高 reward。</p>
+
+  <p>直接把 RGB observation 映射到 56 维 joint action，会让一个 policy 同时承担视觉理解、步态生成、身体协调、接触处理和自然性约束。Puppeteer 的设计把这些职责拆开：高层只生成身体端点该去哪里，低层负责把这个几何意图执行成 joint-level action。</p>
+
+  <figure>
+    <img src="../../assets/puppeteer/figure-2-approach.png" alt="Puppeteer two-stage hierarchical world model architecture">
+    <figcaption>Figure 2 from the paper. Puppeteer 先用 MoCap data 训练 low-level tracking world model，再在 downstream tasks 上训练 high-level puppeteering world model。两个层级都用 TD-MPC2-style model-based RL。</figcaption>
+  </figure>
+
+  <h2>两个 world model 的分工</h2>
+
+  <p>Puppeteer 有两个 agent。</p>
+
+  <p>低层是 tracking agent。它读取 humanoid proprioception <code>q_t</code> 和 abstract command <code>c_t</code>，通过 planning 生成一串 low-level joint actions。这个 agent 先在 CMU MoCap / MoCapAct 数据上训练，学到“身体应该怎样自然地执行参考动作”。</p>
+
+  <p>高层是 puppeteering agent。它读取 proprioception <code>q_t</code> 和 RGB observation <code>v_t</code>，通过 planning 生成一串 abstract commands。下游任务训练时，low-level tracker frozen，高层只需要学会怎样给 tracker 下指令。</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>组件</th>
+        <th>作用</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>encoder</td><td>把 state 编成 latent state</td></tr>
+      <tr><td>latent dynamics</td><td>预测下一步 latent state</td></tr>
+      <tr><td>reward head</td><td>预测 transition reward</td></tr>
+      <tr><td>termination head</td><td>预测是否会 episode termination</td></tr>
+      <tr><td>terminal value</td><td>估计短 horizon 之后的剩余 return</td></tr>
+      <tr><td>policy prior</td><td>给 planner 提供 action proposal</td></tr>
+    </tbody>
+  </table>
+
+  <p>这个结构继承了 TD-MPC2 的核心路线：world model 采用 decoder-free latent modeling，在 latent space 里做 short-horizon rollout，再用 reward / value 给候选 action sequence 打分。Puppeteer 的新增压力来自 humanoid episode termination。非脚部接触地面会终止 episode，所以论文给 world model 加了 termination head，并在 planning 时用 soft truncation 处理 predicted termination。</p>
+
+  <h2>Command 是身体端点的位置</h2>
+
+  <p>Puppeteer 最有品味的接口选择，是 high-level action 的定义。</p>
+
+  <p>高层输出的 command 采用显式几何量：head、hands、feet 五个 end-effectors 的 relative 3D positions，总共 15 维。</p>
+
+  <figure>
+    <img src="../../assets/puppeteer/figure-3-command.png" alt="Puppeteer end-effector command interface">
+    <figcaption>Figure 3 and Equation 1 from the paper. Low-level tracker 追踪 head、hands、feet 的 3D reference positions，同时 world model 保留 encoder、dynamics、reward、termination、value 和 policy prior。</figcaption>
+  </figure>
+
+  <p>这个接口把学习问题改小了。高层不用控制每个关节，它只需要决定身体端点在未来几个 step 应该往哪里走。低层 tracker 再把端点位置变成可执行动作。</p>
+
+  <p>这和传统 hierarchical RL 里常见的 latent skill embedding 有一个关键差别：end-effector command 是几何对象。它更容易解释，也更容易和 robotics 里的 task-space control 对齐。高层像在拉线，低层像一个把线牵到真实身体上的控制器。</p>
+
+  <h2>自然性进入 action interface</h2>
+
+  <p>Puppeteer 的自然性主要来自 low-level tracker 的行动边界。下游视觉任务的 reward 很简单，基本按 forward velocity 给分。</p>
+
+  <p>这个 tracker 在 MoCap reference 上训练。下游任务中，高层无法直接输出任意 joint action，只能通过 tracker 改变身体。于是 MoCap motion prior 进入了 action interface：</p>
+
+  <pre><code>visual task decision
+  -> end-effector command
+  -> MoCap-trained tracker
+  -> joint-level humanoid action</code></pre>
+
+  <p>这个设计把 reward hacking 的空间压小。TD-MPC2 直接控制 humanoid 时，可以学出高 return 但很怪的 gait。论文里最直观的例子是 stairs：TD-MPC2 能拿到更高 reward，但会 rolling up stairs；Puppeteer 的 return 低一些，动作更像走路。</p>
+
+  <h2>证据：return 之外要看动作质量</h2>
+
+  <p>Figure 5 是任务性能。8 个任务里，Puppeteer 的 return 大体接近 TD-MPC2。SAC 和 DreamerV3 在 3M environment steps 的预算下基本没有解决这些任务。这里有一个细节值得看：DreamerV3 也是 world model 方法，但它主要通过 imagined rollouts 训练 latent policy；Puppeteer 和 TD-MPC2 在 test time 用 learned model 做 planning。Figure 8 的 ablation 也支持 planning 在这个高维控制设置里的重要性。</p>
+
+  <figure>
+    <img src="../../assets/puppeteer/figure-5-learning-curves.png" alt="Puppeteer learning curves on eight humanoid tasks">
+    <figcaption>Figure 5 from the paper. Puppeteer 在 8 个任务上的 return 大体接近 TD-MPC2；SAC 和 DreamerV3 在该任务套件中表现很弱。</figcaption>
+  </figure>
+
+  <p>Return 只覆盖任务奖励的一部分。Puppeteer 最强的证据其实来自 naturalness evaluation。论文做了一个 51 人 user study，让参与者比较 Puppeteer 和 TD-MPC2 生成的 humanoid motion。Aggregate result 是 97.8% 选择 Puppeteer，1.8% 认为相同，0.4% 选择 TD-MPC2。</p>
+
+  <figure>
+    <img src="../../assets/puppeteer/figure-6-human-preference.png" alt="Human preference result for Puppeteer naturalness">
+    <figcaption>Figure 6 from the paper. 51 位参与者比较 TD-MPC2 和 Puppeteer 的 motion naturalness，绝大多数选择 Puppeteer。</figcaption>
+  </figure>
+
+  <p>这个结果说明一件事：humanoid RL 不能只看 task return。一个 controller 可以完成任务，也可以用非常不自然的方式完成任务。对 physical AI 来说，动作质量本身就是能力的一部分。</p>
+
+  <h2>Ablation 暴露了三条机制</h2>
+
+  <p>Figure 8 和 Figure 9 把 Puppeteer 的几个关键机制拆开。</p>
+
+  <figure>
+    <img src="../../assets/puppeteer/figure-8-9-ablation-generalization.png" alt="Puppeteer ablations and gap generalization">
+    <figcaption>Figures 8 and 9 from the paper. Low-level pretraining 受益于 offline + online mixture 和更多 MoCap clips；downstream tasks 里 high-level 和 low-level 都需要 planning；gaps task 能 zero-shot generalize 到更长 gap。</figcaption>
+  </figure>
+
+  <div class="evidence">
+    <p><strong>第一</strong>，low-level tracker 需要 offline + online mixture。Offline MoCapAct rollouts 帮它覆盖难动作，online interaction 扩大 state-action coverage。只用其中一种数据源，tracking quality 都会下降。</p>
+    <p><strong>第二</strong>，MoCap clip diversity 很重要。使用更多 clips 会提升 tracking performance。Appendix Table 2 里，full setting 的 tracking success rate 达到 88.3%，tracking error 也最低。</p>
+    <p><strong>第三</strong>，planning at both levels 很关键。Figure 8 里，把 high-level 或 low-level 的 planning 换成 model-free policy，downstream score 明显下降。这说明 Puppeteer 的层级结构和 TD-MPC2-style planning 是共同工作的。</p>
+  </div>
+
+  <h2>现在的问题</h2>
+
+  <p>Puppeteer 的任务主要还是 visio-locomotion。Corridor、hurdles、walls、gaps、stairs 都在检验视觉越障和运动控制。它还没有进入完整的 loco-manipulation：拿物体、开门、双手协调、工具使用、长期任务规划，都不在这个 benchmark 的核心范围里。</p>
+
+  <p>End-effector command interface 也有边界。Head、hands、feet 的 3D position 能表达很多 whole-body movement，但 hand position 不等于 grasp state。Manipulation 还需要 object pose、contact state、force、friction、finger configuration。只靠身体端点位置，可能无法表达复杂物体交互。</p>
+
+  <p>Motion prior 依赖 MoCap 覆盖。低层 tracker 能自然执行 MoCap 分布附近的动作；遇到数据里很少出现的动作，它可能变成瓶颈。Frozen tracker 稳定了下游训练，也限制了 low-level adaptation。</p>
+
+  <p>高层仍然偏 task-specific。Puppeteer 的 low-level tracker 可以复用，高层 puppeteer 主要在每个 downstream task 上单独训练。它还没有像 Newt 那样把多个任务放进一个 shared high-level world model 里共同训练。</p>
+
+  <p>最后，论文停留在 simulation。DMControl / MuJoCo 的 56-DoF humanoid 已经很难，但真实 humanoid 还会带来 actuator delay、state estimation、foot contact noise、hardware safety 和 sim-to-real gap。</p>
+
+  <h2>接下来可以做什么</h2>
+
+  <p>第一，把 PRISM-WM-style compositional dynamics 放进 low-level tracker。Puppeteer 的 low-level tracker 要处理跳跃、落地、楼梯和接触切换，这正是 hybrid dynamics 容易让 monolithic transition function 出问题的地方。PRISM-WM 的 MoE dynamics 可以作为 tracker transition model 的候选替换。</p>
+
+  <p>第二，把 Newt-style multitask pretraining 放进 high-level puppeteer。当前高层按任务训练。一个自然延伸是让 high-level world model 在 corridor、gaps、stairs、walls 等任务之间共享 representation、visual dynamics 和 command prior，再做 task-specific finetuning。</p>
+
+  <p>第三，扩展 command interface 到 object interaction。Loco-manipulation 需要的 command 可能包括 hand-object contact、grasp state、object affordance、force target 或 tool pose。关键问题是怎样保持接口可解释，同时让它足够 expressive。</p>
+
+  <p>第四，建立更严肃的 naturalness evaluation。User study 很有说服力，但后续还需要能规模化的指标：energy、foot contact pattern、joint jerk、fall recovery、human motion distance、hardware safety margin。Return、success rate 和 naturalness 应该一起报告。</p>
+
+  <p>Puppeteer 给出的路线很清楚：world model 在 humanoid control 里不只负责预测未来，也可以定义行动接口。低层把人类动作先验变成可复用控制器，高层在这个接口上做视觉任务规划。这个分层还没有解决完整 humanoid autonomy，但它把一个过大的端到端问题切成了两个可以继续研究的对象。</p>
+
+  <section class="refs">
+    <h2>References</h2>
+    <ul>
+      <li>Nicklas Hansen et al., <a href="https://arxiv.org/abs/2405.18418">Hierarchical World Models as Visual Whole-Body Humanoid Controllers</a>, ICLR 2025.</li>
+      <li>Project page, code, and videos: <a href="https://www.nicklashansen.com/rlpuppeteer">rlpuppeteer</a>.</li>
+      <li>Nicklas Hansen et al., <a href="https://arxiv.org/abs/2310.16828">TD-MPC2: Scalable, Robust World Models for Continuous Control</a>, 2024.</li>
+      <li>Nicklas Hansen et al., <a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control</a>, 2022.</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>
