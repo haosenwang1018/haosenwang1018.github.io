@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two Long Horizons — Sense Wang</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --ink: #111;
+      --agent: #1a1a1a;
+      --wm: #2f6f6c;
+      --rule: #eee;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      color: #111;
+      background: #fff;
+      line-height: 1.78;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    main {
+      max-width: 760px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 72px 20px 112px;
+      overflow: visible;
+    }
+
+    nav {
+      margin-bottom: 52px;
+      font-size: 13px;
+    }
+
+    h1 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 42px;
+      line-height: 1.12;
+      font-weight: 700;
+      margin-bottom: 14px;
+      max-width: 720px;
+      overflow-wrap: break-word;
+    }
+
+    h2 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 25px;
+      line-height: 1.28;
+      margin: 56px 0 14px;
+    }
+
+    p { margin-bottom: 17px; }
+
+    a {
+      color: #111;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    a:hover { opacity: 0.55; }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.86em;
+    }
+
+    .meta {
+      color: #999;
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+
+    .article-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin: -18px 0 34px;
+    }
+
+    .language-switch {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .language-switch button {
+      border: 0;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+      color: #999;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      line-height: 1.5;
+      padding: 0 0 3px;
+      text-transform: uppercase;
+    }
+
+    .language-switch button[aria-pressed="true"] {
+      border-color: #111;
+      color: #111;
+    }
+
+    .version[hidden] { display: none; }
+
+    .dek {
+      color: #444;
+      font-size: 19px;
+      line-height: 1.6;
+      max-width: 690px;
+      margin-bottom: 44px;
+    }
+
+    .note {
+      border-left: 3px solid #111;
+      color: #333;
+      font-size: 16px;
+      line-height: 1.72;
+      margin: 28px 0 30px;
+      padding: 2px 0 2px 18px;
+    }
+    .note p { margin-bottom: 10px; }
+    .note p:last-child { margin-bottom: 0; }
+    .note-title {
+      color: #777;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    figure { margin: 38px 0; }
+    figure svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 1px solid var(--rule);
+      background: #fff;
+    }
+    figcaption {
+      color: #777;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 10px;
+    }
+
+    .table-wrap { overflow-x: auto; margin: 32px 0; }
+    table.cmp {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14.5px;
+      line-height: 1.58;
+      min-width: 640px;
+    }
+    table.cmp th, table.cmp td {
+      text-align: left;
+      vertical-align: top;
+      padding: 13px 15px;
+      border-bottom: 1px solid var(--rule);
+    }
+    table.cmp thead th {
+      font-size: 12px;
+      letter-spacing: 0.03em;
+      font-weight: 600;
+      color: #555;
+      border-bottom: 1px solid #ccc;
+    }
+    table.cmp thead th.h-agent { color: var(--agent); border-bottom-color: var(--agent); }
+    table.cmp thead th.h-wm { color: var(--wm); border-bottom-color: var(--wm); }
+    table.cmp td.dim {
+      color: #111;
+      font-weight: 600;
+      width: 20%;
+    }
+    table.cmp td { color: #222; }
+    table.cmp tbody tr:last-child td { border-bottom: 0; }
+
+    .references {
+      color: #555;
+      font-size: 15px;
+      margin-left: 22px;
+    }
+    .references li { margin-bottom: 10px; padding-left: 4px; }
+
+    @media (max-width: 560px) {
+      main { margin: 0; max-width: 390px; padding-top: 48px; }
+      h1 { font-size: 31px; }
+      body { font-size: 16px; }
+      .dek { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+    <div class="article-toolbar">
+      <div class="language-switch" aria-label="Language">
+        <button type="button" data-lang-button="en" aria-pressed="true">English</button>
+        <button type="button" data-lang-button="zh" aria-pressed="false">中文</button>
+      </div>
+    </div>
+
+    <!-- ============================ ENGLISH ============================ -->
+    <article class="version" data-lang-panel="en" lang="en">
+      <h1>Two Long Horizons</h1>
+      <div class="meta">June 2026</div>
+
+      <p class="dek">
+        The same phrase names a reliability problem in language-model agents and a fidelity problem in world models. Telling the two apart explains why one horizon has been doubling every few months while the other, in its hardest form, is still measured in seconds.
+      </p>
+
+      <p>
+        Two research literatures use the phrase <em>long horizon</em> constantly, and they rarely cite each other. In work on language-model agents, a long horizon is a claim about reliability over time: how long a task an agent can carry before it makes one fatal mistake. In work on world models and model-based reinforcement learning, a long horizon is a claim about fidelity over rollout: how many steps a learned model can predict before its imagined future stops matching the real one. The phrase is shared. The axis underneath it is not.
+      </p>
+
+      <p>
+        The distinction is worth holding precisely, because the two horizons behave differently enough that advice from one field is often wrong in the other. One has been doubling on a calendar; the other gets longer only when the model itself gets more accurate.
+      </p>
+
+      <h2>The agent's horizon is measured in human time</h2>
+
+      <p>
+        The cleanest definition of an agent's long horizon comes from METR. Their metric is the <strong>50%-task-completion time horizon</strong>: the length of tasks, measured by how long a human expert takes, that a model can finish with 50% success (<a href="https://arxiv.org/abs/2503.14499">Kwa et al., 2025</a>). The axis is human time. A model with a one-hour horizon succeeds half the time on tasks that take a person about an hour — Claude 3.7 Sonnet, in March 2025. The headline is a trend: that horizon has doubled roughly every seven months since 2019, and faster, closer to every four months, through 2024–2025. Later frontier models pushed the 50% figure from under an hour to several hours.
+      </p>
+
+      <p>
+        Two details keep this from being a general autonomy claim, and both matter for the comparison. First, the y-axis is human labor, not machine runtime. METR is explicit that the horizon measures "the amount of serial human labor [a model] can replace," not how long it can run on its own (<a href="https://metr.org/notes/2026-01-22-time-horizon-limitations/">METR, 2026</a>). A five-hour horizon is not five hours of unattended operation. Second, reliability does most of the work. The 80%-success horizon is about five times shorter than the 50% horizon for the same model. Demanding higher reliability collapses the usable task length, because the failures are not in reasoning, they are in execution stretched over many steps.
+      </p>
+
+      <p>
+        That last point has its own paper. <a href="https://arxiv.org/abs/2509.09677"><em>The Illusion of Diminishing Returns</em></a> isolates execution by handing the model the full plan and knowledge for a task and asking only that it carry out many simple steps in sequence. Models that reach 100% accuracy on the first step still degrade over the run, and the degradation has a clean shape: completing an <code>H</code>-step task requires succeeding at each step, so end-to-end success behaves like single-step accuracy raised to the power of the horizon. A small gain in per-step accuracy compounds into a large gain in achievable length, which is why short benchmarks look saturated while long tasks keep improving. Toby Ord makes the same curve explicit from the other side: model an agent as failing at a constant rate per human-minute of work, and you get an exponentially declining success rate with task length, and a characteristic "half-life" for each agent (<a href="https://arxiv.org/abs/2505.05115">Ord, 2025</a>).
+      </p>
+
+      <p>
+        So the agent's long horizon is a measurement of reliability. The unit is human task-time; the quantity that accumulates is the probability of a task-level mistake; and the way to extend it is to raise per-step reliability or to shorten the chain of steps that all have to go right.
+      </p>
+
+      <h2>The world model's horizon is counted in its own steps</h2>
+
+      <p>
+        A world model's long horizon lives on a different axis. Here the horizon is the number of steps the learned model is unrolled forward, and the quantity that accumulates is prediction error.
+      </p>
+
+      <p>
+        The canonical statement is MBPO's. A one-step dynamics model applied autoregressively feeds each prediction back in as the next input, so "small errors compound over the prediction horizon" (<a href="https://arxiv.org/abs/1906.08253">Janner et al., 2019</a>). The classical bound behind this, the simulation lemma, scales value error by one-step model error times the effective horizon — up to quadratically in the worst case. MBPO's response is to keep the model horizon short and decoupled from the task horizon: instead of a few long rollouts from the start state, it runs many short rollouts branched from real states sampled out of the replay buffer. In practice the rollout length is often one, and the authors note their model is accurate enough for 200-step rollouts yet learns better from far shorter ones; 500-step rollouts are too inaccurate to use at all.
+      </p>
+
+      <p>
+        The same instinct — roll the model a few steps, no further — runs through the planning world models. Dreamer learns behavior entirely inside imagined latent trajectories of a fixed length: the imagination horizon is exactly 15 steps, held constant across Dreamer, DreamerV2, and DreamerV3 (<a href="https://arxiv.org/abs/2301.04104">Hafner et al., 2023</a>). <a href="https://arxiv.org/abs/2203.04955">TD-MPC</a> plans over a latent horizon of 5; <a href="https://arxiv.org/abs/2310.16828">TD-MPC2</a> shortens the default to 3. <a href="https://arxiv.org/abs/1911.08265">MuZero</a> unrolls its learned model for only 5 hypothetical steps during training. None of these models is asked to predict far. Each is unrolled briefly and then stopped.
+      </p>
+
+      <p>
+        For generative video world models, the horizon is measured in frames and seconds, and the failure is visible rather than scalar. <a href="https://arxiv.org/abs/2405.12399">DIAMOND</a> traces long-rollout collapse to compounding error that pushes the model out of distribution, and shows the diffusion formulation changes how fast that happens: a DDPM-based model drifts badly over a 1000-step rollout while an EDM-based one stays stable, even with a single denoising step. <a href="https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/">Genie 3</a> generates an interactive world at 24 frames per second and 720p that stays consistent for a few minutes, with visual memory reaching about one minute back — and DeepMind names that same window as the limit, because inaccuracies accumulate over time. The honest summary of the video line is that "long horizon" still means minutes, and the field describes its own state as <a href="https://arxiv.org/abs/2510.20668">"far from persistence."</a>
+      </p>
+
+      <p>
+        So the world-model long horizon is a measurement of how far the prediction holds. The unit is model timesteps or frames; the quantity that accumulates is divergence of the predicted state from the real one; and the way to extend it is to make the model more accurate per step, or to roll it fewer steps before handing off.
+      </p>
+
+      <figure>
+        <svg viewBox="0 0 920 392" role="img" aria-label="Two schematic axes: success versus human task length for agents, prediction error versus rollout step for world models">
+          <!-- divider -->
+          <line x1="460" y1="40" x2="460" y2="356" stroke="#e6e6e6" stroke-width="1"/>
+
+          <!-- ============ LEFT: AGENT ============ -->
+          <text x="80" y="58" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#1a1a1a" letter-spacing="0.04em">LANGUAGE-MODEL AGENT</text>
+          <!-- axes -->
+          <line x1="92" y1="96" x2="92" y2="312" stroke="#cccccc" stroke-width="1"/>
+          <line x1="92" y1="312" x2="430" y2="312" stroke="#cccccc" stroke-width="1"/>
+          <!-- reliability guides -->
+          <line x1="92" y1="136" x2="222" y2="136" stroke="#bbbbbb" stroke-width="1" stroke-dasharray="3 3"/>
+          <line x1="92" y1="202" x2="312" y2="202" stroke="#bbbbbb" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="60" y="140" font-size="11" fill="#888">0.8</text>
+          <text x="60" y="206" font-size="11" fill="#888">0.5</text>
+          <!-- success curve (decreasing logistic) -->
+          <path d="M100,102 C150,108 188,118 222,136 C258,156 286,178 312,202 C352,238 392,282 426,304" fill="none" stroke="#1a1a1a" stroke-width="2.2"/>
+          <!-- horizon drops -->
+          <line x1="222" y1="136" x2="222" y2="312" stroke="#1a1a1a" stroke-width="1" stroke-dasharray="2 3"/>
+          <line x1="312" y1="202" x2="312" y2="312" stroke="#1a1a1a" stroke-width="1" stroke-dasharray="2 3"/>
+          <circle cx="222" cy="136" r="3" fill="#1a1a1a"/>
+          <circle cx="312" cy="202" r="3" fill="#1a1a1a"/>
+          <text x="206" y="330" font-size="11" fill="#555">t&#8328;&#8320;</text>
+          <text x="300" y="330" font-size="11" fill="#555">t&#8325;&#8320;</text>
+          <!-- axis labels -->
+          <text x="92" y="352" font-size="12" fill="#777">human task length &#8594;</text>
+          <text x="74" y="92" font-size="12" fill="#777">task success</text>
+          <text x="100" y="378" font-size="12.5" fill="#1a1a1a">accumulates: per-step reliability</text>
+
+          <!-- ============ RIGHT: WORLD MODEL ============ -->
+          <text x="540" y="58" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#2f6f6c" letter-spacing="0.04em">WORLD MODEL</text>
+          <line x1="552" y1="96" x2="552" y2="312" stroke="#cccccc" stroke-width="1"/>
+          <line x1="552" y1="312" x2="892" y2="312" stroke="#cccccc" stroke-width="1"/>
+          <!-- horizon H marker -->
+          <line x1="612" y1="108" x2="612" y2="312" stroke="#2f6f6c" stroke-width="1" stroke-dasharray="2 3"/>
+          <text x="566" y="108" font-size="11" fill="#2f6f6c">H</text>
+          <!-- shaded "value covers the rest" -->
+          <rect x="612" y="108" width="280" height="204" fill="#2f6f6c" opacity="0.045"/>
+          <!-- steep curve: naive rollout -->
+          <path d="M560,304 C600,288 636,250 700,168 C742,116 786,98 884,92" fill="none" stroke="#2f6f6c" stroke-width="2.2"/>
+          <!-- flat curve: short rollout + value -->
+          <path d="M560,306 C648,300 724,292 820,276 C852,270 876,266 888,264" fill="none" stroke="#2f6f6c" stroke-width="1.6" stroke-dasharray="5 4"/>
+          <text x="700" y="150" font-size="11" fill="#2f6f6c">naïve rollout</text>
+          <text x="700" y="258" font-size="11" fill="#3f8a86">short rollout + value</text>
+          <text x="628" y="206" font-size="11" fill="#7faaa7">value covers the rest</text>
+          <!-- axis labels -->
+          <text x="552" y="352" font-size="12" fill="#777">rollout step k &#8594;</text>
+          <text x="534" y="92" font-size="12" fill="#777">prediction error</text>
+          <text x="560" y="378" font-size="12.5" fill="#2f6f6c">accumulates: state-prediction error</text>
+        </svg>
+        <figcaption>
+          Schematic of the two axes, not reproduced data. Left: the success-versus-human-task-length curve <a href="https://arxiv.org/abs/2503.14499">METR</a> fits to read off a time horizon at a chosen reliability; the 80% horizon sits to the left of the 50% horizon. Right: prediction error growing over an autoregressive rollout, the curve <a href="https://arxiv.org/abs/1906.08253">MBPO</a> and <a href="https://arxiv.org/abs/2405.12399">DIAMOND</a> measure, with a learned value standing in for everything past the short horizon <code>H</code>.
+        </figcaption>
+      </figure>
+
+      <h2>Side by side</h2>
+
+      <p>
+        Reading the two horizons against each other makes the structural differences concrete. Every row below is the same word resolving to a different object.
+      </p>
+
+      <div class="table-wrap">
+        <table class="cmp">
+          <thead>
+            <tr>
+              <th>Dimension</th>
+              <th class="h-agent">In a language-model agent</th>
+              <th class="h-wm">In a world model</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="dim">The axis</td>
+              <td>Human task-completion time. A model's "time horizon" is the human duration of tasks it finishes at a set reliability.</td>
+              <td>The model's own timesteps, or frames of video, that it is unrolled forward.</td>
+            </tr>
+            <tr>
+              <td class="dim">What accumulates per step</td>
+              <td>Task-level reliability. End-to-end success ≈ single-step accuracy raised to the horizon.</td>
+              <td>State-prediction error. One-step model error compounds over the rollout.</td>
+            </tr>
+            <tr>
+              <td class="dim">How it is measured</td>
+              <td>Fit a success curve against human task length, read a horizon at 50% / 80%, track its doubling over calendar time.</td>
+              <td>Fix a horizon <code>H</code>, then measure rollout drift directly — pixel error, consistency duration.</td>
+            </tr>
+            <tr>
+              <td class="dim">How it is shortened</td>
+              <td>Split the task into short grounded sessions; persist memory to disk; verify each step.</td>
+              <td>Roll the model a few steps, then bootstrap a learned value; branch from real states; abstract into latent space.</td>
+            </tr>
+            <tr>
+              <td class="dim">Grounding</td>
+              <td>Added at every step (tool output, test results). The main thing that extends the horizon.</td>
+              <td>Removed during imagination. The model runs ungrounded for <code>H</code> steps by design.</td>
+            </tr>
+            <tr>
+              <td class="dim">The object at the far end</td>
+              <td>A sparse, binary verifier (tests pass or fail). It creates the credit-assignment problem.</td>
+              <td>A dense, continuous value (TD bootstrap). It dissolves the credit-assignment problem.</td>
+            </tr>
+            <tr>
+              <td class="dim">What more scale or "thinking" buys</td>
+              <td>Reliability doubles over time; thinking removes self-conditioning and lengthens execution.</td>
+              <td>A longer <code>H</code> often hurts; usable horizon grows from model fidelity, not calendar time.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>The shared mechanism: a model conditioning on its own output</h2>
+
+      <p>
+        The two horizons are not unrelated. Both fields, when they look for the deepest cause of failure, arrive at the same place: a model consuming its own previous outputs. And both name the same ancestor for it — exposure bias, the train-test mismatch first framed for sequence models a decade ago, where a network trained on ground-truth prefixes is, at inference, fed its own imperfect generations and never learned to recover (<a href="https://arxiv.org/abs/1511.06732">Ranzato et al., 2015</a>).
+      </p>
+
+      <p>
+        What differs is the surface the loop runs on. In a language-model agent it is a reliability effect. <em>The Illusion of Diminishing Returns</em> shows it causally: inject errors into the model's own context and its next-step accuracy falls, even at fixed context length — the model becomes more likely to err when its history already contains errors. The paper calls this <strong>self-conditioning</strong>, and reports two things that matter for the comparison. Scaling the model does not remove it: 200-billion-parameter models still self-condition. Explicit "thinking" — RL-trained reasoning — does remove it, and also stretches how far a model can execute in a single turn, from around 120 steps for one model to over a thousand for another.
+      </p>
+
+      <p>
+        In a world model the same loop is a fidelity effect. Each predicted state or frame becomes the input to the next, so error does not just persist, it pushes the rollout off the distribution the model was trained on, which raises the next error. This is exactly DIAMOND's drift, and the video literature's pair of failure modes — history forgetting and temporal degradation — both attributed to the teacher-forcing mismatch (<a href="https://arxiv.org/abs/2503.10704">Meta-ARVDM, 2025</a>). The cures differ in kind: the agent side adds grounding and trains recovery; the world-model side shortens rollouts, changes the diffusion objective, conditions on more history, or anchors generation to its opening frames. The same loop produces a reliability problem on one side and a perceptual-drift problem on the other.
+      </p>
+
+      <h2>The same trick, inverted: a learned value at the end of the horizon</h2>
+
+      <p>
+        Both fields also stop short of running the full horizon, and lean on a learned object to cover the rest. This is where the comparison is most useful, because the object plays the same structural role and produces the opposite consequence.
+      </p>
+
+      <p>
+        In a world model the terminal object is a value function. TD-MPC plans five steps and then adds a single learned terminal <code>Q</code>-value that estimates all return beyond the horizon, so the short rollout stands in for an effectively infinite one. MuZero bootstraps onto an <code>n</code>-step search value; Dreamer closes its 15-step return with a critic, and reports that without that bootstrap the agent becomes "shortsighted" and only solves reactive tasks. This terminal value is dense and continuous, and it is trained by one-step temporal-difference bootstrapping — so the long horizon is never rolled out anywhere. It is folded into a value function during training. There is no sparse-reward credit-assignment crisis, because the value carries information at every step.
+      </p>
+
+      <p>
+        In a language-model agent the object at the end of the horizon is a verifier, and it is sparse and discrete. Most agentic tasks emit a single scalar at the end: hidden tests pass or fail, an evaluator returns pass or needs-work, functional correctness is graded once at termination. Because that signal is terminal and binary, it creates the credit-assignment problem rather than dissolving it. Value-free RL such as GRPO has to spread one outcome reward uniformly across every turn of a long trajectory, unable to tell which tool call mattered (<a href="https://arxiv.org/abs/2505.11821">Zeng et al., 2025</a>). A whole line of work exists only to densify that terminal signal — turn-level rewards, hindsight redistribution, tree-search value estimation — and RL theory warns that the obvious fix is not enough: adding a constant makes the reward non-sparse without making it informative (<a href="https://arxiv.org/abs/2103.06224">Arumugam et al., 2021</a>).
+      </p>
+
+      <figure>
+        <svg viewBox="0 0 920 286" role="img" aria-label="The terminal object inverted: a dense continuous value in world models, a sparse binary verifier in agents">
+          <!-- ===== ROW 1: WORLD MODEL ===== -->
+          <text x="40" y="56" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#2f6f6c" letter-spacing="0.04em">WORLD MODEL</text>
+          <!-- encode -->
+          <rect x="40" y="72" width="92" height="34" rx="4" fill="#fff" stroke="#bdbdbd"/>
+          <text x="86" y="93" font-size="11" fill="#444" text-anchor="middle">real state</text>
+          <!-- short latent chain -->
+          <g font-size="11" fill="#2f6f6c" text-anchor="middle">
+            <rect x="158" y="72" width="40" height="34" rx="4" fill="#fff" stroke="#9fc4c1"/><text x="178" y="93">z&#8320;</text>
+            <rect x="212" y="72" width="40" height="34" rx="4" fill="#fff" stroke="#9fc4c1"/><text x="232" y="93">z&#8321;</text>
+            <rect x="266" y="72" width="40" height="34" rx="4" fill="#fff" stroke="#9fc4c1"/><text x="286" y="93">z&#8322;</text>
+            <rect x="320" y="72" width="40" height="34" rx="4" fill="#fff" stroke="#9fc4c1"/><text x="340" y="93">z&#8323;</text>
+          </g>
+          <!-- arrows -->
+          <g stroke="#cfd8d7" stroke-width="1.4" fill="none">
+            <line x1="132" y1="89" x2="156" y2="89" marker-end="url(#aTeal)"/>
+            <line x1="198" y1="89" x2="210" y2="89" marker-end="url(#aTeal)"/>
+            <line x1="252" y1="89" x2="264" y2="89" marker-end="url(#aTeal)"/>
+            <line x1="306" y1="89" x2="318" y2="89" marker-end="url(#aTeal)"/>
+            <line x1="360" y1="89" x2="404" y2="89" marker-end="url(#aTeal)"/>
+          </g>
+          <!-- terminal value -->
+          <rect x="408" y="64" width="150" height="50" rx="8" fill="#2f6f6c" opacity="0.10" stroke="#2f6f6c"/>
+          <text x="483" y="84" font-size="12.5" fill="#2f6f6c" text-anchor="middle" font-weight="600">terminal value</text>
+          <text x="483" y="101" font-size="11" fill="#2f6f6c" text-anchor="middle">dense · continuous</text>
+          <text x="408" y="138" font-size="12" fill="#555">unroll H steps, then bootstrap one TD value &#8594; credit assignment dissolved</text>
+
+          <!-- divider -->
+          <line x1="40" y1="166" x2="880" y2="166" stroke="#eee" stroke-width="1"/>
+
+          <!-- ===== ROW 2: AGENT ===== -->
+          <text x="40" y="200" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#1a1a1a" letter-spacing="0.04em">LANGUAGE-MODEL AGENT</text>
+          <rect x="40" y="216" width="70" height="34" rx="4" fill="#fff" stroke="#bdbdbd"/>
+          <text x="75" y="237" font-size="11" fill="#444" text-anchor="middle">start</text>
+          <g font-size="11" fill="#444" text-anchor="middle">
+            <rect x="130" y="216" width="46" height="34" rx="4" fill="#fff" stroke="#cfcfcf"/><text x="153" y="237">step</text>
+            <rect x="190" y="216" width="46" height="34" rx="4" fill="#fff" stroke="#cfcfcf"/><text x="213" y="237">step</text>
+            <rect x="250" y="216" width="46" height="34" rx="4" fill="#fff" stroke="#cfcfcf"/><text x="273" y="237">step</text>
+            <text x="318" y="237" font-size="14" fill="#999">· · ·</text>
+            <rect x="346" y="216" width="46" height="34" rx="4" fill="#fff" stroke="#cfcfcf"/><text x="369" y="237">step</text>
+          </g>
+          <g stroke="#dddddd" stroke-width="1.4" fill="none">
+            <line x1="110" y1="233" x2="128" y2="233" marker-end="url(#aInk)"/>
+            <line x1="176" y1="233" x2="188" y2="233" marker-end="url(#aInk)"/>
+            <line x1="236" y1="233" x2="248" y2="233" marker-end="url(#aInk)"/>
+            <line x1="392" y1="233" x2="436" y2="233" marker-end="url(#aInk)"/>
+          </g>
+          <!-- verifier -->
+          <rect x="440" y="208" width="150" height="50" rx="8" fill="#fff" stroke="#1a1a1a"/>
+          <text x="515" y="228" font-size="12.5" fill="#111" text-anchor="middle" font-weight="600">verifier</text>
+          <text x="515" y="245" font-size="11" fill="#444" text-anchor="middle">pass / fail · binary</text>
+          <text x="440" y="282" font-size="12" fill="#555">one scalar at the end, smeared over every step &#8594; credit assignment is hard</text>
+
+          <defs>
+            <marker id="aTeal" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#9fc4c1"/></marker>
+            <marker id="aInk" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#cccccc"/></marker>
+          </defs>
+        </svg>
+        <figcaption>
+          The same structural move — cap the horizon with a learned estimate instead of rolling it all the way out — points in opposite directions. The world model's value is dense and trained by TD bootstrapping, so the long horizon is folded into a function. The agent's verifier is a single binary signal at termination, which is what turns long-horizon credit assignment into a research problem.
+        </figcaption>
+      </figure>
+
+      <p>
+        So the same move — cap the horizon with a learned estimate instead of rolling it out — produces opposite work. The world model's value dissolves the long-horizon problem. The agent's verifier is what makes it hard.
+      </p>
+
+      <h2>Where the two horizons meet</h2>
+
+      <p>
+        The cleanest evidence that these are genuinely different horizons is the place they stop being different. METR's time horizon is a software-and-reasoning result. Run the same methodology on tasks that need perception and physical grounding and it collapses: horizons for visual computer-use tasks are 40 to 100 times shorter than for software, and Claude Sonnet 4.5's horizon for real-world coffee-making is about two minutes (<a href="https://metr.org/notes/2026-01-22-time-horizon-limitations/">METR, 2026</a>).
+      </p>
+
+      <p>
+        Two minutes is the world-model regime. It is the same order as Genie 3's consistency window, and it appears for the same reason: in a physical, partially observed setting, an agent has to maintain an internal model of a world that keeps changing, and that model drifts. In domains with no clean symbolic state to check against, how long the agent can stay reliable becomes bounded by how far the model's own predictions stay faithful. The two axes stay distinct in the places each field usually measures — clean software tasks for agents, controlled dynamics for world models — and they appear to converge exactly in the messy physical middle that neither field has solved.
+      </p>
+
+      <h2>Open questions</h2>
+
+      <p>
+        The comparison is useful mostly because it makes a few questions sharper than either field asks alone.
+      </p>
+
+      <ul class="references">
+        <li>Is the agent horizon in physical domains literally bounded by world-model rollout fidelity, or only correlated with it? The coffee-making number suggests a bound; nobody has measured it as one.</li>
+        <li>Self-conditioning has one name and two cures. Is there a world-model analog of RL-trained recovery — a model taught to correct its own drift — or is drift-suppression a fundamentally different lever?</li>
+        <li>The "densify the terminal signal" work in agent RL is, in effect, an attempt to grow a value function where there was only a verifier. How close can a sparse outcome signal be pushed toward the dense terminal value that already makes world-model planning stable?</li>
+        <li>METR's doubling is a calendar-time scaling law. World-model horizon progress reads as architectural jumps in rollout duration, not a smooth curve. Is there a measurable scaling law for consistency duration, or is it gated by architecture?</li>
+        <li>How much of the agent horizon depends on clean, auto-scorable tasks? METR's own messiness analysis suggests the headline trend rides the cleanest tasks; on messy, partially observed tasks the distinction from world-model drift may narrow.</li>
+      </ul>
+
+      <h2>Sources</h2>
+      <ol class="references">
+        <li><a href="https://arxiv.org/abs/2503.14499">Measuring AI Ability to Complete Long Tasks</a>, Kwa et al. (METR), 2025 — the 50% time-horizon metric and the ~7-month doubling trend.</li>
+        <li><a href="https://metr.org/notes/2026-01-22-time-horizon-limitations/">Clarifying limitations of time horizon</a>, METR, 2026 — horizon as human serial labor, and its 40–100× collapse under perception / physical grounding.</li>
+        <li><a href="https://arxiv.org/abs/2509.09677">The Illusion of Diminishing Returns: Measuring Long Horizon Execution in LLMs</a>, Sinha, Arun, Goel, Staab, Geiping, 2025 — per-step-accuracy compounding and the causal self-conditioning effect.</li>
+        <li><a href="https://arxiv.org/abs/2505.05115">Is there a half-life for the success rates of AI agents?</a>, Toby Ord, 2025 — constant-hazard model of agent success decay.</li>
+        <li><a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Effective harnesses for long-running agents</a>, Anthropic, 2025 — decomposition, durable on-disk handoff, and verification against false success.</li>
+        <li><a href="https://arxiv.org/abs/1906.08253">When to Trust Your Model: Model-Based Policy Optimization</a>, Janner, Fu, Zhang, Levine, NeurIPS 2019 — compounding error and short branched rollouts.</li>
+        <li><a href="https://arxiv.org/abs/2301.04104">Mastering Diverse Domains through World Models (DreamerV3)</a>, Hafner, Pasukonis, Ba, Lillicrap, 2023 — imagination horizon <code>H</code>=15 with a value-bootstrapped return.</li>
+        <li><a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control (TD-MPC)</a>, Hansen, Wang, Su, 2022, and <a href="https://arxiv.org/abs/2310.16828">TD-MPC2</a>, 2024 — short latent planning plus a learned terminal value.</li>
+        <li><a href="https://arxiv.org/abs/1911.08265">Mastering Atari, Go, Chess and Shogi by Planning with a Learned Model (MuZero)</a>, Schrittwieser et al., 2020 — five-step model unroll with a bootstrapped search value.</li>
+        <li><a href="https://arxiv.org/abs/2405.12399">Diffusion for World Modeling: Visual Details Matter in Atari (DIAMOND)</a>, Alonso et al., NeurIPS 2024 — rollout drift measured directly, DDPM vs EDM.</li>
+        <li><a href="https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/">Genie 3: A new frontier for world models</a>, Google DeepMind, 2025 — interactive worlds consistent for a few minutes.</li>
+        <li><a href="https://arxiv.org/abs/2503.10704">Error Analyses of Auto-Regressive Video Diffusion Models</a>, 2025 — history forgetting and temporal degradation as exposure bias.</li>
+        <li><a href="https://arxiv.org/abs/2510.20668">From Masks to Worlds: A Hitchhiker's Guide to World Models</a>, 2025 — the Genie progression and the "far from persistence" framing.</li>
+        <li><a href="https://arxiv.org/abs/1511.06732">Sequence Level Training with Recurrent Neural Networks</a>, Ranzato et al., 2015 — the original exposure-bias framing and its RL remedy.</li>
+        <li><a href="https://arxiv.org/abs/2505.11821">Reinforcing Multi-Turn Reasoning in LLM Agents via Turn-Level Reward Design</a>, 2025, and <a href="https://arxiv.org/abs/2103.06224">An Information-Theoretic Perspective on Credit Assignment</a>, 2021 — why a sparse terminal reward makes long-horizon credit assignment hard.</li>
+        <li>Long-horizon agent benchmarks: <a href="https://arxiv.org/abs/2404.07972">OSWorld</a>, <a href="https://arxiv.org/abs/2311.12983">GAIA</a>, <a href="https://arxiv.org/abs/2406.12045">τ-bench</a> — step budgets, tiered horizons, and pass<sup>k</sup> reliability decay.</li>
+      </ol>
+    </article>
+
+    <!-- ============================ 中文 ============================ -->
+    <article class="version" data-lang-panel="zh" lang="zh-CN" hidden>
+      <h1>两个 Long Horizon</h1>
+      <div class="meta">June 2026</div>
+
+      <p class="dek">
+        同一个词，在 language-model agent 里说的是可靠性问题，在 world model 里说的是保真度问题。把这两件事分开，就能解释为什么一条 horizon 每几个月翻一倍，而另一条在最难的形态下还只能按秒来量。
+      </p>
+
+      <p>
+        在两类研究里，<em>long horizon</em> 都是高频词，而它们几乎不互相引用。在 language-model agent 的工作里，long horizon 说的是可靠性随时间的衰减：一个 agent 能在犯下第一个致命错误之前，把多长的任务做完。在 world model 和 model-based RL 的工作里，long horizon 说的是保真度随 rollout 的衰减：一个学到的模型能往前预测多少步，它想象出来的未来才开始偏离真实环境。词是同一个，底下那根坐标轴却不同。
+      </p>
+
+      <p>
+        把这个区分讲清楚是有用的，因为两条 horizon 的行为差得足够远，以至于一个领域里的经验搬到另一个领域常常是错的。一条按日历在翻倍；另一条只有在模型自己变得更准时才会变长。
+      </p>
+
+      <h2>agent 的 horizon 用人类时间来量</h2>
+
+      <p>
+        对 agent 的 long horizon，最干净的定义来自 METR。它的指标是 <strong>50%-task-completion time horizon</strong>：用人类专家完成任务所需的时间来度量任务长度，模型能以 50% 成功率完成的那个时长（<a href="https://arxiv.org/abs/2503.14499">Kwa 等，2025</a>）。坐标轴是人类时间。一个 horizon 为一小时的模型，在人类大约要花一小时的任务上有一半概率成功——2025 年 3 月时的 Claude 3.7 Sonnet 就是这个量级。真正的结论是一个趋势：这个 horizon 自 2019 年起大约每七个月翻一倍，在 2024–2025 年更快，接近每四个月一次。之后的前沿模型把 50% 的数字从不到一小时推到了几个小时。
+      </p>
+
+      <p>
+        有两个细节让它不能被读成一个普遍的自主性指标，而它们对这次对比都重要。第一，纵轴量的是人类劳动；机器自己运行多久是另一回事。METR 明确说，这个 horizon 度量的是「模型能替代的人类串行劳动量」，而它能自己跑多久是另一回事（<a href="https://metr.org/notes/2026-01-22-time-horizon-limitations/">METR，2026</a>）。五小时的 horizon 并不等于五小时无人值守地运行。第二，可靠性承担了大部分作用。对同一个模型，80% 成功率的 horizon 大约只有 50% horizon 的五分之一。要求更高的可靠性，会让可用任务长度急剧缩短，因为失败往往不在推理，而在被拉长到很多步的执行上。
+      </p>
+
+      <p>
+        最后这一点有它自己的论文。<a href="https://arxiv.org/abs/2509.09677"><em>The Illusion of Diminishing Returns</em></a> 把执行单独拎出来：直接把完整的计划和知识交给模型，只要求它把很多简单步骤一步步做下去。那些在第一步就达到 100% 准确率的模型，整段做下来仍会衰减，而衰减有一个干净的形状：完成一个 <code>H</code> 步任务需要每一步都成功，所以端到端成功率近似等于单步准确率的 <code>H</code> 次方。单步准确率的一点点提升，会复利成可完成长度的大幅增长——这正是为什么短 benchmark 看起来已经饱和，长任务却还在变好。Toby Ord 从另一面把同一条曲线写明：把 agent 建模为在人类要花的每一分钟里以恒定概率失败，就会得到成功率随任务长度指数下降，以及每个 agent 各自的「半衰期」（<a href="https://arxiv.org/abs/2505.05115">Ord，2025</a>）。
+      </p>
+
+      <p>
+        所以 agent 的 long horizon 量的是可靠性。单位是人类任务时长，每步累积的是犯下任务级错误的概率；延长它的办法，是提高单步可靠性，或者缩短那条必须全部走对的步骤链。
+      </p>
+
+      <h2>world model 的 horizon 用它自己的步数来量</h2>
+
+      <p>
+        world model 的 long horizon 落在另一根坐标轴上。这里的 horizon 是学到的模型被往前 rollout 的步数，而每步累积的是预测误差。
+      </p>
+
+      <p>
+        最经典的表述来自 MBPO。一个单步 dynamics model 被自回归地反复调用，每一步预测又成为下一步的输入，于是「小误差会在预测 horizon 上复利累积」（<a href="https://arxiv.org/abs/1906.08253">Janner 等，2019</a>）。它背后的经典界，simulation lemma，把 value 误差界成单步模型误差乘以 effective horizon——在最坏情况下甚至是平方关系。MBPO 的回应是把 model horizon 压短，并与 task horizon 解耦：与其从初始状态做几条很长的 rollout，不如从 replay buffer 里采样到的真实状态出发、分叉出许多条很短的 rollout。实践中 rollout 长度常常就是 1；作者还指出他们的模型对 200 步 rollout 已经足够准，但从远更短的 rollout 里学得更好，而 500 步 rollout 已经不准到根本没法用。
+      </p>
+
+      <p>
+        同样的直觉——只滚几步，不再往前——贯穿了那些做 planning 的 world model。Dreamer 完全在固定长度的想象 latent 轨迹里学习行为：imagination horizon 恰好是 15 步，在 Dreamer、DreamerV2、DreamerV3 三代里都保持不变（<a href="https://arxiv.org/abs/2301.04104">Hafner 等，2023</a>）。<a href="https://arxiv.org/abs/2203.04955">TD-MPC</a> 在长度为 5 的 latent horizon 上做 planning；<a href="https://arxiv.org/abs/2310.16828">TD-MPC2</a> 把默认值缩到 3。<a href="https://arxiv.org/abs/1911.08265">MuZero</a> 在训练时只把学到的模型展开 5 个假想步。没有一个模型被要求预测得很远，每个都只滚一小段就停下来。
+      </p>
+
+      <p>
+        对生成式的视频 world model，horizon 用帧和秒来量，失败也从一个标量变成可见的画面。<a href="https://arxiv.org/abs/2405.12399">DIAMOND</a> 把长 rollout 的崩坏追溯到复利误差把模型推出训练分布，并说明 diffusion 的具体形式会改变它崩得多快：基于 DDPM 的模型在 1000 步 rollout 上严重 drift，而基于 EDM 的模型即使只用一步去噪也能保持稳定。<a href="https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/">Genie 3</a> 以 24 帧每秒、720p 生成一个可交互世界，能保持几分钟的一致性，视觉记忆大约能回溯到一分钟之前——DeepMind 把同一个窗口称作它的上限，因为误差会随时间累积。视频这条线诚实的总结是：「long horizon」仍然只意味着几分钟，而这个领域对自己状态的描述是 <a href="https://arxiv.org/abs/2510.20668">「离 persistence 还很远」</a>。
+      </p>
+
+      <p>
+        所以 world model 的 long horizon 量的是预测能撑多远。单位是模型的 timestep 或帧，每步累积的是预测状态相对真实状态的偏离；延长它的办法，是让模型每一步更准，或者在交接之前少滚几步。
+      </p>
+
+      <figure>
+        <svg viewBox="0 0 920 392" role="img" aria-label="两根示意坐标轴：agent 是成功率对人类任务长度，world model 是预测误差对 rollout 步数">
+          <line x1="460" y1="40" x2="460" y2="356" stroke="#e6e6e6" stroke-width="1"/>
+
+          <text x="80" y="58" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#1a1a1a" letter-spacing="0.04em">LANGUAGE-MODEL AGENT</text>
+          <line x1="92" y1="96" x2="92" y2="312" stroke="#cccccc" stroke-width="1"/>
+          <line x1="92" y1="312" x2="430" y2="312" stroke="#cccccc" stroke-width="1"/>
+          <line x1="92" y1="136" x2="222" y2="136" stroke="#bbbbbb" stroke-width="1" stroke-dasharray="3 3"/>
+          <line x1="92" y1="202" x2="312" y2="202" stroke="#bbbbbb" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="60" y="140" font-size="11" fill="#888">0.8</text>
+          <text x="60" y="206" font-size="11" fill="#888">0.5</text>
+          <path d="M100,102 C150,108 188,118 222,136 C258,156 286,178 312,202 C352,238 392,282 426,304" fill="none" stroke="#1a1a1a" stroke-width="2.2"/>
+          <line x1="222" y1="136" x2="222" y2="312" stroke="#1a1a1a" stroke-width="1" stroke-dasharray="2 3"/>
+          <line x1="312" y1="202" x2="312" y2="312" stroke="#1a1a1a" stroke-width="1" stroke-dasharray="2 3"/>
+          <circle cx="222" cy="136" r="3" fill="#1a1a1a"/>
+          <circle cx="312" cy="202" r="3" fill="#1a1a1a"/>
+          <text x="206" y="330" font-size="11" fill="#555">t&#8328;&#8320;</text>
+          <text x="300" y="330" font-size="11" fill="#555">t&#8325;&#8320;</text>
+          <text x="92" y="352" font-size="12" fill="#777">人类任务长度 &#8594;</text>
+          <text x="74" y="92" font-size="12" fill="#777">任务成功率</text>
+          <text x="100" y="378" font-size="12.5" fill="#1a1a1a">累积的是：每步可靠性</text>
+
+          <text x="540" y="58" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#2f6f6c" letter-spacing="0.04em">WORLD MODEL</text>
+          <line x1="552" y1="96" x2="552" y2="312" stroke="#cccccc" stroke-width="1"/>
+          <line x1="552" y1="312" x2="892" y2="312" stroke="#cccccc" stroke-width="1"/>
+          <line x1="612" y1="108" x2="612" y2="312" stroke="#2f6f6c" stroke-width="1" stroke-dasharray="2 3"/>
+          <text x="566" y="108" font-size="11" fill="#2f6f6c">H</text>
+          <rect x="612" y="108" width="280" height="204" fill="#2f6f6c" opacity="0.045"/>
+          <path d="M560,304 C600,288 636,250 700,168 C742,116 786,98 884,92" fill="none" stroke="#2f6f6c" stroke-width="2.2"/>
+          <path d="M560,306 C648,300 724,292 820,276 C852,270 876,266 888,264" fill="none" stroke="#2f6f6c" stroke-width="1.6" stroke-dasharray="5 4"/>
+          <text x="700" y="150" font-size="11" fill="#2f6f6c">naïve rollout</text>
+          <text x="700" y="258" font-size="11" fill="#3f8a86">short rollout + value</text>
+          <text x="628" y="206" font-size="11" fill="#7faaa7">value 补上其余部分</text>
+          <text x="552" y="352" font-size="12" fill="#777">rollout 步数 k &#8594;</text>
+          <text x="534" y="92" font-size="12" fill="#777">预测误差</text>
+          <text x="560" y="378" font-size="12.5" fill="#2f6f6c">累积的是：状态预测误差</text>
+        </svg>
+        <figcaption>
+          两根坐标轴的示意图，并非复现数据。左：<a href="https://arxiv.org/abs/2503.14499">METR</a> 拟合的成功率—人类任务长度曲线，从中按设定可靠性读出一个 time horizon；80% 的 horizon 落在 50% 的左边。右：自回归 rollout 上不断增长的预测误差，是 <a href="https://arxiv.org/abs/1906.08253">MBPO</a> 和 <a href="https://arxiv.org/abs/2405.12399">DIAMOND</a> 度量的曲线，短 horizon <code>H</code> 之外的部分交给一个学到的 value 来代替。
+        </figcaption>
+      </figure>
+
+      <h2>并排来看</h2>
+
+      <p>
+        把两条 horizon 并排放在一起，结构差异就具体了。下表每一行，都是同一个词落到了不同的对象上。
+      </p>
+
+      <div class="table-wrap">
+        <table class="cmp">
+          <thead>
+            <tr>
+              <th>维度</th>
+              <th class="h-agent">在 language-model agent 里</th>
+              <th class="h-wm">在 world model 里</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="dim">坐标轴</td>
+              <td>人类任务完成时间。模型的「time horizon」是它在设定可靠性下能完成的任务的人类时长。</td>
+              <td>模型自己被往前 rollout 的 timestep，或视频的帧。</td>
+            </tr>
+            <tr>
+              <td class="dim">每步累积什么</td>
+              <td>任务级可靠性。端到端成功率 ≈ 单步准确率的 horizon 次方。</td>
+              <td>状态预测误差。单步模型误差沿 rollout 复利累积。</td>
+            </tr>
+            <tr>
+              <td class="dim">如何度量</td>
+              <td>对人类任务长度拟合一条成功率曲线，在 50% / 80% 读出 horizon，再看它随日历翻倍。</td>
+              <td>固定一个 horizon <code>H</code>，再直接度量 rollout 的 drift——像素误差、一致性时长。</td>
+            </tr>
+            <tr>
+              <td class="dim">如何缩短</td>
+              <td>把任务拆成有 grounding 的短 session；把记忆落盘；每一步都做校验。</td>
+              <td>只滚几步，再用一个学到的 value bootstrap；从真实状态分叉；抽象到 latent 空间。</td>
+            </tr>
+            <tr>
+              <td class="dim">grounding</td>
+              <td>每一步都加入（工具输出、测试结果）。这是延长 horizon 的主要手段。</td>
+              <td>在想象期间被刻意移除。模型按设计无 grounding 地滚 <code>H</code> 步。</td>
+            </tr>
+            <tr>
+              <td class="dim">末端的对象</td>
+              <td>一个稀疏的二值 verifier（测试通过或失败）。它制造了 credit assignment 问题。</td>
+              <td>一个稠密连续的 value（TD bootstrap）。它化解了 credit assignment 问题。</td>
+            </tr>
+            <tr>
+              <td class="dim">更大规模或「thinking」带来什么</td>
+              <td>可靠性随时间翻倍；thinking 去掉 self-conditioning，并延长执行长度。</td>
+              <td>更长的 <code>H</code> 常常更糟；可用 horizon 靠模型保真度提升，不随日历时间翻倍。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>共享的机制：模型以自己先前的输出为输入</h2>
+
+      <p>
+        这两条 horizon 并非毫无关系。两个领域在寻找失败最深层原因时，都走到同一个地方：模型把自己先前的输出当作下一步的输入。它们也给它起了同一个祖先的名字——exposure bias，十年前为序列模型提出的训练—推理不匹配：一个在 ground-truth 前缀上训练的网络，推理时输入换成了自己并不完美的生成，却从未学会从中恢复（<a href="https://arxiv.org/abs/1511.06732">Ranzato 等，2015</a>）。
+      </p>
+
+      <p>
+        区别在于这个回路作用的表面。在 language-model agent 里，它是一个可靠性效应。<em>The Illusion of Diminishing Returns</em> 用因果方式把它显示出来：往模型自己的 context 里注入错误，它下一步的准确率就下降，即使 context 长度保持不变——当历史里已经含有错误时，模型更容易再出错。论文把这叫 <strong>self-conditioning</strong>，并报告了两件对这次对比重要的事：扩大模型规模并不能消除它，两千亿参数级的模型仍然会 self-condition；而显式的「thinking」——经过 RL 训练的推理——能消除它，同时把模型在单轮里能执行的长度大幅拉长，从某个模型的约 120 步到另一个模型的一千步以上。
+      </p>
+
+      <p>
+        在 world model 里，同一个回路是一个保真度效应。每个预测出的状态或帧都成为下一步的输入，于是误差不仅留存，还把 rollout 推离模型训练时所见的分布，从而抬高下一步的误差。这正是 DIAMOND 的 drift，也是视频文献里那一对失败模式——history forgetting 和 temporal degradation——两者都归因于 teacher-forcing 的不匹配（<a href="https://arxiv.org/abs/2503.10704">Meta-ARVDM，2025</a>）。两边的解法在性质上不同：agent 这边加入 grounding 并训练恢复能力；world model 这边缩短 rollout、更换 diffusion 目标、条件于更多历史，或把生成锚定到开头的若干帧。同一个回路，在一边产生可靠性问题，在另一边产生感知 drift 问题。
+      </p>
+
+      <h2>同一个机制，反过来：horizon 末端的一个学到的 value</h2>
+
+      <p>
+        两个领域也都没把完整的 horizon 真正滚完，转而依靠一个学到的对象来覆盖其余部分。这是这次对比最有用的地方，因为这个对象扮演相同的结构性角色，却产生相反的后果。
+      </p>
+
+      <p>
+        在 world model 里，末端的对象是一个 value function。TD-MPC 规划 5 步，然后加上一个学到的 terminal <code>Q</code>-value，估计 horizon 之外的全部 return，于是短 rollout 就代替了一条实际上无限长的轨迹。MuZero bootstrap 到一个 <code>n</code> 步搜索 value；Dreamer 用一个 critic 收束它 15 步的 return，并报告：没有这个 bootstrap，agent 就会变得「shortsighted」，只能解决反应式任务。这个 terminal value 是稠密且连续的，由单步 TD bootstrapping 训练得到——所以长 horizon 从来没有在任何地方真正被滚出来，它在训练时就被折叠进了一个 value function。这里没有稀疏奖励带来的 credit-assignment 危机，因为这个 value 在每一步都携带信息。
+      </p>
+
+      <p>
+        在 language-model agent 里，horizon 末端的对象是一个 verifier，它稀疏且离散。大多数 agentic 任务在最后才给出一个标量：隐藏测试通过或失败，一个 evaluator 返回 pass 或 needs-work，functional correctness 在终止时被打一次分。正因为这个信号是末端的、二值的，它制造了 credit assignment 问题，没有化解它。像 GRPO 这样的 value-free RL，只能把一个 outcome reward 均匀地摊到长轨迹的每一回合上，无法分辨哪一次工具调用真正重要（<a href="https://arxiv.org/abs/2505.11821">Zeng 等，2025</a>）。有一整条线的工作只为把这个末端信号变稠密——turn-level reward、hindsight 重分配、tree-search value 估计——而 RL 理论提醒：显而易见的修法并不够，给奖励加一个常数能让它不再稀疏，却不能让它更有信息（<a href="https://arxiv.org/abs/2103.06224">Arumugam 等，2021</a>）。
+      </p>
+
+      <figure>
+        <svg viewBox="0 0 920 286" role="img" aria-label="末端对象的反转：world model 是稠密连续的 value，agent 是稀疏二值的 verifier">
+          <text x="40" y="56" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#2f6f6c" letter-spacing="0.04em">WORLD MODEL</text>
+          <rect x="40" y="72" width="92" height="34" rx="4" fill="#fff" stroke="#bdbdbd"/>
+          <text x="86" y="93" font-size="11" fill="#444" text-anchor="middle">真实状态</text>
+          <g font-size="11" fill="#2f6f6c" text-anchor="middle">
+            <rect x="158" y="72" width="40" height="34" rx="4" fill="#fff" stroke="#9fc4c1"/><text x="178" y="93">z&#8320;</text>
+            <rect x="212" y="72" width="40" height="34" rx="4" fill="#fff" stroke="#9fc4c1"/><text x="232" y="93">z&#8321;</text>
+            <rect x="266" y="72" width="40" height="34" rx="4" fill="#fff" stroke="#9fc4c1"/><text x="286" y="93">z&#8322;</text>
+            <rect x="320" y="72" width="40" height="34" rx="4" fill="#fff" stroke="#9fc4c1"/><text x="340" y="93">z&#8323;</text>
+          </g>
+          <g stroke="#cfd8d7" stroke-width="1.4" fill="none">
+            <line x1="132" y1="89" x2="156" y2="89" marker-end="url(#bTeal)"/>
+            <line x1="198" y1="89" x2="210" y2="89" marker-end="url(#bTeal)"/>
+            <line x1="252" y1="89" x2="264" y2="89" marker-end="url(#bTeal)"/>
+            <line x1="306" y1="89" x2="318" y2="89" marker-end="url(#bTeal)"/>
+            <line x1="360" y1="89" x2="404" y2="89" marker-end="url(#bTeal)"/>
+          </g>
+          <rect x="408" y="64" width="150" height="50" rx="8" fill="#2f6f6c" opacity="0.10" stroke="#2f6f6c"/>
+          <text x="483" y="84" font-size="12.5" fill="#2f6f6c" text-anchor="middle" font-weight="600">terminal value</text>
+          <text x="483" y="101" font-size="11" fill="#2f6f6c" text-anchor="middle">稠密 · 连续</text>
+          <text x="408" y="138" font-size="12" fill="#555">滚 H 步，再 bootstrap 一个 TD value &#8594; credit assignment 被化解</text>
+
+          <line x1="40" y1="166" x2="880" y2="166" stroke="#eee" stroke-width="1"/>
+
+          <text x="40" y="200" font-family="ui-monospace, Menlo, monospace" font-size="12" fill="#1a1a1a" letter-spacing="0.04em">LANGUAGE-MODEL AGENT</text>
+          <rect x="40" y="216" width="70" height="34" rx="4" fill="#fff" stroke="#bdbdbd"/>
+          <text x="75" y="237" font-size="11" fill="#444" text-anchor="middle">起点</text>
+          <g font-size="11" fill="#444" text-anchor="middle">
+            <rect x="130" y="216" width="46" height="34" rx="4" fill="#fff" stroke="#cfcfcf"/><text x="153" y="237">step</text>
+            <rect x="190" y="216" width="46" height="34" rx="4" fill="#fff" stroke="#cfcfcf"/><text x="213" y="237">step</text>
+            <rect x="250" y="216" width="46" height="34" rx="4" fill="#fff" stroke="#cfcfcf"/><text x="273" y="237">step</text>
+            <text x="318" y="237" font-size="14" fill="#999">· · ·</text>
+            <rect x="346" y="216" width="46" height="34" rx="4" fill="#fff" stroke="#cfcfcf"/><text x="369" y="237">step</text>
+          </g>
+          <g stroke="#dddddd" stroke-width="1.4" fill="none">
+            <line x1="110" y1="233" x2="128" y2="233" marker-end="url(#bInk)"/>
+            <line x1="176" y1="233" x2="188" y2="233" marker-end="url(#bInk)"/>
+            <line x1="236" y1="233" x2="248" y2="233" marker-end="url(#bInk)"/>
+            <line x1="392" y1="233" x2="436" y2="233" marker-end="url(#bInk)"/>
+          </g>
+          <rect x="440" y="208" width="150" height="50" rx="8" fill="#fff" stroke="#1a1a1a"/>
+          <text x="515" y="228" font-size="12.5" fill="#111" text-anchor="middle" font-weight="600">verifier</text>
+          <text x="515" y="245" font-size="11" fill="#444" text-anchor="middle">pass / fail · 二值</text>
+          <text x="440" y="282" font-size="12" fill="#555">末端一个标量，被摊到每一步 &#8594; credit assignment 很难</text>
+
+          <defs>
+            <marker id="bTeal" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#9fc4c1"/></marker>
+            <marker id="bInk" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#cccccc"/></marker>
+          </defs>
+        </svg>
+        <figcaption>
+          同一个结构性动作——用一个学到的估计来截断 horizon，而不把它整条滚完——指向相反的方向。world model 的 value 稠密、由 TD bootstrapping 训练，于是长 horizon 被折叠进一个函数。agent 的 verifier 是终止时的单个二值信号，正是它把长 horizon 的 credit assignment 变成了一个研究问题。
+        </figcaption>
+      </figure>
+
+      <p>
+        所以同一个动作——用学到的估计截断 horizon，省去整条滚完——产生了相反的工作。world model 的 value 化解了长 horizon 问题。agent 的 verifier 才是让它变难的原因。
+      </p>
+
+      <h2>两条 horizon 在哪里相遇</h2>
+
+      <p>
+        这两条 horizon 确实不同，最干净的证据，是它们停止不同的那个地方。METR 的 time horizon 是一个软件与推理上的结果。把同一套方法用到需要感知和物理 grounding 的任务上，它就坍缩：视觉 computer-use 任务的 horizon 比软件短 40 到 100 倍，而 Claude Sonnet 4.5 在真实世界冲咖啡上的 horizon 只有大约两分钟（<a href="https://metr.org/notes/2026-01-22-time-horizon-limitations/">METR，2026</a>）。
+      </p>
+
+      <p>
+        两分钟正是 world model 的区间。它和 Genie 3 的一致性窗口同一量级，而出现的原因相同：在一个物理的、部分可观测的环境里，agent 必须维护一个对不断变化的世界的内部模型，而这个模型会 drift。在没有干净符号状态可供核对的领域里，agent 能可靠地做多长，最终被模型的预测能撑多远所界定。两根坐标轴在各自领域通常度量的地方保持分离——agent 在干净的软件任务上，world model 在受控的动力学上——而它们似乎恰好在那块谁都还没解决的、混乱的物理中间地带相遇。
+      </p>
+
+      <h2>开放问题</h2>
+
+      <p>
+        这次对比之所以有用，主要是它把几个问题问得比任一领域单独时更锋利。
+      </p>
+
+      <ul class="references">
+        <li>在物理域里，agent 的 horizon 是否真的被 world-model rollout 保真度所界定，还是只是与之相关？冲咖啡那个数字暗示了一个上界，但没有人把它当作上界来度量过。</li>
+        <li>self-conditioning 只有一个名字，却有两种解法。world model 是否存在一个 RL 训练恢复能力的对应物——一个被教会修正自己 drift 的模型——还是 drift-suppression 本质上是另一种杠杆？</li>
+        <li>agent RL 里「把末端信号变稠密」的工作，本质上是在只有 verifier 的地方长出一个 value function。一个稀疏的 outcome 信号，能被推到多接近那个已经让 world-model planning 稳定的稠密 terminal value？</li>
+        <li>METR 的翻倍是一条日历时间上的 scaling law。world model 的 horizon 进展更像 rollout 时长上一次次架构跳变，看不出一条平滑曲线。一致性时长是否存在可度量的 scaling law，还是它被架构所限定？</li>
+        <li>agent 的 horizon 有多少依赖于干净、可自动判分的任务？METR 自己的 messiness 分析暗示，那条头条趋势是骑在最干净的任务上的；在混乱、部分可观测的任务上，它与 world-model drift 的区别可能会收窄。</li>
+      </ul>
+
+      <h2>Sources</h2>
+      <ol class="references">
+        <li><a href="https://arxiv.org/abs/2503.14499">Measuring AI Ability to Complete Long Tasks</a>，Kwa 等（METR），2025——50% time-horizon 指标与约七个月翻倍的趋势。</li>
+        <li><a href="https://metr.org/notes/2026-01-22-time-horizon-limitations/">Clarifying limitations of time horizon</a>，METR，2026——horizon 作为被替代的人类串行劳动，以及它在感知 / 物理 grounding 下坍缩 40–100 倍。</li>
+        <li><a href="https://arxiv.org/abs/2509.09677">The Illusion of Diminishing Returns: Measuring Long Horizon Execution in LLMs</a>，Sinha、Arun、Goel、Staab、Geiping，2025——单步准确率复利与因果性的 self-conditioning 效应。</li>
+        <li><a href="https://arxiv.org/abs/2505.05115">Is there a half-life for the success rates of AI agents?</a>，Toby Ord，2025——agent 成功率衰减的恒定 hazard 模型。</li>
+        <li><a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Effective harnesses for long-running agents</a>，Anthropic，2025——任务拆分、落盘交接，以及对假成功的校验。</li>
+        <li><a href="https://arxiv.org/abs/1906.08253">When to Trust Your Model: Model-Based Policy Optimization</a>，Janner、Fu、Zhang、Levine，NeurIPS 2019——复利误差与短分叉 rollout。</li>
+        <li><a href="https://arxiv.org/abs/2301.04104">Mastering Diverse Domains through World Models (DreamerV3)</a>，Hafner、Pasukonis、Ba、Lillicrap，2023——imagination horizon <code>H</code>=15 与 value-bootstrap 的 return。</li>
+        <li><a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control (TD-MPC)</a>，Hansen、Wang、Su，2022，及 <a href="https://arxiv.org/abs/2310.16828">TD-MPC2</a>，2024——短 latent planning 加学到的 terminal value。</li>
+        <li><a href="https://arxiv.org/abs/1911.08265">Mastering Atari, Go, Chess and Shogi by Planning with a Learned Model (MuZero)</a>，Schrittwieser 等，2020——五步模型展开加 bootstrap 的搜索 value。</li>
+        <li><a href="https://arxiv.org/abs/2405.12399">Diffusion for World Modeling: Visual Details Matter in Atari (DIAMOND)</a>，Alonso 等，NeurIPS 2024——直接度量 rollout drift，DDPM 对 EDM。</li>
+        <li><a href="https://deepmind.google/blog/genie-3-a-new-frontier-for-world-models/">Genie 3: A new frontier for world models</a>，Google DeepMind，2025——可交互世界保持几分钟一致。</li>
+        <li><a href="https://arxiv.org/abs/2503.10704">Error Analyses of Auto-Regressive Video Diffusion Models</a>，2025——history forgetting 与 temporal degradation 作为 exposure bias。</li>
+        <li><a href="https://arxiv.org/abs/2510.20668">From Masks to Worlds: A Hitchhiker's Guide to World Models</a>，2025——Genie 系列演进与「离 persistence 还很远」的判断。</li>
+        <li><a href="https://arxiv.org/abs/1511.06732">Sequence Level Training with Recurrent Neural Networks</a>，Ranzato 等，2015——exposure bias 最初的框架及其 RL 解法。</li>
+        <li><a href="https://arxiv.org/abs/2505.11821">Reinforcing Multi-Turn Reasoning in LLM Agents via Turn-Level Reward Design</a>，2025，及 <a href="https://arxiv.org/abs/2103.06224">An Information-Theoretic Perspective on Credit Assignment</a>，2021——为什么稀疏的末端奖励让长 horizon 的 credit assignment 变难。</li>
+        <li>长 horizon 的 agent benchmark：<a href="https://arxiv.org/abs/2404.07972">OSWorld</a>、<a href="https://arxiv.org/abs/2311.12983">GAIA</a>、<a href="https://arxiv.org/abs/2406.12045">τ-bench</a>——步数预算、按 horizon 分级，以及 pass<sup>k</sup> 的可靠性衰减。</li>
+      </ol>
+    </article>
+  </main>
+
+  <script>
+    const languageKey = "writing-language";
+    const titles = {
+      en: "Two Long Horizons — Sense Wang",
+      zh: "两个 Long Horizon — Sense Wang"
+    };
+    const buttons = Array.from(document.querySelectorAll("[data-lang-button]"));
+    const panels = Array.from(document.querySelectorAll("[data-lang-panel]"));
+
+    function setLanguage(lang) {
+      buttons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.langButton === lang));
+      });
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.langPanel !== lang;
+      });
+      document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+      document.title = titles[lang];
+      localStorage.setItem(languageKey, lang);
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => setLanguage(button.dataset.langButton));
+    });
+
+    setLanguage(localStorage.getItem(languageKey) === "zh" ? "zh" : "en");
+  </script>
+</body>
+</html>
