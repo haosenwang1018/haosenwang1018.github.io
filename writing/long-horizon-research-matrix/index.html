@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="一份面向机器人世界模型与机器人策略的 Long Horizon 研究矩阵：rollout drift、closed-loop planning、trust horizon、event verification、temporal abstraction 与 object/state persistence。">
+  <title>Long Horizon：机器人世界模型的研究矩阵 - Sense Wang</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      color: #111;
+      background: #fff;
+      line-height: 1.78;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    main {
+      max-width: 780px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 72px 20px 112px;
+    }
+
+    nav {
+      margin-bottom: 52px;
+      font-size: 13px;
+    }
+
+    a {
+      color: #111;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    a:hover { opacity: 0.55; }
+
+    h1 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 42px;
+      line-height: 1.12;
+      font-weight: 700;
+      margin-bottom: 14px;
+      max-width: 760px;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 25px;
+      line-height: 1.28;
+      margin: 58px 0 15px;
+      padding-top: 2px;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      font-size: 18px;
+      line-height: 1.42;
+      margin: 30px 0 9px;
+      letter-spacing: 0;
+    }
+
+    p { margin-bottom: 17px; }
+
+    .meta {
+      color: #999;
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+
+    .dek {
+      color: #444;
+      font-size: 19px;
+      line-height: 1.62;
+      max-width: 710px;
+      margin-bottom: 44px;
+    }
+
+    .note {
+      border-left: 3px solid #111;
+      color: #333;
+      font-size: 16px;
+      line-height: 1.72;
+      margin: 28px 0 32px;
+      padding: 2px 0 2px 18px;
+    }
+
+    .note p { margin-bottom: 10px; }
+    .note p:last-child { margin-bottom: 0; }
+
+    .note-title {
+      color: #777;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .figure {
+      margin: 36px 0 38px;
+      border-top: 1px solid #e5e5e5;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 24px 0 18px;
+    }
+
+    .figure svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .caption {
+      color: #777;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin: 30px 0 36px;
+      border-top: 1px solid #d8d8d8;
+      border-bottom: 1px solid #e8e8e8;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 12px 14px;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      color: #555;
+      font-size: 12px;
+      letter-spacing: 0.03em;
+      font-weight: 600;
+      text-transform: uppercase;
+      background: #fafafa;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    td:first-child {
+      color: #111;
+      font-weight: 650;
+      width: 22%;
+    }
+
+    ul, ol {
+      margin: 14px 0 24px 22px;
+    }
+
+    li {
+      margin-bottom: 9px;
+      padding-left: 4px;
+    }
+
+    .section-kicker {
+      color: #777;
+      font-size: 13px;
+      margin: -5px 0 18px;
+    }
+
+    .references {
+      color: #555;
+      font-size: 15px;
+      margin-left: 22px;
+    }
+
+    .references li {
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    @media (max-width: 560px) {
+      main {
+        margin: 0;
+        max-width: 100%;
+        padding: 48px 18px 88px;
+      }
+
+      h1 { font-size: 31px; }
+      h2 { font-size: 22px; margin-top: 46px; }
+      body { font-size: 16px; }
+      .dek { font-size: 18px; }
+      table { min-width: 720px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+    <article>
+      <h1>Long Horizon：机器人世界模型的研究矩阵</h1>
+      <div class="meta">June 2026</div>
+
+      <p class="dek">
+        Long Horizon 在机器人世界模型里由几类互相耦合的失败模式构成：rollout drift、closed-loop planning、trust horizon、event verification、temporal abstraction，以及 object/state persistence。
+      </p>
+
+      <p>
+        机器人里的 long horizon 通常从一个很具体的计算过程开始：当前观测被编码成 state，world model 在候选 action sequence 下向前预测，planner 根据预测出的 state、reward、value 或 event score 选择动作，然后机器人只执行下一步动作。下一次观测到来后，系统再规划一次。
+      </p>
+
+      <p>
+        这个闭环把一个普通预测误差放大成决策问题。一步 transition 的误差会进入下一步预测；一个看起来合理的 video future 可能没有完成任务事件；一个高分 action sequence 可能只是利用了模型的错误。Long Horizon 的难点不在于任务时间更长这个表面事实，而在于模型、planner、memory、event verifier 和 action interface 在长轨迹里一起承受误差。
+      </p>
+
+      <div class="note">
+        <div class="note-title">Research object</div>
+        <p>这份矩阵把 long horizon 拆成可研究的六个问题轴。它是一份用于读论文、比较方法和设计实验的工作地图，尚未替代逐篇 paper card 与图表级证据核对。</p>
+        <p>这里的公开版本只保留 robot world model、robot policy、VLA、humanoid control 与 embodied memory。软件 agent 与纯语言 agent 不放入这份矩阵。</p>
+      </div>
+
+      <div class="figure" aria-label="Long horizon failure modes diagram">
+        <svg viewBox="0 0 980 300" role="img">
+          <defs>
+            <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+              <path d="M0,0 L9,4.5 L0,9 Z" fill="#111"></path>
+            </marker>
+          </defs>
+          <rect x="1" y="1" width="978" height="298" fill="#fff" stroke="#e6e6e6"></rect>
+          <text x="36" y="48" font-size="18" font-weight="700" fill="#111">Long-horizon robot world model loop</text>
+          <text x="36" y="76" font-size="13" fill="#777">The same model is repeatedly queried, scored, checked, and corrected through closed-loop execution.</text>
+
+          <g font-size="14" fill="#111">
+            <rect x="44" y="126" width="128" height="54" fill="#fafafa" stroke="#d8d8d8"></rect>
+            <text x="68" y="148" font-weight="700">State</text>
+            <text x="68" y="168" fill="#666">observation / latent</text>
+
+            <rect x="220" y="126" width="144" height="54" fill="#fafafa" stroke="#d8d8d8"></rect>
+            <text x="246" y="148" font-weight="700">World model</text>
+            <text x="246" y="168" fill="#666">rollout futures</text>
+
+            <rect x="412" y="126" width="136" height="54" fill="#fafafa" stroke="#d8d8d8"></rect>
+            <text x="438" y="148" font-weight="700">Planner</text>
+            <text x="438" y="168" fill="#666">score actions</text>
+
+            <rect x="596" y="126" width="146" height="54" fill="#fafafa" stroke="#d8d8d8"></rect>
+            <text x="622" y="148" font-weight="700">Verifier</text>
+            <text x="622" y="168" fill="#666">events / trust</text>
+
+            <rect x="790" y="126" width="128" height="54" fill="#fafafa" stroke="#d8d8d8"></rect>
+            <text x="814" y="148" font-weight="700">Action</text>
+            <text x="814" y="168" fill="#666">execute next step</text>
+          </g>
+
+          <g stroke="#111" stroke-width="1.4" marker-end="url(#arrow)">
+            <line x1="172" y1="153" x2="214" y2="153"></line>
+            <line x1="364" y1="153" x2="406" y2="153"></line>
+            <line x1="548" y1="153" x2="590" y2="153"></line>
+            <line x1="742" y1="153" x2="784" y2="153"></line>
+            <path d="M854 180 C854 236 112 236 112 184" fill="none"></path>
+          </g>
+
+          <g font-size="12" fill="#555">
+            <text x="220" y="216">rollout drift</text>
+            <text x="386" y="216">planner exploits model errors</text>
+            <text x="592" y="216">event / trust mismatch</text>
+            <text x="780" y="216">closed-loop correction</text>
+          </g>
+        </svg>
+        <div class="caption">
+          A compact view of the interface. Long horizon is not only a longer task; it is repeated prediction under planner pressure, followed by verification and closed-loop correction.
+        </div>
+      </div>
+
+      <h2>六个问题轴</h2>
+      <p>
+        把 long horizon 拆开以后，每个方向对应不同的失败形式、解决策略和代表工作。一个研究题目要先说明自己处理哪一轴，否则“做 Long Horizon”会变成过宽的口号。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>问题轴</th>
+              <th>失败形式</th>
+              <th>常见策略</th>
+              <th>代表工作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Rollout drift</td>
+              <td>预测 state、reward、contact、object 或 latent 时，小误差在多步 rollout 中累积。</td>
+              <td>short rollouts、value bootstrap、uncertainty、task-oriented latent、compositional dynamics、autoregressive stabilization。</td>
+              <td>MBPO, PlaNet, Dreamer, MuZero, TD-MPC, PRISM-WM, AR Forcing, MIND-V, WEAVER</td>
+            </tr>
+            <tr>
+              <td>Closed-loop planning</td>
+              <td>planner 在 imperfect model 上优化，选出 imagined future 高分但真实环境失败的 action sequence。</td>
+              <td>MPC / receding horizon、MPPI / CEM、gradient planning、terminal value、policy prior、test-time compute。</td>
+              <td>PETS, PlaNet, TD-MPC, MuZero, GRASP, Cosmos Policy, tau0-WM, WEAVER</td>
+            </tr>
+            <tr>
+              <td>Trust horizon</td>
+              <td>系统不知道当前 state、contact regime 或 task phase 下 rollout 还能信任多远。</td>
+              <td>ensemble disagreement、latent consistency、reward / value consistency、event verifier、adaptive horizon。</td>
+              <td>PETS, MBPO, MOPO, TD-MPC, PRISM-WM, EV-WM, Variable-Length Latent World Models</td>
+            </tr>
+            <tr>
+              <td>Event verification</td>
+              <td>未来看起来合理，但 drawer 没打开、object 没移动、precondition 不成立，任务进度并没有发生。</td>
+              <td>predicate verifier、event-aware world model、logical state model、simulator validation、reflection / replanning。</td>
+              <td>EV-WM, H-WM, LoHo-Manip, PALM, SayCan, Code as Policies, ReKep</td>
+            </tr>
+            <tr>
+              <td>Temporal abstraction</td>
+              <td>低层 motor-step rollout 太长，逐步规划会让优化和预测都变脆。</td>
+              <td>options / skills、subgoals、waypoints、language plans、action chunks、latent actions、task-and-motion planning。</td>
+              <td>Puppeteer, ULTRA, LoHo-Manip, Long-VLA, A2A, LAPO, Diffusion Policy, ACT</td>
+            </tr>
+            <tr>
+              <td>Object / state persistence</td>
+              <td>系统在长执行中丢失 object identity、location、containment、occluded facts 或 task progress。</td>
+              <td>object-centric representation、slot dynamics、keyframe memory、event memory、episodic memory、world/ego factorization。</td>
+              <td>Slot Attention, C-SWM, Slot-MPC, MEM, KEMO, EventVLA, Mem-World, World-Ego Modeling</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>World model 侧：预测要能被 planner 使用</h2>
+      <p class="section-kicker">这里的核心问题是 imagined futures 是否仍然能指导真实动作选择。</p>
+
+      <p>
+        <a href="https://arxiv.org/abs/2203.04955">TD-MPC</a> 提供一个基础接口：学习 task-oriented latent dynamics，在 latent space 里做 short-horizon MPC，并用 terminal value 估计 horizon 之后的 return。它对 long horizon 的处理方式很克制：少做长 rollout，把远期回报交给 value function。
+      </p>
+
+      <p>
+        <a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a> 把问题推到 transition function 本身。现实物理是 hybrid system，接触、滑动、落地、飞行会让连续动力学发生切换。单一 latent dynamics 容易把这些边界平均成一个连续函数，planner 多步调用以后就会累积错误。PRISM-WM 用 context-aware MoE 和 latent orthogonalization 表示不同 local dynamics。
+      </p>
+
+      <p>
+        <a href="https://bair.berkeley.edu/blog/2026/04/20/grasp/">GRASP</a> 从 planner 侧进入问题。长 horizon 下，直接通过一条多步 learned-dynamics chain 反传会产生不稳定梯度。GRASP 用 lifted states、stochastic exploration 和 gradient reshaping 改善 gradient-based planning 的优化条件。
+      </p>
+
+      <p>
+        <a href="https://arxiv.org/html/2606.13672">WEAVER</a>、<a href="https://arxiv.org/html/2606.13053v2">EV-WM</a>、<a href="https://arxiv.org/html/2606.01027v1">tau0-WM</a>、<a href="https://arxiv.org/abs/2601.03782">PointWorld</a>、<a href="https://arxiv.org/abs/2602.15922">DreamZero</a>、<a href="https://arxiv.org/html/2606.18960">Mem-World</a> 和 <a href="https://arxiv.org/html/2605.14937v1">Slot-MPC</a> 则说明了近期路线的分化：有人提高 manipulation world model 的 rollout consistency，有人加入 event verifier，有人把视频模型改成 video-action model，有人把 state 变成 3D point flow 或 object slots，有人把 memory 绑定到几何表面。
+      </p>
+
+      <h2>Policy 侧：任务要能跨阶段执行</h2>
+      <p class="section-kicker">这些工作研究长任务执行，多数不直接解决 learned world model 的 rollout fidelity。</p>
+
+      <p>
+        <a href="https://psi-lab.ai/Psi0">Psi-Zero</a>、<a href="https://opendrivelab.com/EgoHumanoid">EgoHumanoid</a>、<a href="https://ultra-humanoid.github.io/">ULTRA</a> 和 <a href="https://viral-humanoid.github.io/">VIRAL</a> 处理 humanoid loco-manipulation 的数据、控制和部署问题。它们的 long horizon 体现在真实机器人要在视觉输入、身体平衡、接触、动作延迟和多阶段任务中持续工作。
+      </p>
+
+      <p>
+        <a href="https://arxiv.org/abs/2602.07322">A2A</a>、<a href="https://arxiv.org/abs/2312.10812">LAPO</a>、<a href="https://arxiv.org/html/2603.03596v2">MEM</a>、<a href="https://arxiv.org/html/2606.23589v1">KEMO</a>、<a href="https://arxiv.org/html/2606.20092">EventVLA</a>、<a href="https://arxiv.org/html/2604.21924v1">LoHo-Manip</a> 和 <a href="https://long-vla.github.io/">Long-VLA</a> 则给出另一组接口：action history、latent action、multi-scale memory、event keyframes、visual evidence、task manager、phase-aware masking。它们通常不训练一个 classical world model，但它们暴露了长任务系统需要什么：更快 action generation、更稳定记忆、更清楚的任务阶段和更可靠的进度表示。
+      </p>
+
+      <h2>代表工作矩阵</h2>
+      <p>
+        下表按公开论文与项目页整理。组织信号只用于定位研究生态，不代表贡献归属的完整列表。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>工作</th>
+              <th>方向</th>
+              <th>时间</th>
+              <th>可讨论的 insight</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2203.04955">TD-MPC</a></td>
+              <td>latent world model + MPC</td>
+              <td>2022</td>
+              <td>用 short-horizon planning 加 terminal value 避免长 rollout，同时让 latent 只保留 control-relevant information。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a></td>
+              <td>hybrid / contact dynamics</td>
+              <td>2026</td>
+              <td>把 contact-rich dynamics 拆成多个 expert，避免 monolithic transition function 平均掉 regime switch。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2511.19584">Newt</a></td>
+              <td>multitask world model</td>
+              <td>2025 / 2026</td>
+              <td>检验 TD-MPC2 风格 world model 是否能跨大量 continuous-control tasks 训练。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2405.18418">Puppeteer</a></td>
+              <td>hierarchical humanoid WM</td>
+              <td>2025</td>
+              <td>把 humanoid control 分成 high-level visual puppeteer 和 low-level tracking world model。</td>
+            </tr>
+            <tr>
+              <td><a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy</a></td>
+              <td>video model as policy / WM / value</td>
+              <td>2026</td>
+              <td>把 actions、future states 和 values 编码成 latent frames，使 video model 能参与 planning。</td>
+            </tr>
+            <tr>
+              <td><a href="https://bair.berkeley.edu/blog/2026/04/20/grasp/">GRASP</a></td>
+              <td>gradient planning</td>
+              <td>2026</td>
+              <td>用 lifted states 和 gradient reshaping 改善长 horizon learned-dynamics planning。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2606.13672">WEAVER</a></td>
+              <td>manipulation world model</td>
+              <td>2026</td>
+              <td>同时强调 fidelity、long-horizon consistency 和 efficiency，让 world model 服务 evaluation、improvement、planning。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2606.13053v2">EV-WM</a></td>
+              <td>event verification</td>
+              <td>2026</td>
+              <td>把视觉未来转成可验证 task events，避免 planner 只相信看起来合理的 future。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2606.01027v1">tau0-WM</a></td>
+              <td>video-action WM</td>
+              <td>2026</td>
+              <td>通过 candidate actions、consistency filtering 和 simulator rectification 做 test-time action evaluation。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2601.03782">PointWorld</a></td>
+              <td>3D point-flow WM</td>
+              <td>2026</td>
+              <td>用 3D point flow 表示 action effects，使 state prediction 更接近物理几何。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2602.15922">DreamZero / WAM</a></td>
+              <td>world-action model</td>
+              <td>2026</td>
+              <td>把 future world state 与 action 一起建模，让 video diffusion prior 参与 closed-loop control。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2606.18960">Mem-World</a></td>
+              <td>persistent rollout memory</td>
+              <td>2026</td>
+              <td>用 surfel-indexed memory 维持 wrist-camera rollout 中的 object consistency。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2605.19957">World-Ego Modeling</a></td>
+              <td>world / ego factorization</td>
+              <td>2026</td>
+              <td>把 persistent world evolution 与 robot-centric interaction dynamics 分开建模。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2605.14937v1">Slot-MPC</a></td>
+              <td>object-centric MPC</td>
+              <td>2026</td>
+              <td>把 image state 表示成 object slots，在 slot space 中做 predictive control。</td>
+            </tr>
+            <tr>
+              <td><a href="https://psi-lab.ai/Psi0">Psi-Zero</a></td>
+              <td>humanoid VLA</td>
+              <td>2026</td>
+              <td>用 human egocentric video 学 task semantics，再用 robot data 学 embodiment-specific action。</td>
+            </tr>
+            <tr>
+              <td><a href="https://opendrivelab.com/EgoHumanoid">EgoHumanoid</a></td>
+              <td>robot-free human demos</td>
+              <td>2026</td>
+              <td>通过 view / action alignment 把 in-the-wild egocentric human demos 转成 humanoid training source。</td>
+            </tr>
+            <tr>
+              <td><a href="https://ultra-humanoid.github.io/">ULTRA</a></td>
+              <td>multimodal humanoid control</td>
+              <td>2026</td>
+              <td>统一 dense reference tracking、operator command 和 sparse egocentric goal following。</td>
+            </tr>
+            <tr>
+              <td><a href="https://viral-humanoid.github.io/">VIRAL</a></td>
+              <td>visual sim-to-real</td>
+              <td>2025 / 2026</td>
+              <td>用大规模仿真、domain randomization、teacher-student 训练 RGB humanoid loco-manipulation policy。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2603.03596v2">MEM</a></td>
+              <td>embodied memory</td>
+              <td>2026</td>
+              <td>用 short-term visual memory 与 long-term semantic memory 保持长任务中的 task state。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2606.23589v1">KEMO</a></td>
+              <td>event keyframe memory</td>
+              <td>2026</td>
+              <td>优先保留 event keyframes，减少 dense history，让 VLA 在相似 observation 下知道任务阶段。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2606.20092">EventVLA</a></td>
+              <td>visual evidence memory</td>
+              <td>2026</td>
+              <td>把 memory 视为 task-state evidence，处理遮挡后仍需记住的关键事实。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2604.21924v1">LoHo-Manip</a></td>
+              <td>task manager + VLA</td>
+              <td>2026</td>
+              <td>用 high-level task manager 反复更新 remaining subtasks 和 visual trace，让短 horizon VLA 执行长任务。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>一个更精确的问题：state-dependent trust horizon</h2>
+      <p>
+        在这些方向里，一个适合小团队先做的研究问题是：learned robot world model 的可信 rollout 长度是否依赖 state、contact regime 和 task phase。固定 horizon MPC 隐含假设所有状态都能预测同样远。接触、遮挡、物体关系变化、任务事件切换可能会让这个假设失效。
+      </p>
+
+      <p>
+        这个问题可以被实验化。使用 TD-MPC 或 PRISM-WM 风格的 world model，从真实状态出发，对不同候选 action sequence 做 1 到 H 步 rollout。每个 horizon 记录 latent drift、reward error、value error、event error、object-state consistency 和最终 task success。然后比较固定 horizon、ensemble uncertainty、event-verifier gating、adaptive horizon 等 planner。
+      </p>
+
+      <div class="note">
+        <div class="note-title">Candidate experiment</div>
+        <p>第一步不需要解决所有 long-horizon planning。先测量一个现象：不同 state / contact regime / task phase 是否有系统性不同的 trust horizon。</p>
+        <p>如果答案成立，再问 adaptive horizon 或 verifier-gated planner 能否在不重训 base world model 的情况下提高 closed-loop success。</p>
+      </div>
+
+      <h2>读论文顺序</h2>
+      <p>
+        如果目标是研究 robot world model 的 long horizon，可以先读下面十篇。它们覆盖 trunk、architecture、planner、event verifier、memory、object representation 和 policy-side pressure。
+      </p>
+
+      <ol>
+        <li>TD-MPC：理解 short-horizon MPC、task-oriented latent、terminal value。</li>
+        <li>PRISM-WM：理解 contact-rich hybrid dynamics 为什么会让 rollout drift。</li>
+        <li>GRASP：理解 planner 本身怎样在长 horizon 下失效。</li>
+        <li>WEAVER：理解 manipulation world model 同时需要 fidelity、consistency、efficiency。</li>
+        <li>EV-WM：理解 event verification 为什么比 visual plausibility 更接近任务成功。</li>
+        <li>tau0-WM：理解 video-action world model 如何做 test-time action evaluation。</li>
+        <li>Mem-World：理解 geometry-indexed memory 如何维持 object consistency。</li>
+        <li>Slot-MPC：理解 object-centric state 如何改变 planning 的状态空间。</li>
+        <li>LoHo-Manip：理解 long task 如何被 task manager 拆成 repeated short-horizon execution。</li>
+        <li>World Models for Robotic Manipulation survey：理解 manipulation 场景里的 open challenges 和 evaluation 标准。</li>
+      </ol>
+
+      <h2>参考资料</h2>
+      <ol class="references">
+        <li><a href="https://arxiv.org/abs/2203.04955">TD-MPC: Temporal Difference Learning for Model Predictive Control</a></li>
+        <li><a href="https://arxiv.org/abs/2512.08411">PRISM-WM: Prismatic World Model</a></li>
+        <li><a href="https://arxiv.org/abs/2511.19584">Newt: Learning Massively Multitask World Models for Continuous Control</a></li>
+        <li><a href="https://arxiv.org/abs/2405.18418">Puppeteer: Hierarchical World Models as Visual Whole-Body Humanoid Controllers</a></li>
+        <li><a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy</a></li>
+        <li><a href="https://bair.berkeley.edu/blog/2026/04/20/grasp/">GRASP, UC Berkeley BAIR</a></li>
+        <li><a href="https://arxiv.org/html/2606.13672">WEAVER</a></li>
+        <li><a href="https://arxiv.org/html/2606.13053v2">EV-WM</a></li>
+        <li><a href="https://arxiv.org/html/2606.01027v1">tau0-WM</a></li>
+        <li><a href="https://arxiv.org/abs/2601.03782">PointWorld</a></li>
+        <li><a href="https://arxiv.org/abs/2602.15922">DreamZero / World Action Models Are Zero-shot Policies</a></li>
+        <li><a href="https://arxiv.org/html/2606.18960">Mem-World</a></li>
+        <li><a href="https://arxiv.org/html/2605.19957">World-Ego Modeling</a></li>
+        <li><a href="https://arxiv.org/html/2605.14937v1">Slot-MPC</a></li>
+        <li><a href="https://arxiv.org/html/2605.00080v1">World Model for Robot Learning: A Comprehensive Survey</a></li>
+        <li><a href="https://arxiv.org/html/2606.00113v1">World Models for Robotic Manipulation: A Survey</a></li>
+        <li><a href="https://psi-lab.ai/Psi0">Psi-Zero</a></li>
+        <li><a href="https://opendrivelab.com/EgoHumanoid">EgoHumanoid</a></li>
+        <li><a href="https://ultra-humanoid.github.io/">ULTRA</a></li>
+        <li><a href="https://viral-humanoid.github.io/">VIRAL</a></li>
+        <li><a href="https://arxiv.org/abs/2602.07322">A2A: Action-to-Action Flow Matching</a></li>
+        <li><a href="https://arxiv.org/abs/2312.10812">LAPO: Learning to Act without Actions</a></li>
+        <li><a href="https://arxiv.org/html/2603.03596v2">MEM: Multi-Scale Embodied Memory</a></li>
+        <li><a href="https://arxiv.org/html/2606.23589v1">KEMO</a></li>
+        <li><a href="https://arxiv.org/html/2606.20092">EventVLA</a></li>
+        <li><a href="https://arxiv.org/html/2604.21924v1">LoHo-Manip</a></li>
+        <li><a href="https://long-vla.github.io/">Long-VLA</a></li>
+        <li><a href="https://openaccess.thecvf.com/content/CVPR2026/papers/Liu_PALM_Progress-Aware_Policy_Learning_via_Affordance_Reasoning_for_Long-Horizon_Robotic_CVPR_2026_paper.pdf">PALM: Progress-Aware Policy Learning</a></li>
+      </ol>
+    </article>
+  </main>
+</body>
+</html>
