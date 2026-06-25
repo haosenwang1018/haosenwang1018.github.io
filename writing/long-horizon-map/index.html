@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A bilingual research map of the long-horizon problem across robot world models, robot policies, and language-model agents.">
+  <title>From Rollout to Context - Sense Wang</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      color: #111;
+      background: #fff;
+      line-height: 1.78;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    main {
+      max-width: 760px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 72px 20px 112px;
+      overflow: visible;
+    }
+
+    nav {
+      margin-bottom: 52px;
+      font-size: 13px;
+    }
+
+    h1 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 42px;
+      line-height: 1.12;
+      font-weight: 700;
+      margin-bottom: 14px;
+      max-width: 720px;
+      overflow-wrap: break-word;
+    }
+
+    h2 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 25px;
+      line-height: 1.28;
+      margin: 56px 0 14px;
+    }
+
+    h3 {
+      font-size: 18px;
+      line-height: 1.42;
+      margin: 28px 0 9px;
+    }
+
+    p { margin-bottom: 17px; }
+
+    a {
+      color: #111;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    a:hover { opacity: 0.55; }
+
+    .meta {
+      color: #999;
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+
+    .article-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin: -18px 0 34px;
+    }
+
+    .language-switch {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .language-switch button {
+      border: 0;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+      color: #999;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      line-height: 1.5;
+      padding: 0 0 3px;
+      text-transform: uppercase;
+    }
+
+    .language-switch button[aria-pressed="true"] {
+      border-color: #111;
+      color: #111;
+    }
+
+    .version[hidden] { display: none; }
+
+    .dek {
+      color: #444;
+      font-size: 19px;
+      line-height: 1.6;
+      max-width: 690px;
+      margin-bottom: 44px;
+    }
+
+    .note {
+      border-left: 3px solid #111;
+      color: #333;
+      font-size: 16px;
+      line-height: 1.72;
+      margin: 28px 0 30px;
+      padding: 2px 0 2px 18px;
+    }
+
+    .note p { margin-bottom: 10px; }
+    .note p:last-child { margin-bottom: 0; }
+
+    .note-title {
+      color: #777;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin: 30px 0 34px;
+      border-top: 1px solid #d8d8d8;
+      border-bottom: 1px solid #e8e8e8;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 12px 14px;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      color: #555;
+      font-size: 12px;
+      letter-spacing: 0.03em;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    td:first-child {
+      color: #111;
+      font-weight: 650;
+      width: 24%;
+    }
+
+    .section-kicker {
+      color: #777;
+      font-size: 13px;
+      margin: -5px 0 18px;
+    }
+
+    .references {
+      color: #555;
+      font-size: 15px;
+      margin-left: 22px;
+    }
+
+    .references li {
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    @media (max-width: 560px) {
+      main {
+        margin: 0;
+        max-width: 390px;
+        padding-top: 48px;
+      }
+      h1 { font-size: 31px; }
+      body { font-size: 16px; }
+      .dek { font-size: 18px; }
+      .article-toolbar { margin-top: -8px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+    <div class="article-toolbar">
+      <div class="language-switch" aria-label="Language">
+        <button type="button" data-lang-button="en" aria-pressed="true">English</button>
+        <button type="button" data-lang-button="zh" aria-pressed="false">中文</button>
+      </div>
+    </div>
+
+    <article class="version" data-lang-panel="en" lang="en">
+      <h1>From Rollout to Context</h1>
+      <div class="meta">June 2026</div>
+
+      <p class="dek">
+        A research map of the long-horizon problem across robot world models, robot policies, and language-model agents.
+      </p>
+
+      <p>
+        Long horizon is becoming a shared phrase across robotics and language-model agents, but it does not name one technical object. In robot world models, the pressure comes from repeated prediction: a model is rolled forward under candidate actions, and small transition errors accumulate into wrong imagined futures. In robot policies, the pressure comes from embodied task execution: walking, reaching, grasping, moving, and recovering must survive many control steps and many changes of scene state. In coding and web agents, the pressure comes from context and state: specifications, files, tests, tool outputs, and partial decisions must remain coherent over a long sequence of actions.
+      </p>
+
+      <p>
+        The same phrase therefore points to several failure modes. A map is useful because it separates papers that directly study long-horizon reliability from papers that supply mechanisms a long-horizon system needs.
+      </p>
+
+      <div class="note">
+        <div class="note-title">Working distinction</div>
+        <p><strong>World-model horizon</strong> is measured in model steps. The failure mode is rollout drift, wrong event prediction, or a planner optimizing against a false future.</p>
+        <p><strong>Robot-policy horizon</strong> is measured in control steps and task stages. The failure mode is losing progress, failing at contacts, or completing one subtask while making later subtasks impossible.</p>
+        <p><strong>Agent horizon</strong> is measured in human task time or tool-use trajectories. The failure mode is context loss, state drift, missing tests, or a specification that no longer constrains the work.</p>
+      </div>
+
+      <h2>The first split</h2>
+      <p>
+        Three levels of relevance help keep the literature clean. Some works directly study long-horizon prediction, planning, or execution. Some works are adjacent: they provide future prediction, action chunks, data, retargeting, reward priors, or memory. Some works are background: they establish the vocabulary or the interface that newer systems build on.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Group</th>
+              <th>Representative works</th>
+              <th>What long horizon means</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Robot world models</td>
+              <td>PRISM-WM, GRASP, WEAVER, EV-WM, H-WM, World-Ego Modeling</td>
+              <td>The model is repeatedly queried by a planner. Prediction error, event mismatch, or wrong state factorization changes action selection.</td>
+            </tr>
+            <tr>
+              <td>Robot policies and VLAs</td>
+              <td>Psi-Zero, VIRAL, EgoHumanoid, ULTRA, MEM, DexDrummer, FlowDPG</td>
+              <td>The robot must complete multi-stage embodied tasks under perception, contact, latency, and partial memory.</td>
+            </tr>
+            <tr>
+              <td>Enabling components</td>
+              <td>Cosmos Policy, A2A, LAPO, HumanNet, GMR, SPIDER, SMP, AnySkill</td>
+              <td>The work supplies a mechanism a long-horizon system may need: future-state prediction, action generation, human video, retargeting, or reward priors.</td>
+            </tr>
+            <tr>
+              <td>Language and coding agents</td>
+              <td>OpenAI Codex, Anthropic long-running agents, Kimi K2.6, Mage, Odysseys, SWE-Marathon</td>
+              <td>The agent must preserve task state across context windows, tool calls, tests, and multi-session work.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Robot world models</h2>
+      <p class="section-kicker">The central problem is whether imagined futures remain useful to a planner.</p>
+
+      <p>
+        <a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a>, from Beijing Institute of Technology, Peking University, and BIGAI/NLCo Lab, is the most direct fit for this problem. It studies hybrid physical systems where continuous motion is interrupted by contacts and impacts. A monolithic latent transition model can smooth over boundaries such as sticking versus sliding or flight versus stance. For a planner, this creates compounding errors during long-horizon lookahead. PRISM-WM changes the transition function into a context-aware mixture of experts with latent orthogonalization, so different local dynamics can be represented separately.
+      </p>
+
+      <p>
+        <a href="https://bair.berkeley.edu/blog/2026/04/20/grasp/">GRASP</a> approaches the same pressure from the planner side. It uses learned dynamics for gradient-based planning and adds virtual states, stochastic exploration, and gradient reshaping. The object is not only to predict a future, but to make the gradients through that future useful enough for control.
+      </p>
+
+      <p>
+        <a href="https://arxiv.org/html/2606.13672">WEAVER</a> pushes manipulation world models toward high fidelity, fast generation, and longer context. Its promise is practical: a world model should evaluate policies, improve them, and plan with them. <a href="https://arxiv.org/html/2606.13053v2">EV-WM</a> adds another useful constraint: visual futures should be checked against predicates and task events. A future that looks plausible can still be useless if the required event did not happen.
+      </p>
+
+      <p>
+        Works such as H-WM, tau0-WM, AR Forcing, <a href="https://arxiv.org/html/2605.19957">World-Ego Modeling</a>, Lifting Embodied World Models, and Slot-MPC are variations on the same theme. They move some part of the planning problem into a higher-level state, a video-action sequence, a stabilized autoregressive rollout, a world/ego factorization, a waypoint space, or an object-centric representation.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Work</th>
+              <th>Organization signal</th>
+              <th>Date</th>
+              <th>Main object</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a></td>
+              <td>BIT, Peking University, BIGAI/NLCo Lab</td>
+              <td>2026-05</td>
+              <td>Compositional latent dynamics for hybrid/contact-rich systems.</td>
+            </tr>
+            <tr>
+              <td><a href="https://bair.berkeley.edu/blog/2026/04/20/grasp/">GRASP</a></td>
+              <td>UC Berkeley / BAIR</td>
+              <td>2026-04</td>
+              <td>Gradient-based planning through learned dynamics.</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2606.13672">WEAVER</a></td>
+              <td>CMU / Mila signal</td>
+              <td>2026-06</td>
+              <td>Manipulation world model for evaluation, improvement, and planning.</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2606.13053v2">EV-WM</a></td>
+              <td>Academic arXiv line</td>
+              <td>2026-06</td>
+              <td>World model with event and predicate verification.</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2605.19957">World-Ego Modeling</a></td>
+              <td>Multi-institution arXiv paper</td>
+              <td>2026-05</td>
+              <td>Separates persistent world evolution from robot-centric ego dynamics.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Robot policies and embodied memory</h2>
+      <p class="section-kicker">These papers study long embodied execution more than long model rollout.</p>
+
+      <p>
+        <a href="https://psi-lab.ai/Psi0">Psi-Zero</a> is a humanoid VLA paper. It trains from egocentric human video for task semantics, then uses real humanoid data to train a flow-based joint-space action expert. Its long-horizon problem is task execution: a humanoid has to coordinate perception, locomotion, manipulation, and action chunking across thousands of low-level control steps.
+      </p>
+
+      <p>
+        <a href="https://viral-humanoid.github.io/">VIRAL</a> is a visual sim-to-real robot-policy system from NVIDIA, CMU, UC Berkeley, and CUHK. It trains a privileged teacher and an RGB student in simulation, then deploys on a Unitree G1 for sustained loco-manipulation loops. Its long-horizon claim is embodied deployment under visual perception, not learned-world-model rollout reliability.
+      </p>
+
+      <p>
+        <a href="https://opendrivelab.com/EgoHumanoid">EgoHumanoid</a> addresses the data side of the same problem. It uses robot-free egocentric human demonstrations and aligns human view/action data to a humanoid policy. The long-horizon value comes from diverse multi-stage human demonstrations in real environments: the policy can see more objects, scenes, lighting, and task sequences than a lab-only teleoperation set would provide.
+      </p>
+
+      <p>
+        <a href="https://arxiv.org/html/2603.03596v2">MEM</a> makes the memory problem explicit. It combines short-term visual memory with long-term language memory so a robot can keep task-relevant history over longer interactions. This is closer to the language-agent version of long horizon, but it happens inside a robot policy.
+      </p>
+
+      <h2>Adjacent mechanisms</h2>
+      <p>
+        <a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy</a> is adjacent to long-horizon world modeling rather than a pure long-horizon reliability paper. It fine-tunes a video diffusion model so the same model can output actions, future states, and values. The planning interface matters for long horizon, because imagined futures and value estimates can rank candidate actions, but the paper's main object is the interface that turns a video model into a robot policy/world/value model.
+      </p>
+
+      <p>
+        <a href="https://lorenzo-0-0.github.io/A2A_Flow_Matching/">A2A</a> attacks a different bottleneck: generative action policies are often too slow for real-time control when they start from random noise. A2A starts generation from historical proprioceptive action latents. <a href="https://arxiv.org/abs/2312.10812">LAPO</a> and <a href="https://dagroup-pku.github.io/HumanNet/">HumanNet</a> address data scaling from videos. GMR and <a href="https://jc-bao.github.io/spider-project/">SPIDER</a> address retargeting and physics feasibility. <a href="https://arxiv.org/abs/2512.03028">SMP</a> and <a href="https://anyskill.github.io/">AnySkill</a> provide reusable motion or semantic reward priors.
+      </p>
+
+      <p>
+        These mechanisms matter because long-horizon systems fail at their interfaces. The future model may drift, the action generator may be too slow, the demonstration may be physically infeasible, the reward may be too sparse, or the policy may forget what already happened. Long horizon turns interface flaws into task failures.
+      </p>
+
+      <h2>Language and coding agents</h2>
+      <p>
+        The agent side gives the same phrase a different measurement. OpenAI's Codex long-horizon guidance focuses on persistent software work: repository setup, AGENTS.md, continuation, verification, and context management. Anthropic's writing on long-running agents emphasizes harnesses: progress files, tests, handoff artifacts, and external state. Kimi K2.6 is an industrial model signal around long tool-call and long coding trajectories.
+      </p>
+
+      <p>
+        <a href="https://arxiv.org/html/2606.06090v1">Mage</a> gives the cleanest research formulation: memory should be treated as execution-state management. A long task is not only a set of facts to retrieve. It is a branching state of constraints, decisions, progress, and errors that must be maintained and revised.
+      </p>
+
+      <p>
+        The parallel to world models is useful, but limited. A coding agent loses reliability because context, tests, and task state degrade over a long tool trajectory. A robot world model loses reliability because predicted states become inputs to later predictions. Both are long-horizon problems. The unit, failure mode, and repair mechanism differ.
+      </p>
+
+      <h2>What this map is for</h2>
+      <p>
+        The most relevant line for robot world models is not the broad slogan of long horizon. It is the narrower question of how a model remains useful under repeated closed-loop use: when a planner asks it to imagine futures, when a robot has to use those futures to choose actions, and when small state or event errors change the whole trajectory. PRISM-WM, GRASP, WEAVER, EV-WM, and related hierarchical or object-centric models sit closest to that question.
+      </p>
+
+      <p>
+        Robot-policy papers such as Psi-Zero, VIRAL, EgoHumanoid, and MEM are still important. They show the deployment pressure: real embodied tasks are long before the world model is perfect. They also reveal the missing interfaces — memory, data, action chunks, retargeting, reward, and closed-loop correction — that a useful robot world model will eventually have to meet.
+      </p>
+
+      <h2>References</h2>
+      <ol class="references">
+        <li><a href="https://arxiv.org/abs/2512.08411">Prismatic World Model</a></li>
+        <li><a href="https://bair.berkeley.edu/blog/2026/04/20/grasp/">GRASP, UC Berkeley BAIR</a></li>
+        <li><a href="https://arxiv.org/html/2606.13672">WEAVER</a></li>
+        <li><a href="https://arxiv.org/html/2606.13053v2">EV-WM</a></li>
+        <li><a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy</a></li>
+        <li><a href="https://psi-lab.ai/Psi0">Psi-Zero</a></li>
+        <li><a href="https://viral-humanoid.github.io/">VIRAL</a></li>
+        <li><a href="https://opendrivelab.com/EgoHumanoid">EgoHumanoid</a></li>
+        <li><a href="https://arxiv.org/html/2603.03596v2">MEM: Multi-Scale Embodied Memory</a></li>
+        <li><a href="https://developers.openai.com/blog/run-long-horizon-tasks-with-codex">OpenAI Codex long-horizon tasks</a></li>
+        <li><a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Anthropic, Effective harnesses for long-running agents</a></li>
+        <li><a href="https://www.kimi.com/blog/kimi-k2-6">Kimi K2.6</a></li>
+        <li><a href="https://arxiv.org/html/2606.06090v1">Mage: Memory as Execution State Management</a></li>
+      </ol>
+    </article>
+
+    <article class="version" data-lang-panel="zh" lang="zh-CN" hidden>
+      <h1>从 Rollout 到 Context</h1>
+      <div class="meta">June 2026</div>
+
+      <p class="dek">
+        Long Horizon 问题的研究地图：World Model、Robot Policy 与 Language Agent 里的长任务问题分别是什么。
+      </p>
+
+      <p>
+        Long horizon 正在同时出现在机器人和语言模型 agent 的讨论里，但它并不指向同一个技术对象。在 robot world model 里，压力来自反复预测：模型在候选动作下向前 rollout，小的 transition error 会累积成错误的 imagined future。在 robot policy 里，压力来自具身任务执行：走路、伸手、抓取、移动、恢复平衡，要跨很多控制步和很多场景状态。在 coding agent 和 web agent 里，压力来自 context 和 state：需求、文件、测试、工具输出和中间决策要在长动作序列里保持一致。
+      </p>
+
+      <p>
+        因此，同一个词覆盖了几种不同的失败模式。先把这些问题分开，才能判断一篇论文是在直接研究 long horizon，还是在提供长任务系统所需的组件。
+      </p>
+
+      <div class="note">
+        <div class="note-title">工作区分</div>
+        <p><strong>World-model horizon</strong> 的单位是模型 timestep。失败模式是 rollout drift、事件预测错误，或者 planner 在错误的未来上优化动作。</p>
+        <p><strong>Robot-policy horizon</strong> 的单位是控制步和任务阶段。失败模式是任务进度丢失、接触失败，或者完成当前子任务后让后续子任务无法执行。</p>
+        <p><strong>Agent horizon</strong> 的单位是人类任务时长或工具调用轨迹。失败模式是 context 丢失、状态漂移、测试遗漏，或者原始需求不再约束后续工作。</p>
+      </div>
+
+      <h2>第一层区分</h2>
+      <p>
+        这里有三层相关性。第一层工作直接研究长 rollout、长任务执行、闭环规划或长轨迹评测。第二层工作提供长任务系统需要的机制，例如 future prediction、action chunk、数据、retargeting、reward prior 或 memory。第三层工作提供基础语法，例如 MPC、latent dynamics、motion prior 或 action-free pretraining。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>类别</th>
+              <th>代表工作</th>
+              <th>Long horizon 在这里指什么</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Robot world models</td>
+              <td>PRISM-WM, GRASP, WEAVER, EV-WM, H-WM, World-Ego Modeling</td>
+              <td>模型被 planner 反复调用。预测误差、事件不一致或状态表示错误会改变动作选择。</td>
+            </tr>
+            <tr>
+              <td>Robot policies and VLAs</td>
+              <td>Psi-Zero, VIRAL, EgoHumanoid, ULTRA, MEM, DexDrummer, FlowDPG</td>
+              <td>机器人要在感知、接触、延迟和部分记忆条件下完成多阶段具身任务。</td>
+            </tr>
+            <tr>
+              <td>Enabling components</td>
+              <td>Cosmos Policy, A2A, LAPO, HumanNet, GMR, SPIDER, SMP, AnySkill</td>
+              <td>这些工作提供长任务系统可能需要的组件：future-state prediction、action generation、人类视频、retargeting 或 reward prior。</td>
+            </tr>
+            <tr>
+              <td>Language and coding agents</td>
+              <td>OpenAI Codex, Anthropic long-running agents, Kimi K2.6, Mage, Odysseys, SWE-Marathon</td>
+              <td>agent 要在 context window、工具调用、测试和多 session 工作中保持任务状态。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Robot world models</h2>
+      <p class="section-kicker">核心问题是 imagined future 能否继续服务 planner。</p>
+
+      <p>
+        <a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a> 最贴这个问题。它来自北京理工大学、北京大学和 BIGAI/NLCo Lab，研究 hybrid physical systems：连续运动会被 contact 和 impact 打断。单一 latent transition model 容易把 sticking/sliding、flight/stance 这些边界平滑掉。planner 做 long-horizon lookahead 时，这种平滑会变成 compounding error。PRISM-WM 把 transition function 改成 context-aware mixture of experts，并用 latent orthogonalization 让不同局部 dynamics 分开表示。
+      </p>
+
+      <p>
+        <a href="https://bair.berkeley.edu/blog/2026/04/20/grasp/">GRASP</a> 从 planner 侧处理同一类压力。它用 learned dynamics 做 gradient-based planning，并加入 virtual states、stochastic exploration 和 gradient reshaping。这里的对象包括预测未来，也包括让穿过未来轨迹的梯度足够可用于控制。
+      </p>
+
+      <p>
+        <a href="https://arxiv.org/html/2606.13672">WEAVER</a> 把 manipulation world model 推向更高保真度、更快生成和更长 context，用于 policy evaluation、improvement 和 planning。<a href="https://arxiv.org/html/2606.13053v2">EV-WM</a> 加了一个很有用的约束：视觉未来要能通过 predicate 和 task event 验证。一个 future 可以看起来合理，但如果目标事件没有发生，它对任务没有用。
+      </p>
+
+      <p>
+        H-WM、tau0-WM、AR Forcing、<a href="https://arxiv.org/html/2605.19957">World-Ego Modeling</a>、Lifting Embodied World Models 和 Slot-MPC 都在改写同一类问题。它们把长规划的一部分放进更高层状态、video-action sequence、稳定的 autoregressive rollout、world/ego factorization、waypoint space 或 object-centric representation。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>工作</th>
+              <th>组织信号</th>
+              <th>时间</th>
+              <th>主要对象</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a></td>
+              <td>BIT, Peking University, BIGAI/NLCo Lab</td>
+              <td>2026-05</td>
+              <td>面向 hybrid/contact-rich systems 的 compositional latent dynamics。</td>
+            </tr>
+            <tr>
+              <td><a href="https://bair.berkeley.edu/blog/2026/04/20/grasp/">GRASP</a></td>
+              <td>UC Berkeley / BAIR</td>
+              <td>2026-04</td>
+              <td>穿过 learned dynamics 的 gradient-based planning。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2606.13672">WEAVER</a></td>
+              <td>CMU / Mila signal</td>
+              <td>2026-06</td>
+              <td>用于 evaluation、improvement 和 planning 的 manipulation world model。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2606.13053v2">EV-WM</a></td>
+              <td>Academic arXiv line</td>
+              <td>2026-06</td>
+              <td>带 event 和 predicate verification 的 world model。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/html/2605.19957">World-Ego Modeling</a></td>
+              <td>Multi-institution arXiv paper</td>
+              <td>2026-05</td>
+              <td>把 persistent world evolution 和 robot-centric ego dynamics 分开。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Robot policies and embodied memory</h2>
+      <p class="section-kicker">这些工作主要研究长具身执行，长模型 rollout 只作为相邻背景出现。</p>
+
+      <p>
+        <a href="https://psi-lab.ai/Psi0">Psi-Zero</a> 是 humanoid VLA 论文。它用 egocentric human video 学 task semantics，再用真实 humanoid 数据训练 flow-based joint-space action expert。它的 long-horizon 问题是任务执行：humanoid 要在几千个底层控制步里协调 perception、locomotion、manipulation 和 action chunking。
+      </p>
+
+      <p>
+        <a href="https://viral-humanoid.github.io/">VIRAL</a> 是 NVIDIA、CMU、UC Berkeley 和 CUHK 的 visual sim-to-real robot-policy system。它在仿真里训练 privileged teacher 和 RGB student，再部署到 Unitree G1 上完成连续 loco-manipulation loop。它的 long-horizon 证据来自具身部署和视觉感知下的持续执行。
+      </p>
+
+      <p>
+        <a href="https://opendrivelab.com/EgoHumanoid">EgoHumanoid</a> 处理同一类问题的数据侧。它用 robot-free egocentric human demonstrations，并把人的 view/action 数据对齐到 humanoid policy。它的 long-horizon 价值来自真实环境中的多阶段人类示范：模型能看到比实验室 teleoperation 更丰富的物体、场景、光照和任务顺序。
+      </p>
+
+      <p>
+        <a href="https://arxiv.org/html/2603.03596v2">MEM</a> 把 memory 问题显式化。它结合 short-term visual memory 和 long-term language memory，让机器人在更长交互里保留任务相关历史。它接近 language-agent 里的 long horizon，但对象是 robot policy。
+      </p>
+
+      <h2>Adjacent mechanisms</h2>
+      <p>
+        <a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy</a> 更接近 long-horizon world modeling 的相邻方向。它 fine-tune video diffusion model，让同一个模型输出 action、future state 和 value。这个 planning interface 对 long horizon 重要，因为 imagined future 和 value estimate 可以给候选动作排序，但论文的主要对象是把 video model 转成 robot policy/world/value model 的接口。
+      </p>
+
+      <p>
+        <a href="https://lorenzo-0-0.github.io/A2A_Flow_Matching/">A2A</a> 处理另一个瓶颈：从随机噪声开始的 generative action policy 往往太慢，难以满足实时控制。A2A 从历史 proprioceptive action latent 开始生成。<a href="https://arxiv.org/abs/2312.10812">LAPO</a> 和 <a href="https://dagroup-pku.github.io/HumanNet/">HumanNet</a> 处理视频数据规模。GMR 和 <a href="https://jc-bao.github.io/spider-project/">SPIDER</a> 处理 retargeting 和物理可执行性。<a href="https://arxiv.org/abs/2512.03028">SMP</a> 和 <a href="https://anyskill.github.io/">AnySkill</a> 提供可复用的 motion 或 semantic reward prior。
+      </p>
+
+      <p>
+        这些机制重要，因为长任务系统经常在接口处失败。future model 可能漂移，action generator 可能太慢，demonstration 可能物理不可行，reward 可能太稀疏，policy 可能忘记已经发生过的事件。Long horizon 会把接口缺陷变成任务失败。
+      </p>
+
+      <h2>Language and coding agents</h2>
+      <p>
+        Agent 侧给这个词提供了另一套度量。OpenAI 的 Codex long-horizon guidance 关注持续软件工作：repository setup、AGENTS.md、continuation、verification 和 context management。Anthropic 关于 long-running agents 的文章强调 harness：progress files、tests、handoff artifacts 和 external state。Kimi K2.6 是工业界围绕长工具调用和长 coding trajectory 的模型信号。
+      </p>
+
+      <p>
+        <a href="https://arxiv.org/html/2606.06090v1">Mage</a> 给出了比较清楚的研究表述：memory 应该被看成 execution-state management。长任务需要检索事实，也需要维护一棵不断变化的状态树，里面有约束、决策、进度和错误。
+      </p>
+
+      <p>
+        这里和 world model 有相似性，也有清晰边界。Coding agent 的可靠性下降来自 context、tests 和 task state 在长工具轨迹里退化。Robot world model 的可靠性下降来自 predicted state 作为下一步 prediction 的输入。两者都属于 long-horizon 问题，但单位、失败模式和修复机制不同。
+      </p>
+
+      <h2>这张地图的用途</h2>
+      <p>
+        对 robot world model 最相关的问题是具体的闭环使用：当 planner 让模型想象 future，当机器人要用这些 future 选择动作，当小的 state error 或 event error 改变整条 trajectory，模型还能否继续有用。PRISM-WM、GRASP、WEAVER、EV-WM 和相关的 hierarchical/object-centric models 最接近这个问题。
+      </p>
+
+      <p>
+        Psi-Zero、VIRAL、EgoHumanoid 和 MEM 这些 robot-policy 工作同样重要。它们展示了部署压力：真实具身任务在 world model 完美之前已经很长。它们也暴露出一个有用 robot world model 最后必须面对的接口：memory、data、action chunks、retargeting、reward 和 closed-loop correction。
+      </p>
+
+      <h2>References</h2>
+      <ol class="references">
+        <li><a href="https://arxiv.org/abs/2512.08411">Prismatic World Model</a></li>
+        <li><a href="https://bair.berkeley.edu/blog/2026/04/20/grasp/">GRASP, UC Berkeley BAIR</a></li>
+        <li><a href="https://arxiv.org/html/2606.13672">WEAVER</a></li>
+        <li><a href="https://arxiv.org/html/2606.13053v2">EV-WM</a></li>
+        <li><a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy</a></li>
+        <li><a href="https://psi-lab.ai/Psi0">Psi-Zero</a></li>
+        <li><a href="https://viral-humanoid.github.io/">VIRAL</a></li>
+        <li><a href="https://opendrivelab.com/EgoHumanoid">EgoHumanoid</a></li>
+        <li><a href="https://arxiv.org/html/2603.03596v2">MEM: Multi-Scale Embodied Memory</a></li>
+        <li><a href="https://developers.openai.com/blog/run-long-horizon-tasks-with-codex">OpenAI Codex long-horizon tasks</a></li>
+        <li><a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Anthropic, Effective harnesses for long-running agents</a></li>
+        <li><a href="https://www.kimi.com/blog/kimi-k2-6">Kimi K2.6</a></li>
+        <li><a href="https://arxiv.org/html/2606.06090v1">Mage: Memory as Execution State Management</a></li>
+      </ol>
+    </article>
+  </main>
+
+  <script>
+    const buttons = Array.from(document.querySelectorAll("[data-lang-button]"));
+    const panels = Array.from(document.querySelectorAll("[data-lang-panel]"));
+    const storageKey = "sense-lang-long-horizon-map";
+
+    function setLanguage(lang) {
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.langPanel !== lang;
+      });
+      buttons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.langButton === lang));
+      });
+      document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+      try { localStorage.setItem(storageKey, lang); } catch (_) {}
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => setLanguage(button.dataset.langButton));
+    });
+
+    let initial = "en";
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved === "zh" || saved === "en") initial = saved;
+    } catch (_) {}
+    setLanguage(initial);
+  </script>
+</body>
+</html>
