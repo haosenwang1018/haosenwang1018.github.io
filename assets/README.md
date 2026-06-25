@@ -1,5 +1,23 @@
 # Assets
 
+## `qwen-agentworld/teaser.png`
+
+- Source: Qwen-AgentWorld overview image from the official QwenLM repository
+- Original URL: https://raw.githubusercontent.com/QwenLM/Qwen-AgentWorld/main/assets/teaser.png
+- Project page/code: https://github.com/QwenLM/Qwen-AgentWorld
+- Paper URL: https://arxiv.org/abs/2606.24597
+- License/status: Project figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: downloaded from the official repository for the Qwen-AgentWorld technical blog
+
+## `qwen-agentworld/bench-results-bar.png`
+
+- Source: AgentWorldBench result image from the official QwenLM repository
+- Original URL: https://raw.githubusercontent.com/QwenLM/Qwen-AgentWorld/main/assets/bench_results_bar.png
+- Project page/code: https://github.com/QwenLM/Qwen-AgentWorld
+- Paper URL: https://arxiv.org/abs/2606.24597
+- License/status: Project figure used for commentary/educational writing; verify reuse requirements before external redistribution beyond the personal site
+- Local processing: downloaded from the official repository for the Qwen-AgentWorld technical blog
+
 ## `puppeteer/figure-2-approach.png`
 
 - Source: Figure 2 from `Hierarchical World Models as Visual Whole-Body Humanoid Controllers`, Hansen et al., ICLR 2025

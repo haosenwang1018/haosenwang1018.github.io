@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="A technical breakdown of Cosmos Policy, latent frame injection, video diffusion backbones for robot control, value-guided planning, and the evidence behind the paper.">
-  <title>Cosmos Policy: Turning a Video World Model into a Control Interface - Sense Wang</title>
+  <meta name="description" content="A restrained technical note on Cosmos Policy, latent slot injection, and how a video diffusion model can be fine-tuned to output robot actions, future states, and values.">
+  <title>Cosmos Policy: How a Video Model Outputs Actions - Sense Wang</title>
   <script>
     window.MathJax = {
       tex: {
@@ -234,45 +234,60 @@
     </div>
 
     <article class="version" data-lang-panel="en" lang="en">
-      <h1>Cosmos Policy: Turning a Video World Model into a Control Interface</h1>
+      <h1>Cosmos Policy: How a Video Model Outputs Actions</h1>
       <div class="meta">June 2026</div>
 
       <p class="dek">
-        Cosmos Policy rewrites robot control as diffusion sequence completion. Given the current observation, the video diffusion backbone denoises one latent-frame sequence whose target slots contain an action chunk, the future observation after that action, and the value of that future state.
+        Cosmos is NVIDIA's <a href="https://www.nvidia.com/en-us/ai/cosmos/">world-model platform for Physical AI</a>. Cosmos Policy takes the Cosmos-Predict2 Video2World backbone and fine-tunes it so selected video-latent slots mean action, future observation, and value. The model still denoises latent tensors; training data and decoding rules change what some tensors mean.
       </p>
 
       <p>
-        A pretrained video model already has a useful input-output contract: condition on the current scene and generate what comes next. In notation, the video model is close to \(p(o_{t+1:t+H} \mid o_t, c)\). Robot control changes the objects in that contract: the model must choose a control variable, predict the state reached after that control, and score that state.
+        The central question is simple. Cosmos-Predict2 was built to predict future video. Cosmos Policy asks whether the same tensor interface can also carry robot control variables.
       </p>
 
       <p>
-        Cosmos Policy turns that control interface into a representation problem. It preserves the video backbone and changes the sequence from future frames only into a trajectory tuple: current observation, action chunk, future observation, and future-state value.
+        The answer in the paper is to keep the video model's shape contract and change the sequence stored inside it.
       </p>
 
       <figure class="wide">
         <img src="../../assets/cosmos-policy/figure-1-overview.jpg" alt="Cosmos Policy overview showing current state and task description as inputs and action chunk, future state, and value as outputs">
         <figcaption>
-          Figure 1 from the Cosmos Policy paper. The diagram defines the control interface: current state and task description enter the Cosmos-Predict2 backbone; action chunk, future state, and value leave as three targets from the same model.
+          Figure 1 from the Cosmos Policy paper. The same backbone receives current state and task text, then outputs action, future state, and value.
         </figcaption>
       </figure>
 
-      <h2>The Missing Control Interface</h2>
+      <h2>Start From The Tensor</h2>
 
       <p>
-        A video generator models the distribution of future observations. A policy chooses an action that changes the world. Cosmos Policy links those two objects by making the action part of the generated latent sequence.
+        A video diffusion model emits latent tensors. When those tensors pass through a video VAE decoder, they become image frames. The tensors do not carry a fixed semantic label by themselves. Their meaning comes from the training target and the way the output is read.
       </p>
 
       <p>
-        The latent sequence has one direct order:
+        Cosmos-Predict2 starts with a video sequence interface:
       </p>
 
-      <pre><code>current state and camera views
+      <pre><code>current observation
+-> future video latents
+-> video decoder
+-> future frames</code></pre>
+
+      <p>
+        Cosmos Policy keeps the latent-frame interface and changes the slots:
+      </p>
+
+      <pre><code>current observation
 -> action chunk
--> future state and camera views
--> value of the future state</code></pre>
+-> future observation
+-> value</code></pre>
 
       <p>
-        At the bottom layer, this is a sequence of tensors. Image observations pass through the video VAE; low-dimensional robot variables pass through a shape-matching map that normalizes the numbers and repeats them into a video-latent-shaped volume:
+        This is the technical reason a video model can output actions. The network is still producing tensors with the expected shape. Fine-tuning teaches the model that some tensor slots now correspond to robot actions and scalar values.
+      </p>
+
+      <h2>The Slot Assignment</h2>
+
+      <p>
+        Image observations enter normally. The video VAE encodes each camera observation into video latent frames. Robot variables are handled differently. Proprioception, action chunks, and scalar values are normalized, repeated across a video-latent-shaped volume, and inserted into reserved slots.
       </p>
 
       <div class="math-panel">
@@ -286,42 +301,29 @@
       </div>
 
       <p>
-        The current and future observations are different random variables in the same trajectory distribution. They are connected by the transition induced by the action chunk:
-      </p>
-
-      <div class="math-panel">
-        \[
-        s_{t+K} \sim P(\cdot \mid s_t, a_{t:t+K-1})
-        \]
-      </div>
-
-      <p>
-        After action and value become latent slots, the same model can be queried with different masks. With only the current state visible, it behaves like a policy. With state and action visible, it behaves like a world model. With state, action, and future state visible, it behaves like a value estimator.
-      </p>
-
-      <h2>The Smallest Technical Move</h2>
-
-      <p>
-        The mechanism that makes this interface compatible with Cosmos-Predict2 is latent frame injection. Cosmos-Predict2 expects a sequence of latent video frames. Cosmos Policy keeps that architecture and inserts non-image modalities into the same sequence.
-      </p>
-
-      <p>
-        The transformer only sees tensors with the video-latent shape. For images, the video VAE produces latent frames normally. For robot proprioception, actions, and scalar values, the paper normalizes the numbers to [-1, 1], repeats them across an image-shaped latent volume, and overwrites placeholder latent frames. At inference time, action and value extraction reverses the operation by averaging across the duplicated latent volume and un-normalizing the result.
+        \(z(o_t)\) is the video latent for the current observation. \(\phi_a\) maps an action chunk into a video-latent-shaped slot. \(\phi_v\) maps a scalar value into the same shape family. After denoising, action and value extraction runs the reverse operation: average over the repeated volume, then un-normalize back to the original action or value scale.
       </p>
 
       <figure class="wide">
         <img src="../../assets/cosmos-policy/figure-2-latent-injection.jpg" alt="Cosmos Policy latent frame injection diagram showing conditioning sequence, target sequence, robot proprioception, action chunk, future state, and value inserted into video latent frames">
         <figcaption>
-          Figure 2 from the paper. The red-bordered slots are the new modalities. Proprioception, action chunk, future proprioception, and value enter through latent-frame representation and are denoised by the same video diffusion model.
+          Figure 2 from the paper. The red-bordered slots are the control variables injected into the video latent sequence.
         </figcaption>
       </figure>
 
       <p>
-        This representation is deliberately awkward. A low-dimensional action vector becomes an image-shaped latent slot. The cost is representation efficiency; the gain is compatibility with the pretrained video model's native training machinery.
+        The method spends extra representation capacity to preserve compatibility with the pretrained video backbone. A low-dimensional action vector becomes an image-shaped latent slot. The gain is that the transformer and diffusion objective remain close to the original video model.
       </p>
 
+      <h2>Diffusion Learns The Interface</h2>
+
+      <div class="note">
+        <div class="note-title">Denoising intuition</div>
+        <p>During training, the model sees many clean state -> action -> future -> value trajectories. It deliberately corrupts those trajectories with noise, then learns to restore them under the current state. At inference time, the unknown slots start as noise, and the denoising process turns them into one plausible action, future, and value sample.</p>
+      </div>
+
       <p>
-        The diffusion objective remains the original denoising problem. The clean sequence \(x_0\) is corrupted by Gaussian noise, and the denoiser learns to recover the clean latent sequence under a task condition and a mask:
+        The clean sequence \(x_0\) is the robot trajectory represented as latent slots. The forward process adds Gaussian noise. The denoiser learns to recover the clean sequence under a task condition and a mask:
       </p>
 
       <div class="math-panel">
@@ -332,10 +334,8 @@
         \]
       </div>
 
-      <h2>One Architecture, Three Roles</h2>
-
       <p>
-        Once the sequence is fixed, the same model can be trained as a policy, a world model, or a value estimator. The conditioning mask decides which slots are clean inputs and which slots must be denoised as targets.
+        The mask is important. It marks which slots are known inputs and which slots must be predicted. With the current state visible and action/future/value hidden, the same denoising model becomes a policy. With state and action visible, it becomes a world model. With state, action, and future visible, it becomes a value estimator.
       </p>
 
       <div class="math-panel">
@@ -348,29 +348,10 @@
         \]
       </div>
 
-      <p>
-        This is a training contract across three conditioning masks. The full latent sequence stays the same. During policy training, the current state is clean and the action/future/value slots are targets. During world-model training, state and action are clean and future/value slots are targets. During value training, state, action, and future state are clean and the value slot is the target.
-      </p>
+      <h2>Why The Paper Needs Value</h2>
 
       <p>
-        This is why the latent-sequence trick carries the paper's main contribution. Once action, future observation, and value live inside the same denoising object, the pretrained video model can be fine-tuned as a policy, a transition model, and a value model without adding separate heads or a new action module.
-      </p>
-
-      <figure class="wide">
-        <img src="../../assets/cosmos-policy/figure-12-joint-objectives.jpg" alt="Cosmos Policy joint objective diagram showing policy training, world model training, and value function training through different conditioning masks">
-        <figcaption>
-          Appendix Figure 12 from the paper. The figure is visually busy, but the idea is simple: the red target box moves. The model is always denoising latent frames; the conditioning scheme determines whether that denoising step trains the policy, the world model, or the value function.
-        </figcaption>
-      </figure>
-
-      <p>
-        This is the main departure from many video-to-policy systems. Cosmos Policy turns action prediction into the same kind of sequence completion problem as future video prediction, using the diffusion sequence itself as the action interface.
-      </p>
-
-      <h2>Planning With Video Imagination</h2>
-
-      <p>
-        As a direct policy, Cosmos Policy samples an action chunk and executes it. The planning version adds a second step: sample multiple action candidates, predict the future state for each candidate, predict the value of that future state, and execute the action with the best predicted value.
+        A direct policy samples an action chunk and executes it. The planning version samples multiple candidate action chunks, predicts the future state for each candidate, estimates the value of each future, and executes the action with the highest predicted value.
       </p>
 
       <div class="math-panel">
@@ -384,75 +365,37 @@
       </div>
 
       <p>
-        The practical detail is rollout data. Planning from demonstrations alone is weak because demonstrations mostly show successful behavior. The paper therefore collects policy rollouts, including failures, and fine-tunes a separate planning checkpoint with more weight on world-model and value prediction. At deployment, the original checkpoint proposes actions, while the refined checkpoint scores their futures.
+        This is where Cosmos Policy moves from video prediction toward a control-oriented world model. The future is used for action selection. The model predicts an action, predicts what that action will lead to, then scores the predicted future.
       </p>
 
-      <figure>
-        <img src="../../assets/cosmos-policy/figure-7-planning.jpg" alt="Cosmos Policy planning comparison showing base policy, model-free planning, and model-based planning on two ALOHA tasks">
-        <figcaption>
-          Figure 7 from the paper. Model-based planning with a predicted future state and value improves over the base policy on the two difficult ALOHA tasks. The improvement depends on rollout-data refinement and a best-of-N search procedure.
-        </figcaption>
-      </figure>
-
-      <h2>What The Experiments Actually Test</h2>
+      <h2>Evidence And Boundary</h2>
 
       <p>
-        The direct-policy results test whether video pretraining is a strong initialization for imitation control. LIBERO and RoboCasa are simulation benchmarks; ALOHA is the real bimanual manipulation setting. The headline numbers are high: 98.5% average success on LIBERO, 67.1% on RoboCasa, and 93.6 average score on the ALOHA tasks.
-      </p>
-
-      <figure class="wide">
-        <img src="../../assets/cosmos-policy/tables-1-2-benchmarks.png" alt="Tables 1 and 2 from Cosmos Policy showing LIBERO and RoboCasa benchmark results">
-        <figcaption>
-          Tables 1 and 2 from the paper. The useful comparison combines score and data budget. RoboCasa reports 67.1% average success with 50 demonstrations per task, while many VLA baselines use hundreds or thousands of demonstrations per task.
-        </figcaption>
-      </figure>
-
-      <figure class="wide">
-        <img src="../../assets/cosmos-policy/figure-4-aloha.jpg" alt="Figure 4 from Cosmos Policy showing real-world ALOHA robot evaluation scores across four tasks and an average column">
-        <figcaption>
-          Figure 4 from the paper. The real-robot result is strongest on the average score and on tasks where high action multimodality and precision matter. Appendix Table 3 adds an important caveat: pi0.5 is slightly higher on the paper's OOD slice, even though Cosmos Policy has the best full average.
-        </figcaption>
-      </figure>
-
-      <p>
-        The ablation is the mechanism check. If future-state and value prediction were decorative auxiliary targets, the action-only version would stay close. In RoboCasa, the barebones policy that only models actions falls from 67.1% to 44.4% average success.
+        The paper reports strong direct-policy results on LIBERO, RoboCasa, and ALOHA. The more useful mechanism check is the RoboCasa ablation. Removing the future-state and value auxiliary targets drops average success from 67.1% to 44.4%. That row says the future/value slots are contributing to action learning.
       </p>
 
       <figure class="wide">
         <img src="../../assets/cosmos-policy/table-5-ablation.png" alt="Table 5 from Cosmos Policy showing RoboCasa ablations and inference latency results">
         <figcaption>
-          Table 5 from the paper. The large drop in the last ablation is the important row: removing both world-model/value training and auxiliary future-state/value supervision makes the policy much weaker. The table also shows a speed result: one denoising step reaches 66.4% on RoboCasa with 0.16 second latency per action chunk on one H100.
+          Table 5 from the paper. The key ablation removes the future-state and value targets and sharply weakens the policy.
         </figcaption>
       </figure>
 
       <p>
-        This supports the paper's core mechanism. The future prediction target supplies part of the policy training signal.
-      </p>
-
-      <h2>Where The Claim Is Still Fragile</h2>
-
-      <p>
-        The evidence supports a concrete claim: a pretrained video diffusion model can become a strong manipulation policy when actions, future states, and values are placed into its native latent sequence. General closed-loop world modeling remains outside what these experiments establish.
+        The result supports a specific claim: a pretrained video diffusion model can become a strong manipulation policy when robot actions, future observations, and values are represented inside its native latent sequence.
       </p>
 
       <p>
-        The first weakness is planning cost. The paper reports around 4.9 seconds for the best-of-N planning setup on 8 parallel H100 GPUs in the ALOHA experiments. Direct policy inference is much faster, especially with fewer denoising steps, but the full planning loop is still hard to imagine for dynamic manipulation or locomotion.
+        The result leaves three questions open. First, the full best-of-N planning setup is expensive; the paper reports about 4.9 seconds on 8 H100 GPUs in the ALOHA planning setting. Second, planning needs rollout data so the world model and value model see failures beyond demonstrations. Third, repeating actions and scalar values across a video-latent volume preserves compatibility, but it is not obviously the most efficient representation for control.
       </p>
 
       <p>
-        The second weakness is data distribution. Planning requires rollout data to refine the world model and value function beyond successful demonstrations. Video pretraining supplies a strong prior, while effective planning still needs experience from the deployed policy's own mistakes.
-      </p>
-
-      <p>
-        The third weakness is representation efficiency. Repeating actions and scalar values across a full latent volume is a clever compatibility trick. It preserves the pretrained video interface and leaves open whether control variables deserve a lighter representation.
-      </p>
-
-      <p>
-        Cosmos Policy turns a video model into a control interface by changing the objects inside the diffusion sequence. The next technical pressure point is closed-loop reliability: action chunks must be precise, imagined futures must stay calibrated, and value estimates must remain useful after the robot leaves the demonstration distribution.
+        Cosmos Policy is useful because it makes the interface problem explicit. A video world model becomes relevant to robotics only after action, future, and value enter the same object that the model can train on and sample from.
       </p>
 
       <h2>Sources</h2>
       <ol class="references">
+        <li><a href="https://www.nvidia.com/en-us/ai/cosmos/">NVIDIA Cosmos</a>, NVIDIA's world foundation model platform for Physical AI.</li>
         <li><a href="https://arxiv.org/abs/2601.16163">Cosmos Policy: Fine-Tuning Video Models for Visuomotor Control and Planning</a>, Kim et al., arXiv 2026.</li>
         <li><a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy project page</a>, NVIDIA Research.</li>
         <li><a href="https://github.com/nvlabs/cosmos-policy">NVlabs/cosmos-policy</a>, released code, models, and training data references.</li>
@@ -460,45 +403,60 @@
     </article>
 
     <article class="version" data-lang-panel="zh" lang="zh-CN" hidden>
-      <h1>Cosmos Policy：把视频世界模型改造成控制接口</h1>
+      <h1>Cosmos Policy：视频模型怎样输出机器人动作</h1>
       <div class="meta">June 2026</div>
 
       <p class="dek">
-        Cosmos Policy 把机器人控制改写成 diffusion sequence completion：给定当前观测，让同一个 video diffusion backbone 在一条 latent-frame sequence 里补全 action chunk、执行后的 future observation，以及这个 future state 的 value。
+        Cosmos 是 NVIDIA 面向 Physical AI 的 <a href="https://www.nvidia.com/en-us/ai/cosmos/">world-model platform</a>。Cosmos Policy 取用其中的 Cosmos-Predict2 Video2World backbone，在机器人数据上继续训练，让若干 video latent slots 分别表示 action、future observation 和 value。底层模型仍然在 denoise latent tensors；改变的是 slot 的含义、训练目标和读取方式。
       </p>
 
       <p>
-        预训练视频模型原本的接口很清楚：给它当前画面和条件，它生成接下来会发生什么。用符号写，它接近 \(p(o_{t+1:t+H} \mid o_t, c)\)。机器人控制把这个接口里的对象换掉：模型要选择控制变量，预测这个控制变量带来的 future state，再评估这个 state 离成功有多近。
+        这篇论文的核心问题很直接。Cosmos-Predict2 原本预测未来视频。Cosmos Policy 检验同一套 tensor 接口能否承载机器人控制变量。
       </p>
 
       <p>
-        Cosmos Policy 把这个控制接口改写成表示问题。它保留 video backbone，把原来的 future-frame sequence 换成一组 trajectory tuple：current observation、action chunk、future observation 和 future-state value。
+        论文的做法是保留视频模型的形状约定，替换这条序列里存放的对象。
       </p>
 
       <figure class="wide">
         <img src="../../assets/cosmos-policy/figure-1-overview.jpg" alt="Cosmos Policy overview showing current state and task description as inputs and action chunk, future state, and value as outputs">
         <figcaption>
-          Cosmos Policy 论文 Figure 1。这张图定义了控制接口：current state 和 task description 进入 Cosmos-Predict2 backbone；action chunk、future state 和 value 作为同一个模型的三个输出目标。
+          Cosmos Policy 论文 Figure 1。同一个 backbone 接收 current state 和 task text，然后输出 action、future state 和 value。
         </figcaption>
       </figure>
 
-      <h2>缺失的控制接口</h2>
+      <h2>先看 tensor</h2>
 
       <p>
-        视频生成模型建模的是 future observations 的分布；robot policy 要选择一个会改变世界的 action。Cosmos Policy 连接这两个对象的方法，是让 action 进入同一条生成序列。
+        video diffusion 模型底层输出的是 latent tensors。它们经过 video VAE decoder 后成为未来图像帧。tensor 自身没有固定语义标签。它的含义来自训练目标，也来自输出读取方式。
       </p>
 
       <p>
-        论文里的 latent sequence 顺序很直接：
+        Cosmos-Predict2 的视频接口大致是：
       </p>
 
-      <pre><code>current state and camera views
+      <pre><code>current observation
+-> future video latents
+-> video decoder
+-> future frames</code></pre>
+
+      <p>
+        Cosmos Policy 保留 latent-frame 接口，把 slot 换成：
+      </p>
+
+      <pre><code>current observation
 -> action chunk
--> future state and camera views
--> value of the future state</code></pre>
+-> future observation
+-> value</code></pre>
 
       <p>
-        落到最底层，这是一串 tensor。图像观测经过 video VAE；低维机器人变量经过一个 shape-matching map：先把数字归一化，再复制成 video latent frame 的体积形状。
+        这就是视频模型能够输出 action 的技术原因。网络仍然产生符合原始形状的 tensors。fine-tuning 让模型学习：其中一部分 tensor slots 对应机器人动作和 scalar value。
+      </p>
+
+      <h2>Slot 怎样改含义</h2>
+
+      <p>
+        图像观测照常进入模型。video VAE 把每个相机观测编码成 video latent frames。机器人变量走另一条处理路径。proprioception、action chunk 和 scalar value 先归一化，再复制成 video-latent-shaped volume，最后写入预留 slot。
       </p>
 
       <div class="math-panel">
@@ -512,42 +470,29 @@
       </div>
 
       <p>
-        当前观测和未来观测属于同一条 trajectory distribution 里的两个随机变量，中间由 action chunk 诱导的 transition 连接：
-      </p>
-
-      <div class="math-panel">
-        \[
-        s_{t+K} \sim P(\cdot \mid s_t, a_{t:t+K-1})
-        \]
-      </div>
-
-      <p>
-        action 和 value 变成 latent slots 后，同一个视频模型可以被不同方式调用。只给 current state，它像 policy；给 state 和 action，它像 world model；给 state、action 和 future state，它像 value estimator。
-      </p>
-
-      <h2>最小的技术动作</h2>
-
-      <p>
-        让这个接口能复用 Cosmos-Predict2 的机制叫 latent frame injection。Cosmos-Predict2 原本接收一串 video latent frames。Cosmos Policy 保留这个架构，把非图像模态也插进这串 latent frames 里。
-      </p>
-
-      <p>
-        transformer 只接收 video-latent 形状的 tensor。图像部分照常经过 video VAE 变成 latent frames。proprioception、action、scalar value 这些非图像量，则先归一化到 [-1, 1]，再复制成 image-shaped latent volume，覆盖原来的 placeholder latent frames。推理时，action 和 value 的取出过程反过来：对复制出来的 latent volume 求平均，再 un-normalize 回原始尺度。
+        \(z(o_t)\) 是当前观测的视频 latent。\(\phi_a\) 把 action chunk 映射成 video-latent-shaped slot。\(\phi_v\) 把 scalar value 映射到同一类形状。denoise 完成后，action 和 value 的读取过程反向执行：对复制出的 volume 求平均，再 un-normalize 回原始动作或 value 尺度。
       </p>
 
       <figure class="wide">
         <img src="../../assets/cosmos-policy/figure-2-latent-injection.jpg" alt="Cosmos Policy latent frame injection diagram showing conditioning sequence, target sequence, robot proprioception, action chunk, future state, and value inserted into video latent frames">
         <figcaption>
-          论文 Figure 2。红框里的 slot 是新模态。proprioception、action chunk、future proprioception 和 value 被表示成 latent frames，由同一个 video diffusion model 去 denoise。
+          论文 Figure 2。红框里的 slot 是注入 video latent sequence 的控制变量。
         </figcaption>
       </figure>
 
       <p>
-        这个表示方法有一种有用的别扭。低维 action vector 被铺成一个 image-shaped latent slot。代价是表示效率；收益是 pretrained video model 原来的训练接口被保留下来。
+        这个方法会消耗额外表示容量。低维 action vector 被铺成 image-shaped latent slot。收益是 pretrained video backbone、transformer 结构和 diffusion objective 都能继续使用。
       </p>
 
+      <h2>Diffusion 怎样学这个接口</h2>
+
+      <div class="note">
+        <div class="note-title">Denoising intuition</div>
+        <p>训练时，模型看见许多真实的 state -> action -> future -> value 轨迹；它故意把这些轨迹加噪弄脏，再学习怎样根据当前 state 把它们还原回来。推理时，它从纯噪声开始，一步步 denoise 出一组合理的 action、future 和 value。</p>
+      </div>
+
       <p>
-        diffusion objective 仍然是原来的 denoising problem。clean sequence \(x_0\) 被高斯噪声污染，denoiser 在 task condition 和 mask 约束下恢复 clean latent sequence：
+        clean sequence \(x_0\) 是用 latent slots 表示的机器人轨迹。forward process 加入高斯噪声。denoiser 在 task condition 和 mask 约束下恢复 clean sequence：
       </p>
 
       <div class="math-panel">
@@ -558,10 +503,8 @@
         \]
       </div>
 
-      <h2>一个架构，三种角色</h2>
-
       <p>
-        一旦 sequence 固定下来，同一个模型就可以被训练成 policy、world model 或 value estimator。它当前在学什么，由 conditioning mask 决定：哪些 slot 是 clean input，哪些 slot 要作为 target 被 denoise。
+        mask 很关键。它标记哪些 slot 是已知输入，哪些 slot 要预测。只暴露 current state，隐藏 action、future 和 value，同一个 denoising model 就承担 policy 角色。暴露 state 和 action，它承担 world model 角色。暴露 state、action 和 future，它承担 value estimator 角色。
       </p>
 
       <div class="math-panel">
@@ -574,29 +517,10 @@
         \]
       </div>
 
-      <p>
-        这组公式是训练契约。完整 latent sequence 一直不变。训练 policy 时，current state 是 clean input，action、future、value 是 target。训练 world model 时，state 和 action 是 clean input，future 和 value 是 target。训练 value 时，state、action、future state 是 clean input，value slot 是 target。
-      </p>
+      <h2>为什么还要 value</h2>
 
       <p>
-        这就是 latent-sequence trick 和论文核心贡献之间的关系。action、future observation 和 value 进入同一个 denoising object 后，pretrained video model 就能在不加独立 action head、不重做架构的情况下，同时承担 policy、transition model 和 value model。
-      </p>
-
-      <figure class="wide">
-        <img src="../../assets/cosmos-policy/figure-12-joint-objectives.jpg" alt="Cosmos Policy joint objective diagram showing policy training, world model training, and value function training through different conditioning masks">
-        <figcaption>
-          论文 appendix Figure 12。这张图看起来信息很多，但核心很简单：红色 target box 在移动。模型一直在 denoise latent frames，conditioning scheme 决定这一步是在训练 policy、world model，还是 value function。
-        </figcaption>
-      </figure>
-
-      <p>
-        Cosmos Policy 对 video-to-policy 的改动在这里变清楚：action prediction 被改写成和 future video prediction 同一种 sequence completion 问题，diffusion sequence 自己承担 action interface。
-      </p>
-
-      <h2>用视频想象做 planning</h2>
-
-      <p>
-        作为 direct policy，Cosmos Policy 采样一个 action chunk，然后执行。planning 版本多了一步：先采样多个候选 action，对每个 action 预测 future state，再预测这个 future state 的 value，最后执行 predicted value 最高的 action。
+        direct policy 采样一个 action chunk，然后执行。planning 版本会采样多个候选 action chunk，分别预测每个 action 之后的 future state，再估计每个 future 的 value，最后执行 predicted value 最高的 action。
       </p>
 
       <div class="math-panel">
@@ -610,75 +534,37 @@
       </div>
 
       <p>
-        这里的实现细节是 rollout data。demonstrations 主要展示成功轨迹，planning 还需要看见失败经验。论文额外收集 policy rollouts，再 fine-tune 一个单独的 planning checkpoint，把更多训练权重放在 world model 和 value prediction 上。部署时，原始 checkpoint 负责提 action，refined checkpoint 负责评估这些 action 之后的 future。
+        这一步把 Cosmos Policy 从视频预测推向控制型 world model。future 进入 action selection。模型先预测动作，再预测动作之后的未来，最后给预测出的未来打分。
       </p>
 
-      <figure>
-        <img src="../../assets/cosmos-policy/figure-7-planning.jpg" alt="Cosmos Policy planning comparison showing base policy, model-free planning, and model-based planning on two ALOHA tasks">
-        <figcaption>
-          论文 Figure 7。在两个更难的 ALOHA 任务上，带 future state 和 value 的 model-based planning 比 base policy 更好。这个收益依赖 rollout-data refinement，也依赖 best-of-N search。
-        </figcaption>
-      </figure>
-
-      <h2>实验到底检验了什么</h2>
+      <h2>证据和边界</h2>
 
       <p>
-        direct-policy 实验检验的是：video pretraining 能不能成为 imitation control 的强初始化。LIBERO 和 RoboCasa 是仿真 benchmark；ALOHA 是真实双臂机器人任务。论文的 headline numbers 很高：LIBERO 平均成功率 98.5%，RoboCasa 67.1%，ALOHA 平均分 93.6。
-      </p>
-
-      <figure class="wide">
-        <img src="../../assets/cosmos-policy/tables-1-2-benchmarks.png" alt="Tables 1 and 2 from Cosmos Policy showing LIBERO and RoboCasa benchmark results">
-        <figcaption>
-          论文 Tables 1 和 2。这里要同时看 score 和 data budget。RoboCasa 的 67.1% 是在每个任务 50 条 demonstrations 下得到的，而很多 VLA baseline 使用的是每任务几百到几千条 demonstrations。
-        </figcaption>
-      </figure>
-
-      <figure class="wide">
-        <img src="../../assets/cosmos-policy/figure-4-aloha.jpg" alt="Figure 4 from Cosmos Policy showing real-world ALOHA robot evaluation scores across four tasks and an average column">
-        <figcaption>
-          论文 Figure 4。真实机器人结果最强的位置是平均分，以及需要高动作多模态和高精度操作的任务。Appendix Table 3 也给了一个重要 caveat：在论文自己的 OOD slice 上，pi0.5 略高于 Cosmos Policy；但 full average 仍然是 Cosmos Policy 最高。
-        </figcaption>
-      </figure>
-
-      <p>
-        Ablation 是机制检查。如果 future-state 和 value prediction 只提供装饰性的 auxiliary target，action-only 版本会保持接近的性能。在 RoboCasa 上，只建模 action 的 barebones policy 从 67.1% 掉到了 44.4%。
+        论文在 LIBERO、RoboCasa 和 ALOHA 上报告了很强的 direct-policy 结果。更有用的机制检查来自 RoboCasa ablation。去掉 future-state 和 value auxiliary targets 后，平均成功率从 67.1% 降到 44.4%。这一行说明 future/value slots 参与了 action learning。
       </p>
 
       <figure class="wide">
         <img src="../../assets/cosmos-policy/table-5-ablation.png" alt="Table 5 from Cosmos Policy showing RoboCasa ablations and inference latency results">
         <figcaption>
-          论文 Table 5。最后一行 ablation 最能说明问题：去掉 world-model/value training，又去掉 policy training 里的 future-state/value auxiliary supervision，policy 明显变弱。表里还有一个速度结果：1 个 denoising step 在 RoboCasa 上能做到 66.4%，单 H100 每个 action chunk 延迟 0.16 秒。
+          论文 Table 5。关键 ablation 去掉 future-state 和 value targets 后，policy 明显变弱。
         </figcaption>
       </figure>
 
       <p>
-        这组结果支撑的是论文的核心机制：future prediction target 直接改变了 policy training signal。
-      </p>
-
-      <h2>证据哪里还脆弱</h2>
-
-      <p>
-        这篇论文的证据支撑一个具体事实：把 action、future state 和 value 放进视频模型原生的 latent sequence 后，pretrained video diffusion model 可以被改造成很强的 manipulation policy。通用 closed-loop world model 仍然超出这些实验能证明的范围。
+        这组结果支撑一个具体结论：把机器人 action、future observation 和 value 放进视频模型原生的 latent sequence 后，pretrained video diffusion model 能被改造成很强的 manipulation policy。
       </p>
 
       <p>
-        第一处弱点是 planning cost。论文在 ALOHA 实验里报告的 best-of-N planning 大约需要 8 张 H100 并行跑 4.9 秒。direct policy 推理快很多，尤其是 denoising steps 减少之后；但完整 planning loop 现在还很难直接用于动态操作或 locomotion。
+        论文也留下三个边界。第一，完整 best-of-N planning 成本很高；ALOHA planning 设置报告了 8 张 H100 上约 4.9 秒的耗时。第二，planning 需要 rollout data，让 world model 和 value model 见到 demonstrations 之外的失败经验。第三，把 action 和 scalar value 复制到 video-latent volume 里能保留兼容性，但这未必是控制变量最高效的表示方式。
       </p>
 
       <p>
-        第二处弱点是数据分布。为了让 planning 有效，论文需要收集 rollout data 来 refinement world model 和 value function，让它们见到 demonstrations 之外的失败经验。这个设计合理，也说明 planner 仍然需要来自自身部署错误的经验。
-      </p>
-
-      <p>
-        第三处弱点是表示效率。把 action 和 scalar value 复制到完整 latent volume 里，是一个很聪明的兼容性技巧。它保住了 pretrained video interface，同时留下一个开放问题：control variables 是否需要更轻的表示方式。
-      </p>
-
-      <p>
-        这篇论文把 action、future state 和 value 变成一等 denoising target，由此把 video diffusion backbone 改造成控制接口。接下来的技术压力点变成 closed-loop reliability：action chunk 必须足够精确，imagined future 必须保持校准，value estimate 必须在离开 demonstration distribution 后仍然有用。
+        Cosmos Policy 的价值在于明确了接口问题。video world model 进入机器人控制，需要 action、future 和 value 进入同一个可训练、可采样的对象。
       </p>
 
       <h2>Sources</h2>
       <ol class="references">
+        <li><a href="https://www.nvidia.com/en-us/ai/cosmos/">NVIDIA Cosmos</a>, NVIDIA's world foundation model platform for Physical AI.</li>
         <li><a href="https://arxiv.org/abs/2601.16163">Cosmos Policy: Fine-Tuning Video Models for Visuomotor Control and Planning</a>, Kim et al., arXiv 2026.</li>
         <li><a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy project page</a>, NVIDIA Research.</li>
         <li><a href="https://github.com/nvlabs/cosmos-policy">NVlabs/cosmos-policy</a>, released code, models, and training data references.</li>
@@ -689,8 +575,8 @@
   <script>
     const languageKey = "writing-language";
     const titles = {
-      en: "Cosmos Policy: Turning a Video World Model into a Control Interface - Sense Wang",
-      zh: "Cosmos Policy：把视频世界模型改造成控制接口 - Sense Wang"
+      en: "Cosmos Policy: How a Video Model Outputs Actions - Sense Wang",
+      zh: "Cosmos Policy：视频模型怎样输出机器人动作 - Sense Wang"
     };
     const buttons = Array.from(document.querySelectorAll("[data-lang-button]"));
     const panels = Array.from(document.querySelectorAll("[data-lang-panel]"));
