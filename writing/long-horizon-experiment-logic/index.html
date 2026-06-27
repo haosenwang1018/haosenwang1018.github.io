@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="一篇关于 Long Horizon World Model 实验范式的研究札记：从想证明什么出发，倒推任务、指标、baseline、ablation 和 verifier-MPC 实验设计。">
+  <title>Long Horizon World Models：从主张到实验 - Sense Wang</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      color: #111;
+      background: #fff;
+      line-height: 1.78;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    main {
+      max-width: 780px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 72px 20px 112px;
+    }
+
+    nav {
+      margin-bottom: 52px;
+      font-size: 13px;
+    }
+
+    a {
+      color: #111;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    a:hover { opacity: 0.55; }
+
+    h1 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 42px;
+      line-height: 1.12;
+      font-weight: 700;
+      margin-bottom: 14px;
+      max-width: 760px;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 25px;
+      line-height: 1.28;
+      margin: 58px 0 15px;
+      padding-top: 2px;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      font-size: 18px;
+      line-height: 1.42;
+      margin: 32px 0 9px;
+      letter-spacing: 0;
+    }
+
+    p { margin-bottom: 17px; }
+
+    .meta {
+      color: #999;
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+
+    .dek {
+      color: #444;
+      font-size: 19px;
+      line-height: 1.62;
+      max-width: 720px;
+      margin-bottom: 44px;
+    }
+
+    .note {
+      border-left: 3px solid #111;
+      color: #333;
+      font-size: 16px;
+      line-height: 1.72;
+      margin: 28px 0 32px;
+      padding: 2px 0 2px 18px;
+    }
+
+    .note p { margin-bottom: 10px; }
+    .note p:last-child { margin-bottom: 0; }
+
+    .note-title {
+      color: #777;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .formula {
+      background: #fafafa;
+      border: 1px solid #ececec;
+      color: #333;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      margin: 24px 0 28px;
+      overflow-x: auto;
+      padding: 18px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .figure {
+      margin: 38px 0 40px;
+      border-top: 1px solid #e5e5e5;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 24px 0 18px;
+    }
+
+    .figure svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .caption {
+      color: #777;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin: 30px 0 36px;
+      border-top: 1px solid #d8d8d8;
+      border-bottom: 1px solid #e8e8e8;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 12px 14px;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      color: #555;
+      font-size: 12px;
+      letter-spacing: 0.03em;
+      font-weight: 600;
+      text-transform: uppercase;
+      background: #fafafa;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    td:first-child {
+      color: #111;
+      font-weight: 650;
+      width: 22%;
+    }
+
+    ul, ol {
+      margin: 14px 0 24px 22px;
+    }
+
+    li {
+      margin-bottom: 9px;
+      padding-left: 4px;
+    }
+
+    .references {
+      color: #555;
+      font-size: 15px;
+      margin-left: 22px;
+    }
+
+    .references li {
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    strong { font-weight: 680; }
+
+    @media (max-width: 560px) {
+      main {
+        margin: 0;
+        max-width: 100%;
+        padding: 48px 18px 88px;
+      }
+
+      h1 { font-size: 31px; }
+      h2 { font-size: 22px; margin-top: 46px; }
+      body { font-size: 16px; }
+      .dek { font-size: 18px; }
+      table { min-width: 720px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+    <article>
+      <h1>Long Horizon World Models：从主张到实验</h1>
+      <div class="meta">June 2026</div>
+
+      <p class="dek">
+        研究 long horizon world model 时，真正困难的地方常常在实验设计：怎样把“模型想远了会失败”变成可测的任务、baseline、指标和 ablation。
+      </p>
+
+      <p>
+        一个 robot world model 被放进 MPC 之后，问题很快变得具体。系统从当前 observation 得到 state，给一批 candidate action sequences 做 rollout，用 predicted reward、value、event 或 task progress 给每条候选动作打分，然后执行下一小段动作。新的 observation 到来后，系统再规划一次。
+      </p>
+
+      <p>
+        long horizon failure 发生在这个循环里：world model 在想象中给某条 candidate 很高分，真实执行却失败。这个失败比普通 prediction error 更接近控制系统本身，因为它改变了 planner 的动作选择。
+      </p>
+
+      <div class="figure" aria-label="World model planning loop">
+        <svg viewBox="0 0 760 240" role="img">
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#111"></path>
+            </marker>
+          </defs>
+          <rect x="18" y="42" width="126" height="58" fill="#fff" stroke="#111"></rect>
+          <text x="81" y="66" text-anchor="middle" font-size="14" font-weight="650">observe</text>
+          <text x="81" y="85" text-anchor="middle" font-size="12" fill="#666">current state</text>
+
+          <rect x="188" y="42" width="126" height="58" fill="#fff" stroke="#111"></rect>
+          <text x="251" y="66" text-anchor="middle" font-size="14" font-weight="650">sample</text>
+          <text x="251" y="85" text-anchor="middle" font-size="12" fill="#666">candidate actions</text>
+
+          <rect x="358" y="42" width="126" height="58" fill="#fff" stroke="#111"></rect>
+          <text x="421" y="66" text-anchor="middle" font-size="14" font-weight="650">rollout</text>
+          <text x="421" y="85" text-anchor="middle" font-size="12" fill="#666">world model</text>
+
+          <rect x="528" y="42" width="126" height="58" fill="#fff" stroke="#111"></rect>
+          <text x="591" y="66" text-anchor="middle" font-size="14" font-weight="650">score</text>
+          <text x="591" y="85" text-anchor="middle" font-size="12" fill="#666">reward / value</text>
+
+          <rect x="304" y="148" width="152" height="58" fill="#fafafa" stroke="#111"></rect>
+          <text x="380" y="172" text-anchor="middle" font-size="14" font-weight="650">execute</text>
+          <text x="380" y="191" text-anchor="middle" font-size="12" fill="#666">first action chunk</text>
+
+          <line x1="144" y1="71" x2="181" y2="71" stroke="#111" marker-end="url(#arrow)"></line>
+          <line x1="314" y1="71" x2="351" y2="71" stroke="#111" marker-end="url(#arrow)"></line>
+          <line x1="484" y1="71" x2="521" y2="71" stroke="#111" marker-end="url(#arrow)"></line>
+          <path d="M591 100 C591 130 488 165 462 174" fill="none" stroke="#111" marker-end="url(#arrow)"></path>
+          <path d="M304 176 C210 176 84 148 81 104" fill="none" stroke="#777" stroke-dasharray="5 5" marker-end="url(#arrow)"></path>
+
+          <text x="380" y="126" text-anchor="middle" font-size="13" fill="#444">failure appears when a high imagined score selects a bad real action</text>
+        </svg>
+        <div class="caption">
+          MPC 里的 world model 反复被 planner 查询。实验既要检查 rollout 像不像未来，也要检查 rollout 是否让 planner 选错动作。
+        </div>
+      </div>
+
+      <h2>先写出想证明的结果</h2>
+
+      <p>
+        读这类论文时，我现在更愿意先写实验主张。一个主张要能变成比较、任务、指标和负结果检查。
+      </p>
+
+      <div class="formula">作者想证明 A。
+为了证明 A，实验必须制造 B。
+实验比较 C 和 D。
+如果指标 E 提升，同时失败现象 F 减少，A 得到支持。
+如果平均分提升但 F 没减少，A 仍然脆弱。</div>
+
+      <p>
+        这个顺序会过滤掉很多泛泛的 long horizon 叙述。long horizon 可以指 rollout 步数、任务阶段、历史记忆、语言上下文、动作 chunk 或真实时间。实验必须先确定单位。
+      </p>
+
+      <p>
+        对 learned robot world model 来说，我最关心的单位是：在当前状态和候选动作下，world model 的 imagined rollout 最多能支持 planner 决策几步。
+      </p>
+
+      <h2>一个可测主张</h2>
+
+      <p>
+        我会把研究主张写成：
+      </p>
+
+      <div class="note">
+        <div class="note-title">Research Claim</div>
+        <p>
+          在 closed-loop planning 中，world model 的可信 rollout 长度随状态和 candidate trajectory 变化。一个 verifier 能提前识别不可信 rollout，并让 MPC 少选择模型里高分、真实中失败的动作。
+        </p>
+      </div>
+
+      <p>
+        这句话把研究对象放到 planner 使用 world model 的位置上。它要求实验回答五件事。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>实验主张</th>
+              <th>要证明什么</th>
+              <th>关键证据</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>固定 horizon 有问题</td>
+              <td>同一个模型在 free-space、contact、occlusion、subtask transition 下能被信任的步数不同。</td>
+              <td>不同状态的 rollout error、event error、real success drop 曲线不同。</td>
+            </tr>
+            <tr>
+              <td>planner 会放大错误</td>
+              <td>planner-selected candidates 比普通 candidates 更容易落在模型高分、真实失败的区域。</td>
+              <td>false-positive high-value rate、ranking flip rate、real outcome 对比。</td>
+            </tr>
+            <tr>
+              <td>verifier 能提前报警</td>
+              <td>只看 current state、candidate action、imagined rollout 和模型内部信号，也能预测可用步数。</td>
+              <td>coverage-risk curve、calibration curve、early warning lead time。</td>
+            </tr>
+            <tr>
+              <td>接进 MPC 后有用</td>
+              <td>verifier 改变 action selection，让真实闭环失败减少。</td>
+              <td>task success、subtask completion、unsafe action、replanning count、latency。</td>
+            </tr>
+            <tr>
+              <td>能继续改训练</td>
+              <td>planner 经常访问的不可靠区域可以变成下一轮 world model training data。</td>
+              <td>planner-aware retraining 后，同类高风险 candidate 的 false positive 下降。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>已有论文在测试什么</h2>
+
+      <p>
+        这批论文表面上很分散：latent MPC、hybrid dynamics、event verification、memory、humanoid hierarchy、video foundation model。把它们按实验主张读，会更清楚。
+      </p>
+
+      <h3>TD-MPC：短 rollout 加 terminal value 是否足够支撑控制</h3>
+
+      <p>
+        <a href="https://arxiv.org/abs/2203.04955">TD-MPC</a> 把 world model 用在一个短程 planning 接口里：latent dynamics 向前 rollout 几步，reward model 给局部回报，terminal value 估计更远未来。它的实验要证明，控制任务里可以让 world model 服务 action selection，而不把完整未来还原出来。
+      </p>
+
+      <p>
+        对 trust horizon 方向来说，TD-MPC 提供了 fixed-horizon MPC 的基础形状。下一步问题自然变成：这个 horizon 能否随状态变化。
+      </p>
+
+      <h3>PRISM-WM：接触和 regime switch 是否会缩短可预测步数</h3>
+
+      <p>
+        <a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a> 研究的是 transition function。接触、滑动、站立、飞行等动力学模式被一个 monolithic latent dynamics 平均后，planner 反复调用这个函数，错误会沿 rollout 累积。
+      </p>
+
+      <p>
+        它的实验要看 dynamics architecture 改动是否改善 long-rollout fidelity 和 closed-loop control。这个证据提示：trust horizon 应该按 state regime 分解。contact state 很可能比 free-space state 更早失效。
+      </p>
+
+      <h3>GRASP 和 train-test gap：planner 是否制造自己的测试分布</h3>
+
+      <p>
+        <a href="https://arxiv.org/abs/2602.00475">GRASP</a> 关注 gradient-based planning 的长链优化问题。长 horizon 上，优化器需要穿过很多步 serial rollout 反传，planning interface 自己会变脆。<a href="https://arxiv.org/abs/2512.09929">Closing the Train-Test Gap in World Models for Gradient-Based Planning</a> 把问题推进一步：world model 训练时看的是数据集状态，测试时被 planner 带到另一批状态。
+      </p>
+
+      <p>
+        这类实验提醒我，不能只在 held-out trajectories 上测 prediction error。需要保存 planner 生成和选择的 candidates，再看 planner-selected candidates 是否更容易出错。
+      </p>
+
+      <h3>EV-WM、memory papers：长任务里的失败经常来自事件和记忆</h3>
+
+      <p>
+        <a href="https://arxiv.org/abs/2606.13053">EV-WM</a> 用 event state 检查 imagined future 里的任务进度。未来画面看起来合理，仍然可能没有抓住、没有放入、没有关上、没有满足下一步动作的前置条件。
+      </p>
+
+      <p>
+        <a href="https://arxiv.org/abs/2606.18960">Mem-World</a>、<a href="https://arxiv.org/abs/2606.23589">KEMO</a> 和 <a href="https://arxiv.org/abs/2606.20092">EventVLA</a> 把长任务失败放到 memory 上：当前 observation 看不到早期事件、遮挡物体或历史计数，policy 需要某种历史状态才能继续行动。
+      </p>
+
+      <p>
+        这些实验说明，verifier 的输入不应只有 uncertainty。event consistency、object persistence、memory availability、contact mode 都可能比 pixel error 更早预警控制失败。
+      </p>
+
+      <h3>Variable-length 和 adaptive horizon：horizon 应该进入接口</h3>
+
+      <p>
+        <a href="https://arxiv.org/abs/2606.21775">Variable-Length Latent World Models</a> 和 <a href="https://arxiv.org/abs/2512.04341">NEUBAY</a> 都把 horizon 作为算法对象处理。固定短 horizon 可能太短视，固定长 horizon 容易引入不可靠 future，adaptive horizon 则让模型使用长度随样本变化。
+      </p>
+
+      <p>
+        对 verifier-MPC 来说，这给出了直接接口：把 MPC 里的固定 H 换成由 verifier 输出的 trust horizon，或者保留最大 H，但对不可信 future 加 risk penalty。
+      </p>
+
+      <h2>我希望最后看到的五张图</h2>
+
+      <p>
+        研究 proposal 可以从最后的实验图倒推。若这些图画不出来，主张通常还没有变成实验。
+      </p>
+
+      <div class="figure" aria-label="Desired evidence figures">
+        <svg viewBox="0 0 760 340" role="img">
+          <line x1="60" y1="282" x2="700" y2="282" stroke="#111"></line>
+          <line x1="60" y1="60" x2="60" y2="282" stroke="#111"></line>
+          <text x="56" y="42" text-anchor="middle" font-size="12" fill="#666">risk</text>
+          <text x="706" y="304" text-anchor="end" font-size="12" fill="#666">horizon</text>
+
+          <path d="M72 250 C150 238 214 222 286 194 C356 167 424 130 526 96 C590 75 642 67 690 61" fill="none" stroke="#111" stroke-width="2"></path>
+          <path d="M72 260 C150 255 214 246 286 235 C356 223 424 202 526 184 C590 170 642 162 690 154" fill="none" stroke="#777" stroke-width="2" stroke-dasharray="6 6"></path>
+          <path d="M72 238 C150 221 214 196 286 158 C356 121 424 92 526 72 C590 62 642 58 690 56" fill="none" stroke="#aaa" stroke-width="2" stroke-dasharray="2 6"></path>
+
+          <text x="515" y="92" font-size="13" fill="#111">in-contact</text>
+          <text x="525" y="177" font-size="13" fill="#666">occlusion</text>
+          <text x="515" y="151" font-size="13" fill="#999">free-space</text>
+
+          <rect x="86" y="310" width="10" height="10" fill="#111"></rect>
+          <text x="103" y="320" font-size="12" fill="#444">state-dependent trust horizon distribution</text>
+          <rect x="366" y="310" width="10" height="10" fill="#777"></rect>
+          <text x="383" y="320" font-size="12" fill="#444">planner-selected candidates vs random candidates</text>
+        </svg>
+        <div class="caption">
+          第一张图应该证明不同状态的可用 rollout 长度不同；第二张图应该证明 planner 选中的 candidates 更容易暴露 world model 错误。
+        </div>
+      </div>
+
+      <p>
+        第一张图：不同状态的 trust horizon 分布。free-space、pre-contact、in-contact、occlusion、subtask transition、planner-selected high-score candidate 分开画。它证明 horizon 依赖状态。
+      </p>
+
+      <p>
+        第二张图：planner-selected candidates 和 random candidates 的错误对比。它证明 planner 会把 model error 放大成 action-selection error。
+      </p>
+
+      <p>
+        第三张图：verifier-controlled MPC 与 fixed short horizon、fixed long horizon、uncertainty-only、event-only、oracle horizon 的闭环成功率对比。它证明 verifier 改变了真实行为。
+      </p>
+
+      <p>
+        第四张图：危险状态上的失败分解。contact、occlusion、subtask transition、planner exploitation 分开报告。它证明提升来自具体失败减少。
+      </p>
+
+      <p>
+        第五张图：coverage-risk curve 和 calibration curve。它证明 verifier 的 trust horizon 输出本身可校准。
+      </p>
+
+      <h2>实验数据从哪里来</h2>
+
+      <p>
+        这个实验不需要第一步就训练一个巨大 foundation model。更合理的起点是已有 model-based control 框架或简化 robot manipulation 环境。数据需要三类。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>数据</th>
+              <th>记录什么</th>
+              <th>用来证明什么</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>真实轨迹</td>
+              <td>state、action、next state、reward、event、object state。</td>
+              <td>imagined rollout 在第几步开始偏离真实未来。</td>
+            </tr>
+            <tr>
+              <td>planner candidates</td>
+              <td>MPC 每次生成的所有 action sequences，包括最后选中的和未选中的。</td>
+              <td>planner 是否偏好模型里高分、真实中失败的候选动作。</td>
+            </tr>
+            <tr>
+              <td>状态标签</td>
+              <td>free-space、pre-contact、in-contact、occlusion、object moved、subtask transition、narrow feasibility。</td>
+              <td>trust horizon 是否随状态类型变化。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        最关键的一步是给每个 rollout 产生 trust horizon label。可以定义第一个决策相关错误出现的步数为 h<sub>fail</sub>，再令 h<sub>trust</sub> = h<sub>fail</sub> - 1。这里的错误不能只用 pixel loss，可以包含 event error、value error、object state error、contact mode error、ranking flip 或真实成功率下降。
+      </p>
+
+      <h2>baseline 要回答具体问题</h2>
+
+      <p>
+        baseline 的作用在于逐个排除解释。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>baseline</th>
+              <th>它回答的问题</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>fixed short horizon MPC</td>
+              <td>短 horizon 是否已经足够，verifier 是否只是在变保守。</td>
+            </tr>
+            <tr>
+              <td>fixed long horizon MPC</td>
+              <td>长 rollout 是否真的引入错误。</td>
+            </tr>
+            <tr>
+              <td>uncertainty-only MPC</td>
+              <td>普通不确定性能否替代 verifier。</td>
+            </tr>
+            <tr>
+              <td>event-only MPC</td>
+              <td>任务进度信号是否已经足够。</td>
+            </tr>
+            <tr>
+              <td>contact-only MPC</td>
+              <td>接触状态是否解释主要失败。</td>
+            </tr>
+            <tr>
+              <td>memory-only MPC</td>
+              <td>遮挡和历史状态是否解释主要失败。</td>
+            </tr>
+            <tr>
+              <td>oracle horizon MPC</td>
+              <td>如果知道真实 trust horizon，这个方向的上界有多高。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        如果 oracle horizon 很强，full verifier 很弱，说明问题有价值，模块还不够好。如果 oracle horizon 也弱，horizon selection 可能并非这个环境里的主要瓶颈。
+      </p>
+
+      <h2>负结果也要提前写进实验</h2>
+
+      <p>
+        这个方向最容易出现四种假提升。
+      </p>
+
+      <p>
+        第一，verifier 只学会保守。success rate 上升，replanning count、latency 和任务完成时间也大幅上升，系统可能只是一直缩短动作、频繁重规划。
+      </p>
+
+      <p>
+        第二，verifier 只学到 task ID。换任务或换状态分布后失效，说明它没有学到一般的 trust signal。
+      </p>
+
+      <p>
+        第三，verifier 只学到短 horizon 安全。它永远输出短 horizon，可以减少部分错误，也会让长链任务无法完成。
+      </p>
+
+      <p>
+        第四，verifier 没有改变 planner 选择。平均 reward 提升，但 planner-selected candidates 的 false-positive high-value rate 没下降，主张仍然脆弱。
+      </p>
+
+      <h2>一张论文阅读卡</h2>
+
+      <p>
+        之后读 long-horizon world model 论文，我会用这张卡片记录实验逻辑。
+      </p>
+
+      <div class="formula">论文：
+它最终想证明：
+它认为旧系统在哪里失败：
+它改了哪个接口：
+它在哪个平台或 benchmark 上做实验：
+它设计了哪些任务暴露失败：
+它和谁比较：
+它用哪些指标证明主张：
+它的关键结果：
+它的 ablation 拆掉了什么：
+它没有证明什么：
+它能借到 verifier-MPC 实验的哪一步：</div>
+
+      <p>
+        这张卡强迫自己把论文当作证据设计来读。方法名、模块名和 benchmark 名都会留在纸面上；真正需要进入脑子的是作者怎样把一个主张变成可测结果。
+      </p>
+
+      <h2>结尾</h2>
+
+      <p>
+        Long horizon world model 的研究空间很大。直接说“模型要看得更远”会让问题发散。更可操作的说法是：在 planner 查询 world model 的那一刻，系统需要知道这段 imagined rollout 还能支持几步决策。
+      </p>
+
+      <p>
+        这个问题有清楚的实验路径：按状态分组测 trust horizon，保存 planner candidates，检查 model score 和 real outcome 的排序偏差，把 verifier 接进 MPC，再用危险状态上的失败减少来解释闭环提升。
+      </p>
+
+      <p>
+        如果这些实验成立，world model 的 long horizon 就不再只是一个形容词。它会变成一个接口：当前状态、候选动作和 imagined rollout 共同决定模型还能被 planner 信任多远。
+      </p>
+
+      <h2>References</h2>
+
+      <ol class="references">
+        <li>Nicklas Hansen, Xiaolong Wang, Hao Su, <a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control</a>.</li>
+        <li>Nicklas Hansen, Hao Su, Xiaolong Wang, <a href="https://arxiv.org/abs/2310.16828">TD-MPC2: Scalable, Robust World Models for Continuous Control</a>.</li>
+        <li>Li et al., <a href="https://arxiv.org/abs/2512.08411">Prismatic World Model</a>.</li>
+        <li><a href="https://arxiv.org/abs/2602.00475">GRASP</a>.</li>
+        <li><a href="https://arxiv.org/abs/2512.09929">Closing the Train-Test Gap in World Models for Gradient-Based Planning</a>.</li>
+        <li><a href="https://arxiv.org/abs/2606.13053">Event-Verified World Models</a>.</li>
+        <li><a href="https://arxiv.org/abs/2606.21775">Variable-Length Latent World Models</a> and <a href="https://arxiv.org/abs/2512.04341">NEUBAY</a>.</li>
+        <li><a href="https://arxiv.org/abs/2606.18960">Mem-World</a>, <a href="https://arxiv.org/abs/2606.23589">KEMO</a>, and <a href="https://arxiv.org/abs/2606.20092">EventVLA</a>.</li>
+        <li><a href="https://arxiv.org/abs/2605.14937">Slot-MPC</a>, <a href="https://arxiv.org/abs/2601.03782">PointWorld</a>, and <a href="https://arxiv.org/abs/2606.13672">WEAVER</a>.</li>
+        <li><a href="https://arxiv.org/abs/2405.18418">Puppeteer</a>, <a href="https://arxiv.org/abs/2511.19584">Newt</a>, <a href="https://arxiv.org/abs/2601.16163">Cosmos Policy</a>, and <a href="https://arxiv.org/abs/2606.02800">Cosmos 3</a>.</li>
+      </ol>
+    </article>
+  </main>
+</body>
+</html>
