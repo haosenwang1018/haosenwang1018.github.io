@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Long Horizon Is Not One Problem — Sense Wang</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      color: #111;
+      background: #fff;
+      line-height: 1.78;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    main {
+      max-width: 760px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 72px 20px 112px;
+      overflow: visible;
+    }
+
+    nav {
+      margin-bottom: 52px;
+      font-size: 13px;
+    }
+
+    h1 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 42px;
+      line-height: 1.12;
+      font-weight: 700;
+      margin-bottom: 14px;
+      max-width: 720px;
+      overflow-wrap: break-word;
+    }
+
+    h2 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 25px;
+      line-height: 1.28;
+      margin: 56px 0 14px;
+    }
+
+    h3 {
+      font-size: 18px;
+      line-height: 1.4;
+      margin: 30px 0 6px;
+      font-weight: 700;
+    }
+
+    p {
+      margin-bottom: 17px;
+    }
+
+    a {
+      color: #111;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    a:hover { opacity: 0.55; }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.88em;
+    }
+
+    .note {
+      border-left: 3px solid #111;
+      color: #333;
+      font-size: 16px;
+      line-height: 1.72;
+      margin: 28px 0 30px;
+      padding: 2px 0 2px 18px;
+    }
+
+    .note p { margin-bottom: 10px; }
+    .note p:last-child { margin-bottom: 0; }
+
+    .note-title {
+      color: #777;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .meta {
+      color: #999;
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+
+    .article-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin: -18px 0 34px;
+    }
+
+    .language-switch {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .language-switch button {
+      border: 0;
+      border-bottom: 1px solid transparent;
+      background: transparent;
+      color: #999;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      line-height: 1.5;
+      padding: 0 0 3px;
+      text-transform: uppercase;
+    }
+
+    .language-switch button[aria-pressed="true"] {
+      border-color: #111;
+      color: #111;
+    }
+
+    .version[hidden] { display: none; }
+
+    .dek {
+      color: #444;
+      font-size: 19px;
+      line-height: 1.6;
+      max-width: 690px;
+      margin-bottom: 44px;
+    }
+
+    figure { margin: 38px 0; }
+
+    figcaption {
+      color: #777;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+
+    /* matrix + comparison tables, hairline house style */
+    table { border-collapse: collapse; width: 100%; }
+
+    .matrix {
+      font-size: 14px;
+      line-height: 1.5;
+      margin-top: 4px;
+    }
+
+    .matrix th, .matrix td {
+      border-bottom: 1px solid #ececec;
+      padding: 9px 6px;
+      vertical-align: middle;
+    }
+
+    .matrix thead th {
+      color: #777;
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      border-bottom: 1px solid #ccc;
+      text-align: center;
+      line-height: 1.32;
+      vertical-align: bottom;
+    }
+
+    .matrix thead th.rowhead,
+    .matrix tbody th {
+      text-align: left;
+    }
+
+    .matrix tbody th {
+      font-weight: 600;
+      color: #111;
+      width: 38%;
+      padding-right: 14px;
+    }
+
+    .matrix tbody th .mode-id {
+      color: #999;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      margin-right: 6px;
+    }
+
+    .matrix td.mark {
+      text-align: center;
+      font-size: 15px;
+      color: #111;
+    }
+
+    .matrix td.mark.partial { color: #c0c0c0; }
+
+    .matrix tr.empty-row th,
+    .matrix tr.empty-row td {
+      background: #f7f7f4;
+    }
+
+    .matrix tr.empty-row th { color: #111; }
+
+    .legend {
+      color: #777;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-top: 12px;
+    }
+
+    .legend .dot { color: #111; }
+    .legend .dot.partial { color: #c0c0c0; }
+
+    .compare {
+      font-size: 14.5px;
+      line-height: 1.62;
+      margin-top: 8px;
+    }
+
+    .compare th, .compare td {
+      border-bottom: 1px solid #ececec;
+      padding: 12px 12px 12px 0;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .compare thead th {
+      color: #777;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border-bottom: 1px solid #ccc;
+    }
+
+    .compare tbody th {
+      font-weight: 600;
+      color: #111;
+      width: 26%;
+      padding-right: 16px;
+    }
+
+    .references {
+      color: #555;
+      font-size: 15px;
+      margin-left: 22px;
+    }
+
+    .references li {
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    @media (max-width: 560px) {
+      main {
+        margin: 0;
+        max-width: 390px;
+        padding-top: 48px;
+      }
+      h1 { font-size: 31px; }
+      body { font-size: 16px; }
+      .dek { font-size: 18px; }
+      .matrix { font-size: 12.5px; }
+      .matrix th, .matrix td { padding: 7px 3px; }
+      .matrix tbody th { width: 40%; }
+      .compare { font-size: 13.5px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+    <div class="article-toolbar">
+      <div class="language-switch" aria-label="Language">
+        <button type="button" data-lang-button="en" aria-pressed="true">English</button>
+        <button type="button" data-lang-button="zh" aria-pressed="false">中文</button>
+      </div>
+    </div>
+
+    <!-- ============================ ENGLISH ============================ -->
+    <article class="version" data-lang-panel="en" lang="en">
+      <h1>Long Horizon Is Not One Problem</h1>
+      <div class="meta">June 2026</div>
+
+      <p class="dek">
+        Coding agents, robot world models, and contact-rich control all complain about the long horizon, yet their solutions almost never cite each other. The reason is structural: long horizon decomposes into six different failures, and recent work answers them with five recurring moves. One of the six has no move at all.
+      </p>
+
+      <p>
+        The phrase "long horizon" now appears in three fields that do not read each other's papers. A coding agent is long-horizon when it must keep a software task coherent across many sessions. A robot world model is long-horizon when it must imagine many steps of future dynamics before acting. A locomotion controller is long-horizon when reward arrives only after thousands of control steps. The vocabulary does not transfer, and neither do the methods.
+      </p>
+
+      <p>
+        A label shared by three communities with no shared solution is usually not one problem. It is a surface name for several different failures that happen to share a cause. The useful first step is to separate the cause from the failures.
+      </p>
+
+      <h2>The shared structure</h2>
+
+      <p>
+        The cause is the same everywhere: a task runs longer than the span the system can hold reliably in one piece. What that span is differs by field, and naming it literally is more useful than calling all of it "long horizon."
+      </p>
+
+      <p>
+        In a world model, the span is the number of timesteps a learned transition function stays accurate. Each imagined step takes the previous prediction as input, so per-step error compounds. In an agent, the span is the amount of task state a context window can hold. Each new step pushes earlier state toward the edge of the window, where it is dropped or summarized away. In control, the span is the number of steps a reward signal can directly cover. Each additional step spreads credit assignment thinner over a longer trajectory.
+      </p>
+
+      <p>
+        So the unit being measured is different in each field — model timesteps, context tokens, reward steps — but the structure is identical: something accurate, retained, or assignable degrades per step. Split that single structure apart and six distinct failures fall out, each with a different thing that breaks.
+      </p>
+
+      <h2>What actually breaks</h2>
+
+      <p>
+        These six are coupled but not interchangeable. A method that fixes one can leave the others untouched, which is exactly why papers attacking different ones do not cite each other.
+      </p>
+
+      <h3>1. Rollout drift</h3>
+      <p>
+        A learned transition function feeds its own prediction back as the next input, so a small one-step error becomes a structured multi-step error in latents, rewards, contacts, or object poses. The error is largest where dynamics are discontinuous: a foot touching the ground and a foot in flight follow different transition rules, and a single smoothed model averages them. This is the failure <a href="https://arxiv.org/abs/2203.04955">TD-MPC</a> avoids by refusing to roll out far — it plans a short horizon and bootstraps the rest with a value function — and the failure PRISM-WM attacks directly by splitting the transition function across contact regimes.
+      </p>
+
+      <h3>2. Planner exploitation</h3>
+      <p>
+        A world model trained for passive next-step prediction is used at test time as an optimization target. A planner searches for the action sequence that scores highest inside the model, and that search lands on states the model never saw in training, where its error is unconstrained. The model can look good under prediction and still be bad for control, because the planner actively seeks out its blind spots. This is a train-test gap specific to model-based planning, not a generic accuracy problem.
+      </p>
+
+      <h3>3. Trust horizon</h3>
+      <p>
+        Even a good model never reports how far the current rollout can be trusted. The missing quantity is a number of steps that depends on the present state, task phase, and contact regime — the longest rollout worth using, not the longest the model can physically produce. "Errors accumulate" is a statement about the model; the trust horizon is a statement the model should make about itself, and almost no system makes it.
+      </p>
+
+      <h3>4. Plausible is not correct</h3>
+      <p>
+        A predicted future can be visually and physically plausible while the actual task event did not happen: the gripper looks closed but the object was not grasped, the trajectory looks smooth but a precondition was violated. The unit of progress is wrong. The model is scored on whether the future looks right rather than on whether the task predicate became true.
+      </p>
+
+      <h3>5. Temporal granularity</h3>
+      <p>
+        Planning at every motor step or every token makes a long task intractable, because the number of decisions grows with the horizon. A flat policy mapping pixels to torques over thousands of steps, or a flat agent reasoning token by token over a multi-hour task, is solving a problem whose decision count is too large by construction.
+      </p>
+
+      <h3>6. State persistence</h3>
+      <p>
+        Over a long execution the system loses object identity, location, occluded facts, which subtask is done, and which constraints are still satisfied. The same current observation can require different actions depending on an earlier event that has since left the frame. This is non-Markovian failure: the present observation is no longer a sufficient state.
+      </p>
+
+      <h2>Five moves that recur</h2>
+
+      <p>
+        Across coding agents, world models, and control, the responses collapse into five families. Each one shortens, externalizes, checks, stabilizes, or re-trains — and each maps onto specific failures above rather than onto "long horizon" in general.
+      </p>
+
+      <h3>A. Shorten the horizon</h3>
+      <p>
+        Do not cross the whole span at once. Plan a short rollout and bootstrap the tail with a value function (<a href="https://arxiv.org/abs/2203.04955">TD-MPC</a>); stack a slow high-level planner over a fast low-level controller so each level sees a shorter horizon (hierarchical world models such as Puppeteer; the classic <a href="https://www.sciencedirect.com/science/article/pii/S0004370299000521">options</a> framework); plan in a coarser action space of waypoints, subgoals, or logical predicates (LLM task decomposition grounded by affordances, as in SayCan); predict an action chunk instead of one step. This addresses rollout drift and temporal granularity. It can fail when the high level is assumed reliable: if a subgoal is wrong, a perfectly executed low level still misses the task.
+      </p>
+
+      <h3>B. Externalize state</h3>
+      <p>
+        When the context cannot hold the span, move it outside — and the hard part is retrieval, not capacity. Progress files, structured handoffs, and execution-state memory let an agent continue across sessions that start with no memory (<a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Anthropic's harness work</a>); episodic, keyframe, and geometry-indexed memory let a robot policy fetch the one past frame that the current decision depends on. This addresses state persistence. The longer-context reflex is the weaker version of it; the stronger version retrieves the right evidence at the right time rather than carrying everything forward.
+      </p>
+
+      <h3>C. Verify, don't trust</h3>
+      <p>
+        Since plausible is not correct, check whether the task event actually occurred instead of whether the future looks right. In coding agents this is the test oracle and executable verification; in robot world models it is predicate or event prediction layered on top of visual features, and using model rollouts as a policy evaluator scored against real success rather than visual quality. This addresses planner exploitation and the plausible-is-not-correct failure. It can fail when the verifier itself is wrong or gameable, which moves the problem rather than removing it.
+      </p>
+
+      <h3>D. Stabilize the rollout</h3>
+      <p>
+        Attack the error source directly. Split dynamics by contact regime, expert, or object so the model stops smoothing across incompatible modes (MoE / compositional dynamics such as PRISM-WM; object-centric latents built on slot representations); keep the latent control-relevant rather than reconstruction-oriented (<a href="https://arxiv.org/abs/2203.04955">TD-MPC</a>, Dreamer-style models); penalize epistemic uncertainty so the planner avoids high-error regions (ensemble disagreement, as in PETS-style model-based RL). This addresses rollout drift and, by closing the train-test gap, planner exploitation. The split granularity — how many experts, how many regimes — is usually set by hand.
+      </p>
+
+      <h3>E. Fix signal and data</h3>
+      <p>
+        Long-horizon failure is often credit assignment, not model capacity. Shape dense, stage-aware progress rewards for sparse tasks; pretrain on human and egocentric video, recover latent actions from action-free video, and use feasible retargeting and sim-to-real so the policy sees enough of the long-task distribution. This addresses the training side of the plausible-is-not-correct and temporal-granularity failures. Dense reward is itself gameable, which feeds straight back into planner exploitation.
+      </p>
+
+      <figure>
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th class="rowhead">Failure mode</th>
+              <th>A<br>Shorten</th>
+              <th>B<br>Externalize</th>
+              <th>C<br>Verify</th>
+              <th>D<br>Stabilize</th>
+              <th>E<br>Signal&nbsp;&amp;&nbsp;data</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th><span class="mode-id">1</span>Rollout drift</th>
+              <td class="mark">●</td><td class="mark"></td><td class="mark"></td><td class="mark">●</td><td class="mark partial">○</td>
+            </tr>
+            <tr>
+              <th><span class="mode-id">2</span>Planner exploitation</th>
+              <td class="mark"></td><td class="mark"></td><td class="mark">●</td><td class="mark">●</td><td class="mark"></td>
+            </tr>
+            <tr class="empty-row">
+              <th><span class="mode-id">3</span>Trust horizon</th>
+              <td class="mark"></td><td class="mark"></td><td class="mark"></td><td class="mark"></td><td class="mark"></td>
+            </tr>
+            <tr>
+              <th><span class="mode-id">4</span>Plausible ≠ correct</th>
+              <td class="mark"></td><td class="mark"></td><td class="mark">●</td><td class="mark"></td><td class="mark partial">○</td>
+            </tr>
+            <tr>
+              <th><span class="mode-id">5</span>Temporal granularity</th>
+              <td class="mark">●</td><td class="mark partial">○</td><td class="mark"></td><td class="mark"></td><td class="mark"></td>
+            </tr>
+            <tr>
+              <th><span class="mode-id">6</span>State persistence</th>
+              <td class="mark"></td><td class="mark">●</td><td class="mark"></td><td class="mark partial">○</td><td class="mark"></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="legend">
+          <span class="dot">●</span> the family addresses this failure directly &nbsp;·&nbsp;
+          <span class="dot partial">○</span> partially. Read down each column to see what a move does; read across each row to see how a failure is covered. Row 3 is the object of the last section: the trust horizon has no column.
+        </div>
+        <figcaption>
+          Author's schematic. Six failures against five moves. The matrix is built from the mechanism each move operates on, not from any single paper. The one empty row is the argument of this essay.
+        </figcaption>
+      </figure>
+
+      <h2>Two worlds, the same five moves</h2>
+
+      <p>
+        The five families are domain-independent. A coding agent and a robot world model look unrelated, but when a failure appears in both, the move that answers it is the same — only the implementation changes. The clearest way to see this is to put the two worlds in the same table.
+      </p>
+
+      <figure>
+        <table class="compare">
+          <thead>
+            <tr>
+              <th>Move</th>
+              <th>Coding / LLM agent</th>
+              <th>Robot world model</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>A · Shorten</th>
+              <td>Spec decomposition into features; subagents with branch-and-merge</td>
+              <td>Hierarchical world model; short-horizon MPC with terminal value</td>
+            </tr>
+            <tr>
+              <th>B · Externalize</th>
+              <td>Progress file, compaction of history, structured handoff</td>
+              <td>Episodic and geometry-indexed memory; keyframe retrieval</td>
+            </tr>
+            <tr>
+              <th>C · Verify</th>
+              <td>Test oracle, executable checks, held-out tests</td>
+              <td>Predicate / event verification of imagined futures</td>
+            </tr>
+            <tr>
+              <th>D · Stabilize</th>
+              <td>Context curation that prunes stale, drift-inducing content</td>
+              <td>Regime-split and object-centric dynamics</td>
+            </tr>
+            <tr>
+              <th>E · Signal &amp; data</th>
+              <td>Synthesizing open-ended tasks that elicit long-horizon behavior</td>
+              <td>Dense progress reward; human-video and latent-action pretraining</td>
+            </tr>
+          </tbody>
+        </table>
+        <figcaption>
+          The same five moves, read across two fields. Compaction is latent compression; a progress file is episodic memory; a test oracle is event verification; spec decomposition is hierarchical subgoaling. The experience accumulated in one field transfers to the other once the move, not the domain, is treated as the unit.
+        </figcaption>
+      </figure>
+
+      <p>
+        This is the practical payoff of the decomposition. There is no need to track a hundred long-horizon papers as a hundred separate ideas. Each one is one of five moves applied to one of six failures in one domain. The map is small.
+      </p>
+
+      <h2>The one move that is missing: trust horizon</h2>
+
+      <p>
+        Return to the matrix. Five rows are covered by at least one family. Row three is empty, and the emptiness is not an accident of how the table was drawn.
+      </p>
+
+      <p>
+        Moves A through E all improve the quality of something: the model, the planner, the memory, the data. A better model drifts more slowly; a planner that trains on its own induced states is harder to exploit; better retrieval keeps more state; better reward shaping assigns credit further. None of them produces a calibration. They make the rollout more trustworthy without telling the planner how far to trust it — and a more accurate model with no trust estimate is still queried blindly.
+      </p>
+
+      <p>
+        That gap matters because closed-loop planning has to use the rollout. Without an estimate of how far the rollout remains valid, the planning horizon becomes a fixed hyperparameter: too short on easy states, where the model could safely look further, and too long on brittle states such as contact and mode switches, where the model has already drifted. The horizon should be a function of the state, and right now it is a constant.
+      </p>
+
+      <p>
+        One route to it runs through move D. Once dynamics are split by regime or expert — the direction PRISM-WM takes for contact-rich control — each regime carries its own instrumentation: its own prediction consistency, its own uncertainty, its own evidence of when it stops applying. That structure is what a state-dependent trust horizon needs. The intervention is small and testable: add a horizon estimate on top of an existing world model and gate the planner with it, without retraining the base dynamics. It is the one place on this map where the move does not yet exist, which makes it the most concrete thing to build next.
+      </p>
+
+      <p>
+        The six failures and five moves already account for most of the recent work. What no family yet does is let the model report its own trustable number of steps. That is the open problem hiding inside the phrase "long horizon."
+      </p>
+
+      <h2>Sources</h2>
+      <ol class="references">
+        <li><a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control</a>, Hansen, Wang, and Su, ICML 2022 — short-horizon latent rollout plus terminal value.</li>
+        <li><a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Effective harnesses for long-running agents</a> and <a href="https://www.anthropic.com/engineering/harness-design-long-running-apps">Harness design for long-running application development</a>, Anthropic Engineering — long-horizon agent failure modes and artifact handoff.</li>
+        <li><a href="https://www.sciencedirect.com/science/article/pii/S0004370299000521">Between MDPs and semi-MDPs: A framework for temporal abstraction</a>, Sutton, Precup, and Singh, Artificial Intelligence 1999 — the options framework for temporal abstraction.</li>
+        <li><a href="https://www.nature.com/articles/s41586-020-03051-4">Mastering Atari, Go, Chess and Shogi by Planning with a Learned Model</a> (MuZero), Schrittwieser et al., Nature 2020 — a world model organized around a planning interface.</li>
+      </ol>
+    </article>
+
+    <!-- ============================ 中文 ============================ -->
+    <article class="version" data-lang-panel="zh" lang="zh-CN" hidden>
+      <h1>长程：六种失败，五种应对</h1>
+      <div class="meta">June 2026</div>
+
+      <p class="dek">
+        Coding agent、机器人 world model、接触丰富的控制都在抱怨 long horizon，但三边的解法几乎互不引用。原因是结构性的：long horizon 拆成六种不同的失败，近期工作用五类反复出现的动作来应对。这六种里，有一种至今没有任何动作覆盖。
+      </p>
+
+      <p>
+        “Long horizon” 这个词如今出现在三个互不读对方论文的领域。一个 coding agent 是 long-horizon 的，因为它要让一个软件任务在很多 session 里保持连贯。一个机器人 world model 是 long-horizon 的，因为它要在行动前想象很多步未来动力学。一个 locomotion 控制器是 long-horizon 的，因为 reward 要在几千个控制步之后才到。它们的术语不互通，方法也不互通。
+      </p>
+
+      <p>
+        一个被三个社区共用、却没有共用解法的词，通常并不对应一个问题。它是几种不同失败的表层名字，这些失败只是共享同一个成因。有用的第一步，是把成因和失败分开。
+      </p>
+
+      <h2>共同结构</h2>
+
+      <p>
+        成因在哪里都一样：任务运行的长度，超过了系统一次能可靠持有的那个跨度。这个跨度在不同领域指的东西不同，把它字面说清楚，比把它们全叫 long horizon 更有用。
+      </p>
+
+      <p>
+        在 world model 里，这个跨度是学到的 transition function 还能保持准确的 timestep 数。每想象一步，都把上一步的预测当作输入，于是每一步的误差会复合放大。在 agent 里，这个跨度是 context window 能容纳的任务状态量。每多一步，更早的状态就被推向窗口边缘，被丢弃或被压缩掉。在控制里，这个跨度是 reward 能直接覆盖的步数。每多一步，credit assignment 就在更长的轨迹上摊得更薄。
+      </p>
+
+      <p>
+        所以被度量的单位在每个领域都不同——模型 timestep、context token、reward 步数——但结构完全一致：某种“准确的、被保留的、可被分配的”东西，随每一步退化。把这个单一结构拆开，就得到六种不同的失败，每一种坏掉的东西都不一样。
+      </p>
+
+      <h2>真正坏掉的六样东西</h2>
+
+      <p>
+        这六种相互耦合，却不可替换。一个修好其中一种的方法，可能完全不碰其余几种——这正好解释了为什么攻击不同失败的论文彼此不引用。
+      </p>
+
+      <h3>1. 预测漂移（rollout drift）</h3>
+      <p>
+        学到的 transition function 把自己的预测当作下一步输入，于是一步的小误差会在 latent、reward、接触、物体位姿上变成有结构的多步误差。误差最大的地方是动力学不连续处：脚接触地面和脚处于腾空遵循不同的转移规则，一个被平滑过的单一模型会把它们平均掉。这正是 <a href="https://arxiv.org/abs/2203.04955">TD-MPC</a> 通过拒绝长 rollout 来规避的失败——它只规划短 horizon，剩下用 value function 估计——也是 PRISM-WM 通过把 transition function 按接触 regime 分解来正面处理的失败。
+      </p>
+
+      <h3>2. 规划器钻空子（planner exploitation）</h3>
+      <p>
+        一个为被动单步预测训练的 world model，在测试时被当成优化目标。planner 去搜索在模型内部评分最高的动作序列，而这个搜索会落到模型训练时从未见过的状态，那里它的误差不受约束。模型在预测上看着好，对控制却可能是坏的，因为 planner 在主动寻找它的盲区。这是 model-based planning 特有的 train-test gap：planner 把模型推向它从未被训练过的状态。
+      </p>
+
+      <h3>3. 信任步数未知（trust horizon）</h3>
+      <p>
+        即使模型不错，它也从不报告当前 rollout 能被信任多少步。缺的这个量，是一个随当前状态、任务阶段、接触 regime 变化的步数——值得使用的最长 rollout，它短于模型物理上能产生的最长 rollout。“误差会累积”是一句关于模型的话；trust horizon 是模型本该对自己作出的陈述，而几乎没有系统给出它。
+      </p>
+
+      <h3>4. 看着对但任务没成（plausible ≠ correct）</h3>
+      <p>
+        一个预测的未来可以在视觉上、物理上都 plausible，但真正的任务事件没有发生：夹爪看着闭合了，物体却没被抓起；轨迹看着平滑，某个 precondition 却被违反。进度的计量单位错了。模型被按“未来看着对不对”打分；它本该按“任务 predicate 是否变为真”打分。
+      </p>
+
+      <h3>5. 时间粒度太细（temporal granularity）</h3>
+      <p>
+        在每个 motor step 或每个 token 上规划，会让长任务变得不可解，因为决策数量随 horizon 增长。一个把 pixel 映射到 torque、跨几千步的扁平 policy，或一个逐 token 推理、跨几小时任务的扁平 agent，在求解一个决策数从构造上就太大的问题。
+      </p>
+
+      <h3>6. 状态丢失（state persistence）</h3>
+      <p>
+        在长执行里，系统会丢失物体身份、位置、被遮挡的事实、哪个子任务已完成、哪些约束仍被满足。同一个当前观测，可能因为一个早已离开画面的事件而需要不同的动作。这是非马尔可夫的失败：当前观测不再是充分状态。
+      </p>
+
+      <h2>反复出现的五个动作</h2>
+
+      <p>
+        在 coding agent、world model、控制三边，应对会收敛成五个族。每一个都在缩短、外置、核对、稳定或重训——而且每一个都落在上面某一种具体的失败上，long horizon 这个统称本身没有对应动作。
+      </p>
+
+      <h3>A. 缩短跨度</h3>
+      <p>
+        不要一次跨完整个跨度。规划一段短 rollout，尾部用 value function 估计（<a href="https://arxiv.org/abs/2203.04955">TD-MPC</a>）；在快速低层控制器之上叠一个慢速高层 planner，让每一层看到的 horizon 都更短（Puppeteer 这类层级 world model；经典的 <a href="https://www.sciencedirect.com/science/article/pii/S0004370299000521">options</a> 框架）；在 waypoint、subgoal 或逻辑 predicate 这种更粗的动作空间里规划（用 affordance 落地的 LLM 任务分解，如 SayCan）；一次预测整段 action chunk，把多步合并成一次决策。它处理预测漂移和时间粒度。它会失败在“高层被默认可靠”的地方：如果一个 subgoal 本身错了，低层执行得再完美，任务也错。
+      </p>
+
+      <h3>B. 外置状态</h3>
+      <p>
+        当 context 装不下这个跨度，就把它移到外面——而难点在检索本身，容量反而次要。progress 文件、结构化 handoff、execution-state memory 让一个从无记忆开始的 agent 能跨 session 继续（<a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Anthropic 的 harness 工作</a>）；episodic、keyframe、geometry-indexed 记忆让机器人 policy 取回当前决策所依赖的那一帧历史。它处理状态丢失。“更长的 context”是它较弱的版本；较强的版本在对的时刻检索对的证据，只取当前决策需要的那一份。
+      </p>
+
+      <h3>C. 以验证代替信任</h3>
+      <p>
+        既然“看着对”不等于“任务对”，就去核对任务事件是否真的发生，把“未来看着对”从评分里拿掉。在 coding agent 里这是 test oracle 和可执行验证；在机器人 world model 里，这是在视觉特征之上叠加 predicate 或 event 预测，以及把 model rollout 当作 policy evaluator，按真实成功来打分、把视觉质量排除在评分之外。它处理规划器钻空子和“看着对但任务没成”。它会失败在验证器本身错误或可被钻空子的地方，那样问题被转移，并未被消除。
+      </p>
+
+      <h3>D. 稳定 rollout</h3>
+      <p>
+        直接攻击误差源。把动力学按接触 regime、expert 或物体分解，让模型停止在不兼容的模式之间平滑（MoE / compositional dynamics，如 PRISM-WM；建立在 slot 表示上的 object-centric latent）；让 latent 围绕 control-relevant 训练，不要求它做 reconstruction（<a href="https://arxiv.org/abs/2203.04955">TD-MPC</a>、Dreamer 这类模型）；惩罚 epistemic uncertainty，让 planner 避开高误差区域（ensemble 分歧，如 PETS 这类 model-based RL）。它处理预测漂移，并通过缩小 train-test gap 处理规划器钻空子。分解的粒度——多少个 expert、多少个 regime——通常靠手工设定。
+      </p>
+
+      <h3>E. 修信号与数据</h3>
+      <p>
+        long-horizon 的失败常常出在 credit assignment 这一侧，而不在模型容量。为稀疏任务塑造稠密、stage-aware 的进度 reward；在人类与第一视角视频上预训练，从 action-free 视频里恢复 latent action，用可行的 retargeting 和 sim-to-real 让 policy 见到足够多的长任务分布。它处理“看着对但任务没成”和“时间粒度太细”在训练侧的那一面。稠密 reward 本身可被钻空子，这又直接喂回规划器钻空子。
+      </p>
+
+      <figure>
+        <table class="matrix">
+          <thead>
+            <tr>
+              <th class="rowhead">失败模式</th>
+              <th>A<br>缩短</th>
+              <th>B<br>外置</th>
+              <th>C<br>验证</th>
+              <th>D<br>稳定</th>
+              <th>E<br>信号·数据</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th><span class="mode-id">1</span>预测漂移</th>
+              <td class="mark">●</td><td class="mark"></td><td class="mark"></td><td class="mark">●</td><td class="mark partial">○</td>
+            </tr>
+            <tr>
+              <th><span class="mode-id">2</span>规划器钻空子</th>
+              <td class="mark"></td><td class="mark"></td><td class="mark">●</td><td class="mark">●</td><td class="mark"></td>
+            </tr>
+            <tr class="empty-row">
+              <th><span class="mode-id">3</span>信任步数未知</th>
+              <td class="mark"></td><td class="mark"></td><td class="mark"></td><td class="mark"></td><td class="mark"></td>
+            </tr>
+            <tr>
+              <th><span class="mode-id">4</span>看着对但任务没成</th>
+              <td class="mark"></td><td class="mark"></td><td class="mark">●</td><td class="mark"></td><td class="mark partial">○</td>
+            </tr>
+            <tr>
+              <th><span class="mode-id">5</span>时间粒度太细</th>
+              <td class="mark">●</td><td class="mark partial">○</td><td class="mark"></td><td class="mark"></td><td class="mark"></td>
+            </tr>
+            <tr>
+              <th><span class="mode-id">6</span>状态丢失</th>
+              <td class="mark"></td><td class="mark">●</td><td class="mark"></td><td class="mark partial">○</td><td class="mark"></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="legend">
+          <span class="dot">●</span> 该动作族直接处理这种失败 &nbsp;·&nbsp;
+          <span class="dot partial">○</span> 部分处理。竖着读每一列，看一个动作在做什么；横着读每一行，看一种失败被覆盖到什么程度。第 3 行是最后一节的对象：trust horizon 没有任何一列。
+        </div>
+        <figcaption>
+          自制示意图。六种失败对五种动作。矩阵按每个动作所操作的机制来填，并非取自某一篇论文。唯一全空的那一行，是本文的论点。
+        </figcaption>
+      </figure>
+
+      <h2>两个世界，同一组动作</h2>
+
+      <p>
+        这五个族是领域无关的。一个 coding agent 和一个机器人 world model 看着毫不相关，但当同一种失败在两边都出现，应对它的动作是同一个——变的只是实现。把两个世界放进同一张表，是看清这件事最直接的方式。
+      </p>
+
+      <figure>
+        <table class="compare">
+          <thead>
+            <tr>
+              <th>动作</th>
+              <th>Coding / LLM agent</th>
+              <th>机器人 world model</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>A · 缩短</th>
+              <td>把 spec 分解成 feature；subagent 的 branch-and-merge</td>
+              <td>层级 world model；短窗 MPC 加 terminal value</td>
+            </tr>
+            <tr>
+              <th>B · 外置</th>
+              <td>progress 文件、历史 compaction、结构化 handoff</td>
+              <td>episodic 与 geometry-indexed 记忆；keyframe 检索</td>
+            </tr>
+            <tr>
+              <th>C · 验证</th>
+              <td>test oracle、可执行检查、held-out 测试</td>
+              <td>对想象未来的 predicate / event 验证</td>
+            </tr>
+            <tr>
+              <th>D · 稳定</th>
+              <td>剪除陈旧、诱发漂移内容的 context curation</td>
+              <td>按 regime 分解、object-centric 的动力学</td>
+            </tr>
+            <tr>
+              <th>E · 信号·数据</th>
+              <td>合成能诱发长程行为的开放式任务</td>
+              <td>稠密进度 reward；人类视频与 latent-action 预训练</td>
+            </tr>
+          </tbody>
+        </table>
+        <figcaption>
+          同一组五个动作，横跨两个领域来读。compaction 就是 latent 压缩；progress 文件就是 episodic memory；test oracle 就是 event verification；spec 分解就是 hierarchical subgoaling。一旦以动作为单位来组织，领域差异就退居次要，一个领域里积累的经验能迁移到另一个领域。
+        </figcaption>
+      </figure>
+
+      <p>
+        这是这套分解的实际收益。不必把上百篇 long-horizon 论文当成上百个独立想法来追。每一篇都是五个动作之一，作用在六种失败之一上，落在某一个领域里。这张地图很小。
+      </p>
+
+      <h2>仍然缺的一步：trust horizon</h2>
+
+      <p>
+        回到矩阵。五行都被至少一个族覆盖。第三行是空的，而这个空并非画表时的偶然。
+      </p>
+
+      <p>
+        A 到 E 都在提升某样东西的质量：模型、planner、记忆、数据。更好的模型漂移更慢；一个在自己诱发的状态上训练过的 planner 更难被钻空子；更好的检索保住更多状态；更好的 reward shaping 把 credit 分得更远。它们都不产出校准。它们让 rollout 更可信，却不告诉 planner 该信任它多远——而一个更准、却没有信任估计的模型，仍然是被盲目调用的。
+      </p>
+
+      <p>
+        这个缺口之所以要紧，是因为闭环规划必须使用 rollout。没有“rollout 还有效多远”的估计，planning horizon 就退化成一个固定超参数：在简单状态上太短，那里模型本可以安全地看更远；在接触、模式切换这类脆弱状态上太长，那里模型其实已经漂移。这个 horizon 本该是状态的函数，而现在它是一个常数。
+      </p>
+
+      <p>
+        一条通向它的路径经过动作 D。一旦动力学按 regime 或 expert 分解——PRISM-WM 在接触丰富控制上走的方向——每个 regime 就带着自己的 instrumentation：自己的预测一致性、自己的不确定性、自己关于“何时不再适用”的证据。这套结构，正是一个随状态变化的 trust horizon 所需要的。这个干预很小、可检验：在已有 world model 之上加一个 horizon 估计，用它给 planner 设门，而不重训基座动力学。它是这张地图上唯一动作尚未出现的位置，这让它成为下一步最具体可做的事。
+      </p>
+
+      <p>
+        六种失败、五个动作已经覆盖了近期大部分工作。还没有任何一个族能做到的，是让模型报告自己可信的步数。那是藏在 “long horizon” 这个词里的、仍未解决的问题。
+      </p>
+
+      <h2>Sources</h2>
+      <ol class="references">
+        <li><a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control</a>，Hansen、Wang、Su，ICML 2022 —— 短窗 latent rollout 加 terminal value。</li>
+        <li><a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Effective harnesses for long-running agents</a> 与 <a href="https://www.anthropic.com/engineering/harness-design-long-running-apps">Harness design for long-running application development</a>，Anthropic Engineering —— 长程 agent 的失败模式与 artifact handoff。</li>
+        <li><a href="https://www.sciencedirect.com/science/article/pii/S0004370299000521">Between MDPs and semi-MDPs: A framework for temporal abstraction</a>，Sutton、Precup、Singh，Artificial Intelligence 1999 —— 用于时间抽象的 options 框架。</li>
+        <li><a href="https://www.nature.com/articles/s41586-020-03051-4">Mastering Atari, Go, Chess and Shogi by Planning with a Learned Model</a>（MuZero），Schrittwieser 等，Nature 2020 —— 围绕 planning 接口组织的 world model。</li>
+      </ol>
+    </article>
+  </main>
+
+  <script>
+    const languageKey = "writing-language";
+    const titles = {
+      en: "Long Horizon Is Not One Problem — Sense Wang",
+      zh: "长程：六种失败，五种应对 — Sense Wang"
+    };
+    const buttons = Array.from(document.querySelectorAll("[data-lang-button]"));
+    const panels = Array.from(document.querySelectorAll("[data-lang-panel]"));
+
+    function setLanguage(lang) {
+      buttons.forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.langButton === lang));
+      });
+
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.langPanel !== lang;
+      });
+
+      document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+      document.title = titles[lang];
+      localStorage.setItem(languageKey, lang);
+    }
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => setLanguage(button.dataset.langButton));
+    });
+
+    setLanguage(localStorage.getItem(languageKey) === "zh" ? "zh" : "en");
+  </script>
+</body>
+</html>
