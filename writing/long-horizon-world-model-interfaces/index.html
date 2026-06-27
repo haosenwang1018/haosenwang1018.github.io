@@ -296,32 +296,158 @@
         </table>
       </div>
 
-      <h2>Planner 使用模型</h2>
-
       <p>
-        Planner interface 研究的是 world model 被使用时的分布。一个模型做被动预测时可能表现稳定；放进 MPC、CEM、MPPI 或 gradient planner 后，planner 会主动搜索 high-score action sequences。被选中的轨迹可能进入训练数据覆盖很弱的区域。
+        这五个接口对应同一个闭环机器人系统里的五类问题：模型怎样被 planner 调用，预测误差怎样随状态变化，任务进度怎样被保存，动作粒度怎样影响有效任务长度，以及 world model 怎样进入评估和数据基础设施。
       </p>
 
       <p>
-        这个接口的实验重点是保存 planner 的候选轨迹。比较 random candidates、high-score rejected candidates 和 selected candidate，观察 selected candidate 是否更容易出现 latent error、event error、value ranking error 或真实 success gap。
+        因此，long-horizon 的研究可以先从接口开始，再决定方法名。一个方向是否值得做，取决于它能否把失败定义清楚，能否设计实验暴露这个失败，能否用指标证明改动真的改变了 closed-loop outcome。
       </p>
 
-      <div class="note">
-        <div class="note-title">experiment</div>
-        <p>
-          对同一个 world model，记录 MPC/CEM/gradient planner 的全部候选动作序列。把 planner 最终选择的 trajectory 和普通候选分开评估。若 selected candidate 的 imagined score 高、真实执行差，问题就从平均 prediction error 变成 planner-induced reliability failure。
-        </p>
+      <h2>子集一：Planner 使用模型</h2>
+
+      <p>
+        这个子集研究的是 world model 被使用时的分布。一个模型做被动预测时可能表现稳定；放进 MPC、CEM、MPPI 或 gradient planner 后，planner 会主动搜索 high-score action sequences。被选中的轨迹可能进入训练数据覆盖很弱、模型最不稳定、但 reward 或 value 看起来很高的区域。
+      </p>
+
+      <p>
+        它想解决的问题很具体：随机 rollout 的误差小，不代表 planner 最终会选的 rollout 可靠。长任务里的风险集中在被 planner 选中的那条轨迹。
+      </p>
+
+      <h3>代表论文</h3>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Work</th>
+              <th>Role in this subset</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2203.04955">TD-MPC</a></td>
+              <td>给出短 horizon latent MPC + terminal value 的经典接口：模型只预测一小段，剩下交给 value。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2602.00475">GRASP</a></td>
+              <td>指出长 horizon 梯度规划会因 serial rollout optimization 变难，用 lifted-state planning 改优化接口。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2512.09929">Closing the Train-Test Gap</a></td>
+              <td>把 planner-induced states 和 rollout distribution shift 明确作为 world model planning 的失败来源。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2606.13672">WEAVER</a></td>
+              <td>把 world model 用于 policy evaluation、policy improvement 和 test-time planning，暴露“模型被用起来以后”的可靠性问题。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2605.14937">Slot-MPC</a></td>
+              <td>说明视觉指标好的 world model 不一定能被 planner 用好；planner 需要控制相关表示。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2601.16163">Cosmos Policy</a></td>
+              <td>把 video world model 接进 policy、world model 和 value 体系，并用 best-of-N planning 选择动作。</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <h2>Dynamics 与 rollout fidelity</h2>
+      <h3>实验形状</h3>
 
       <p>
-        Dynamics interface 研究的是模型在不同物理状态下能被信任多远。接触前的状态比较平滑；接触中会出现摩擦、碰撞、抓取成败、对象位移；物体被遮挡后，当前观测又不足以恢复完整状态。同样 rollout 10 步，难度随状态改变。
+        这个方向的实验不应只画平均 rollout error。更有信息量的做法是保存 planner 里的所有候选轨迹，把候选分成三组，再分别测它们在真实环境、replay future 或高保真 simulator 里的结果。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Candidate group</th>
+              <th>What to measure</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>random candidates</td>
+              <td>planner 优化前的普通候选，用作模型平均预测能力的对照组。</td>
+            </tr>
+            <tr>
+              <td>high-score rejected candidates</td>
+              <td>模型里得分高但未被最终选中的候选，用来观察 reward/value 是否已经开始高估。</td>
+            </tr>
+            <tr>
+              <td>selected candidate</td>
+              <td>planner 最终想执行的候选，用来测 latent error、event error、value ranking error 和真实 success gap。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>可能的研究题</h3>
+
+      <ul>
+        <li>Planner-selected rollouts are less trustworthy than random rollouts in contact-rich long-horizon manipulation.</li>
+        <li>A planner-aware trust score can reduce model exploitation without training a bigger world model.</li>
+        <li>Gradient planning and sampling-based MPC fail in different ways; long-horizon failure should be diagnosed by planner interface, not only by model architecture.</li>
+      </ul>
+
+      <h3>边界</h3>
+
+      <p>
+        这个子集可以做 verifier，也可以做 planner logging、planner-induced OOD measurement、train-test rollout distribution correction，或者优化器接口改造。核心是证明 planner 调用模型的方式改变了失败分布。
+      </p>
+
+      <h2>子集二：Dynamics 与 rollout fidelity</h2>
+
+      <p>
+        这个子集研究的是模型在不同物理状态下能被信任多远。接触前的状态比较平滑；接触中会出现摩擦、碰撞、抓取成败和对象位移；物体被遮挡后，当前 observation 又不足以恢复完整状态。同样 rollout 10 步，难度会随状态改变。
       </p>
 
       <p>
-        <a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a> 把 hybrid / contact dynamics 的 oversmoothing 作为核心失败模式。<a href="https://arxiv.org/abs/2606.21775">VLWM</a> 和 <a href="https://arxiv.org/abs/2512.04341">NEUBAY</a> 从 horizon 建模和 adaptive rollout 的角度说明，预测长度本身也是方法接口。
+        它想解决的问题是：在什么状态、接触模式、对象配置或任务阶段下，world model 的 rollout fidelity 会突然下降。这里的 long-horizon failure 会随状态改变，无法用一个统一时间长度概括。
       </p>
+
+      <h3>代表论文</h3>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Work</th>
+              <th>Role in this subset</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a></td>
+              <td>把 hybrid / contact dynamics 的 oversmoothing 作为核心失败模式，用 mixture-of-experts dynamics 提升长 horizon latent fidelity。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2606.21775">VLWM</a></td>
+              <td>认为固定 one-step latent prediction 容易积累误差，用 variable-length latent world model 改预测长度接口。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2601.03782">PointWorld</a></td>
+              <td>用 3D point-flow 预测物体和场景的几何变化，把 rollout fidelity 从像素转到几何运动。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2605.14937">Slot-MPC</a></td>
+              <td>用 object slots 表达状态，让 planner 直接关心物体状态，避开整张图像预测带来的无关负担。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2512.04341">NEUBAY</a></td>
+              <td>从 adaptive horizon 和 Bayesian evaluation 的角度讨论什么时候该信多远。</td>
+            </tr>
+            <tr>
+              <td>Universal Horizon Models</td>
+              <td>尝试把不同 horizon 的预测统一建模，覆盖固定长度预测器之外的时间尺度。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>实验形状</h3>
 
       <div class="table-wrap">
         <table>
@@ -357,42 +483,390 @@
         </table>
       </div>
 
-      <h2>Event、memory 与 progress</h2>
+      <p>
+        指标需要越过像素。更接近控制的指标包括 latent error、object pose error、point-flow error、event error、value ranking error 和 closed-loop success。最有用的图往往是按状态类别分组的 trust-horizon 曲线。
+      </p>
+
+      <h3>可能的研究题</h3>
+
+      <ul>
+        <li>State-dependent rollout fidelity: learned robot world models have different trust horizons across contact regimes.</li>
+        <li>Contact-aware world model evaluation predicts closed-loop planning failure better than average rollout error.</li>
+        <li>Object and point representations help planning because they preserve decision-relevant state, not because they generate prettier futures.</li>
+      </ul>
+
+      <h3>边界</h3>
+
+      <p>
+        这个子集可以先做纯诊断，不必一开始就训练完整 policy。它适合从 TD-MPC / PRISM-WM 这类复现体系进入，因为这些方法本来就把 latent dynamics、rollout horizon 和 planning success 放在同一个实验框架里。
+      </p>
+
+      <h2>子集三：Event、memory 与 progress</h2>
 
       <p>
         长任务由一串事件组成。杯子是否已经被拿起，抽屉是否打开过，目标物体被遮挡前在哪里，子任务是否已经完成，这些信息经常无法从当前图像直接读出。
       </p>
 
       <p>
-        <a href="https://arxiv.org/abs/2606.13053">EV-WM</a> 将 event / predicate verification 接进 planning。<a href="https://arxiv.org/abs/2606.18960">Mem-World</a> 用 geometry-indexed memory 处理 wrist-view occlusion。<a href="https://arxiv.org/abs/2606.23589">KEMO</a> 和 <a href="https://arxiv.org/abs/2606.20092">EventVLA</a> 将 keyframe 和 event evidence 作为长任务记忆的核心对象。
+        它想解决的问题是：world model 不能只预测下一帧像不像，还要回答关键事件有没有发生、哪些历史证据必须保存、当前任务推进到哪一步。如果视觉未来看起来合理，但事件顺序错了，系统仍然会失败。
       </p>
+
+      <h3>代表论文</h3>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Work</th>
+              <th>Role in this subset</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2606.13053">EV-WM</a></td>
+              <td>把 event / predicate verification 接进 planning，让未来不只被视觉质量评分，也被事件进度评分。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2606.18960">Mem-World</a></td>
+              <td>处理 wrist-view occlusion 和 camera motion，用 geometry-indexed memory 保持长任务一致性。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2606.23589">KEMO</a></td>
+              <td>用 event-driven keyframe memory 处理 memory-dependent long-horizon manipulation。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2606.20092">EventVLA</a></td>
+              <td>把 transient event evidence 作为长任务记忆对象，补足只保存视觉 anchor 的方案。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2602.11291">H-WM</a></td>
+              <td>用 hierarchical logical world model 和 visual guidance，把任务进度拆成显式逻辑状态。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2604.21924">LoHo-Manip</a></td>
+              <td>用 task manager 预测剩余 subtasks 和 visual traces，服务 receding-horizon execution。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2606.01027">tau0-WM</a></td>
+              <td>把 action generation、video prediction 和 progress scoring 放进同一个系统，并用 test-time compute 提升多阶段任务。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>实验形状</h3>
 
       <p>
-        这一类实验需要 memory-dependent tasks。任务可以让关键物体短暂出现后被遮挡，要求系统在多个子任务之后仍能恢复对象身份、位置或事件状态。指标应包含 task success、stage completion、event accuracy、progress score，以及移除 memory 后的下降幅度。
+        这一类实验需要 memory-dependent tasks。任务可以超出单步 pick-and-place：让关键物体短暂出现后被遮挡，要求系统在多个子任务之后仍能恢复对象身份、位置或事件状态。
       </p>
 
-      <h2>Action abstraction 与 hierarchy</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Task design</th>
+              <th>Failure exposed</th>
+              <th>Useful metrics</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>物体短暂出现后被遮挡</td>
+              <td>object persistence 和 memory retrieval。</td>
+              <td>object identity accuracy, pose error</td>
+            </tr>
+            <tr>
+              <td>多个中间状态必须保留</td>
+              <td>event memory 是否保存了已发生事实。</td>
+              <td>event accuracy, stage completion</td>
+            </tr>
+            <tr>
+              <td>子任务顺序必须正确</td>
+              <td>progress state 是否能区分任务阶段。</td>
+              <td>progress score, subtask success</td>
+            </tr>
+            <tr>
+              <td>当前画面无法区分任务阶段</td>
+              <td>模型是否真的使用历史证据。</td>
+              <td>memory ablation drop, final success</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>可能的研究题</h3>
+
+      <ul>
+        <li>Event memory is a smaller and more useful interface than full video memory for long-horizon robot manipulation.</li>
+        <li>Progress-state prediction can diagnose long-horizon failure earlier than pixel or latent error.</li>
+        <li>Keyframe selection should be event-driven, not frame-uniform, in memory-dependent manipulation.</li>
+      </ul>
+
+      <h3>边界</h3>
+
+      <p>
+        这个子集更偏 VLA、manipulation 和 real robot。它不一定需要 MPC，也可以作为 policy wrapper、memory module、task manager 或 progress verifier。它的难点是任务、数据、标注和真实平台更重。
+      </p>
+
+      <h2>子集四：Action abstraction 与 hierarchy</h2>
 
       <p>
         Long-horizon 也可能来自动作粒度。每一步都输出底层关节 action，会把任务拉成很长的序列。更高层的 action chunk、subgoal、waypoint 或 hierarchy 可以缩短有效决策长度，但会把问题转移到低层控制器和子目标可达性上。
       </p>
 
       <p>
-        <a href="https://arxiv.org/abs/2405.18418">Puppeteer</a> 用低层 motion prior 和高层 visual puppeteering agent 组织 humanoid control。<a href="https://arxiv.org/abs/2603.12263">Psi-Zero</a> 通过 human video pretraining 和 humanoid action expert post-training 处理长任务 humanoid loco-manipulation。<a href="https://arxiv.org/abs/2601.16163">Cosmos Policy</a> 则把视频基础模型 fine-tune 成 policy、world model 和 value model。
+        它想解决的问题是：长任务的困难可能不在 world model 大小，而在 action interface。底层动作空间太细，planner 要想很久；高层动作空间太粗，又可能丢掉接触细节。
       </p>
+
+      <h3>代表论文</h3>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Work</th>
+              <th>Role in this subset</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2405.18418">Puppeteer</a></td>
+              <td>用低层 motion prior 和高层 visual puppeteering agent，让 humanoid 做视觉全身控制且动作自然。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2603.12263">Psi-Zero</a></td>
+              <td>通过 human video pretraining 和 humanoid action expert post-training，把 humanoid loco-manipulation 变成可执行任务。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2601.16163">Cosmos Policy</a></td>
+              <td>把视频基础模型 fine-tune 成 policy、world model 和 value model，用 latent frame injection 支持动作生成和规划。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2511.19584">Newt</a></td>
+              <td>展示 TD-MPC2-style agent 在 200 个连续控制任务上的 multitask scaling、language、demos 和 open-loop horizon。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2604.21924">LoHo-Manip</a></td>
+              <td>用 task manager 负责长任务分解和中间 visual trace，底层 policy 执行局部动作。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2606.01027">tau0-WM</a></td>
+              <td>用 progress scoring 和 test-time compute 选择更好的多阶段动作。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>实验形状</h3>
 
       <p>
-        这个接口的实验不应只比较最终 success。还需要 subtask success、action continuity、motion naturalness、human preference、latency，以及失败发生在哪个任务阶段。
+        这个接口的实验应该比较不同 action interface，模型大小只作为对照变量。
       </p>
 
-      <h2>评估与数据基础设施</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Action interface</th>
+              <th>What it tests</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>low-level action</td>
+              <td>逐步动作最精细，但有效 horizon 最长。</td>
+            </tr>
+            <tr>
+              <td>action chunk</td>
+              <td>一次输出一段动作，减少决策次数，但需要处理连续性和纠错。</td>
+            </tr>
+            <tr>
+              <td>subgoal / waypoint</td>
+              <td>高层规划更短，但要求低层控制器能可靠到达。</td>
+            </tr>
+            <tr>
+              <td>event-conditioned action</td>
+              <td>用任务事件指导动作段，测试动作是否跟任务进度对齐。</td>
+            </tr>
+            <tr>
+              <td>hierarchy</td>
+              <td>高层选目标，低层保证身体自然和可执行。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        指标除了 task success，还应包括 subtask success、action continuity、motion naturalness、human preference、latency，以及失败发生在哪个任务阶段。
+      </p>
+
+      <h3>可能的研究题</h3>
+
+      <ul>
+        <li>Long-horizon failure can be reduced by changing action granularity before changing model scale.</li>
+        <li>Hierarchical action interfaces are useful when low-level rollout length, rather than perception, is the bottleneck.</li>
+        <li>Naturalness and success can diverge; humanoid long-horizon work needs both task metrics and motion-quality metrics.</li>
+      </ul>
+
+      <h3>边界</h3>
+
+      <p>
+        这个子集和 humanoid、whole-body control、VLA 很贴近，但离 TD-MPC / PRISM-WM 的 model-based RL 核心稍远。它适合作为真实机器人和工业 Physical AI 的方向，但不一定是最小可做学术题。
+      </p>
+
+      <h2>子集五：评估与数据基础设施</h2>
 
       <p>
         World model 的用途已经超出控制本身。它可以评估 policy、生成 synthetic data、筛选 test-time candidates，或者构造专门暴露 long-horizon failure 的 benchmark。
       </p>
 
       <p>
-        <a href="https://arxiv.org/abs/2606.13672">WEAVER</a> 直接把 world model 用于 policy evaluation、policy improvement 和 test-time planning。<a href="https://arxiv.org/abs/2606.02800">Cosmos 3</a> 把 robotics action generation 放进 omnimodal Physical AI backbone。这个方向的核心证据不应只来自视频指标，还要看 policy-ranking correlation、真实 success improvement、synthetic data 带来的增益，以及 evaluation 是否能预测真实失败。
+        它想解决的问题是：如果 world model 暂时不足以直接闭环控制，它仍然能不能作为基础设施带来价值。比如离线评估哪个 policy 更可能成功，生成额外训练数据，在 test-time 筛掉危险动作，或把 benchmark 从单任务成功率扩展到 long-horizon progress、event、memory 和 geometry。
+      </p>
+
+      <h3>代表论文</h3>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Work</th>
+              <th>Role in this subset</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2606.13672">WEAVER</a></td>
+              <td>明确展示 world model 可以做 policy evaluation、policy improvement 和 test-time planning。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2606.18960">Mem-World</a></td>
+              <td>用 memory-based world model 做 policy evaluation 和 synthetic data improvement。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2606.02800">Cosmos 3</a></td>
+              <td>工业级 Physical AI backbone，把 robotics action generation 放进 omnimodal foundation model。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2601.16163">Cosmos Policy</a></td>
+              <td>从视频基础模型到 policy、world model 和 value，展示工业路线里的可部署接口。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2511.19584">Newt</a></td>
+              <td>给出 multitask benchmark 和 scaling 叙事，强调 benchmark、data 和 generalization。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2601.03782">PointWorld</a></td>
+              <td>用大规模 3D point-flow world model 做控制相关预测和 zero-shot MPC。</td>
+            </tr>
+            <tr>
+              <td><a href="https://arxiv.org/abs/2606.00113">World-model surveys</a></td>
+              <td>强调 world model 的评价不应只看视频质量，还要看控制、规划、泛化和可靠性。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>实验形状</h3>
+
+      <p>
+        这个方向不应只做模型指标。至少要把 world-model metric 和真实 robot 或 policy outcome 连起来。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Experiment</th>
+              <th>What it proves</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>policy evaluation correlation</td>
+              <td>world model 的预测成功率是否和真实成功率相关。</td>
+            </tr>
+            <tr>
+              <td>synthetic data improvement</td>
+              <td>world model 生成数据后，policy 是否真的更好。</td>
+            </tr>
+            <tr>
+              <td>test-time candidate filtering</td>
+              <td>world model 能否筛掉会失败的动作。</td>
+            </tr>
+            <tr>
+              <td>benchmark stress test</td>
+              <td>新 benchmark 是否能暴露旧 benchmark 看不到的 failure。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>可能的研究题</h3>
+
+      <ul>
+        <li>World model evaluation should be measured by policy-ranking correlation, not only video fidelity.</li>
+        <li>Synthetic rollouts are useful only when they preserve task events and contact-relevant state.</li>
+        <li>A long-horizon benchmark should expose memory, event progress, planner exploitation, and state-dependent drift separately.</li>
+      </ul>
+
+      <h3>边界</h3>
+
+      <p>
+        这个子集最贴近工业界，但也最容易变大。要做学术产出，需要把问题收窄成一个可证明的 claim，比如 policy ranking correlation、synthetic data 在某类 failure 上有效，或 benchmark 能区分两类旧方法。
+      </p>
+
+      <h2>五个子集之间的关系</h2>
+
+      <p>
+        这张图可以按机器人执行链来讲。系统要先记住过去，再想象未来，接着决定动作粒度，再用模型选动作，最后用评估和数据改进下一轮系统。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Execution position</th>
+              <th>Research subset</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>记住过去</td>
+              <td>Event / memory / progress</td>
+            </tr>
+            <tr>
+              <td>想象未来</td>
+              <td>Dynamics / rollout fidelity</td>
+            </tr>
+            <tr>
+              <td>决定动作粒度</td>
+              <td>Action abstraction / hierarchy</td>
+            </tr>
+            <tr>
+              <td>用模型选动作</td>
+              <td>Planner 使用模型的接口</td>
+            </tr>
+            <tr>
+              <td>评估和改进系统</td>
+              <td>World model 基础设施</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>从哪里开始做</h2>
+
+      <p>
+        第一优先级是 dynamics / rollout fidelity。它最贴近 TD-MPC 和 PRISM-WM，也最容易做成清楚实验。这个方向能回答“长任务什么时候开始漂”，不需要一开始就搭完整机器人系统。
+      </p>
+
+      <p>
+        第二优先级是 planner 使用模型的接口。它比单纯 prediction 更接近 model-based control 的核心。关键实验是比较 selected candidate 和普通 rollout，避免只画泛泛的误差曲线。
+      </p>
+
+      <p>
+        第三优先级是 event / memory / progress。它更贴近真实 long-horizon manipulation 和工业 VLA，但需要任务、数据、标注和机器人平台支撑。若已有 real robot 或 imitation / VLA 资源，这个方向会很有价值。
       </p>
 
       <h2>Verifier-MPC 在这张图里的位置</h2>
@@ -419,13 +893,24 @@
         <li><a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a></li>
         <li><a href="https://arxiv.org/abs/2602.00475">GRASP</a></li>
         <li><a href="https://arxiv.org/abs/2512.09929">Closing the Train-Test Gap in World Models for Gradient-Based Planning</a></li>
+        <li><a href="https://arxiv.org/abs/2606.21775">VLWM</a></li>
+        <li><a href="https://arxiv.org/abs/2601.03782">PointWorld</a></li>
+        <li><a href="https://arxiv.org/abs/2605.14937">Slot-MPC</a></li>
+        <li><a href="https://arxiv.org/abs/2512.04341">NEUBAY</a></li>
         <li><a href="https://arxiv.org/abs/2606.13053">EV-WM</a></li>
         <li><a href="https://arxiv.org/abs/2606.13672">WEAVER</a></li>
         <li><a href="https://arxiv.org/abs/2606.18960">Mem-World</a></li>
         <li><a href="https://arxiv.org/abs/2606.23589">KEMO</a></li>
         <li><a href="https://arxiv.org/abs/2606.20092">EventVLA</a></li>
+        <li><a href="https://arxiv.org/abs/2602.11291">H-WM</a></li>
+        <li><a href="https://arxiv.org/abs/2604.21924">LoHo-Manip</a></li>
+        <li><a href="https://arxiv.org/abs/2606.01027">tau0-WM</a></li>
+        <li><a href="https://arxiv.org/abs/2405.18418">Puppeteer</a></li>
+        <li><a href="https://arxiv.org/abs/2603.12263">Psi-Zero</a></li>
+        <li><a href="https://arxiv.org/abs/2511.19584">Newt</a></li>
         <li><a href="https://arxiv.org/abs/2601.16163">Cosmos Policy</a></li>
         <li><a href="https://arxiv.org/abs/2606.02800">Cosmos 3</a></li>
+        <li><a href="https://arxiv.org/abs/2606.00113">World Models for Robotic Manipulation: A Survey</a></li>
         <li><a href="https://arxiv.org/abs/2606.23085">Foresight: Failure Detection for Long-Horizon Robotic Manipulation with Action-Conditioned World Model Latents</a></li>
         <li><a href="https://arxiv.org/html/2606.23079v1">AdaReP: Adaptive Re-Planning under Model Mismatch for Neural World-Model Predictive Control</a></li>
       </ul>
