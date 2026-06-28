@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="一张闭环底图：机器人用学出来的世界模型在脑子里想象、打分、选动作。把近半年 long-horizon world model 的前沿论文挂回这张图，每篇都在改其中一个零件。">
+  <title>机器人世界模型的闭环底图：long-horizon 论文都在改哪个零件 - Sense Wang</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      color: #111;
+      background: #fff;
+      line-height: 1.78;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    main {
+      max-width: 780px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 72px 20px 112px;
+    }
+
+    nav {
+      margin-bottom: 52px;
+      font-size: 13px;
+    }
+
+    a {
+      color: #111;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    a:hover { opacity: 0.55; }
+
+    h1 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 42px;
+      line-height: 1.12;
+      font-weight: 700;
+      margin-bottom: 14px;
+      max-width: 760px;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 25px;
+      line-height: 1.28;
+      margin: 58px 0 15px;
+      padding-top: 2px;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      font-size: 18px;
+      line-height: 1.42;
+      margin: 32px 0 9px;
+      letter-spacing: 0;
+    }
+
+    p { margin-bottom: 17px; }
+
+    .meta {
+      color: #999;
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+
+    .dek {
+      color: #444;
+      font-size: 19px;
+      line-height: 1.62;
+      max-width: 720px;
+      margin-bottom: 44px;
+    }
+
+    .note {
+      border-left: 3px solid #111;
+      color: #333;
+      font-size: 16px;
+      line-height: 1.72;
+      margin: 28px 0 32px;
+      padding: 2px 0 2px 18px;
+    }
+
+    .note p { margin-bottom: 10px; }
+    .note p:last-child { margin-bottom: 0; }
+
+    .note-title {
+      color: #777;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .formula {
+      background: #fafafa;
+      border: 1px solid #ececec;
+      color: #333;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      line-height: 1.65;
+      margin: 24px 0 28px;
+      overflow-x: auto;
+      padding: 18px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .figure {
+      margin: 38px 0 40px;
+      border-top: 1px solid #e5e5e5;
+      border-bottom: 1px solid #e5e5e5;
+      padding: 24px 0 18px;
+    }
+
+    .figure svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .caption {
+      color: #777;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-top: 12px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin: 30px 0 36px;
+      border-top: 1px solid #d8d8d8;
+      border-bottom: 1px solid #e8e8e8;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 12px 14px;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      color: #555;
+      font-size: 12px;
+      letter-spacing: 0.03em;
+      font-weight: 600;
+      text-transform: uppercase;
+      background: #fafafa;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    td:first-child {
+      color: #111;
+      font-weight: 650;
+      width: 27%;
+    }
+
+    td.org { color: #666; width: 21%; font-weight: 500; }
+
+    ul, ol {
+      margin: 14px 0 24px 22px;
+    }
+
+    li {
+      margin-bottom: 9px;
+      padding-left: 4px;
+    }
+
+    .references {
+      color: #555;
+      font-size: 15px;
+      margin-left: 22px;
+    }
+
+    .references li {
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    strong { font-weight: 680; }
+
+    @media (max-width: 560px) {
+      main {
+        margin: 0;
+        max-width: 100%;
+        padding: 48px 18px 88px;
+      }
+
+      h1 { font-size: 31px; }
+      h2 { font-size: 22px; margin-top: 46px; }
+      body { font-size: 16px; }
+      .dek { font-size: 18px; }
+      table { min-width: 720px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+    <article>
+      <h1>机器人世界模型的闭环底图：long-horizon 论文都在改哪个零件</h1>
+      <div class="meta">June 2026</div>
+
+      <p class="dek">
+        long-horizon world model 的论文表面上很分散：latent dynamics、object slots、event verifier、memory、JEPA、video foundation model。把它们放回同一张图——机器人用一个学出来的想象器在脑子里选动作的闭环——就会发现，每篇都在改这张图的某一个零件。这篇用这张底图当轴，把近半年的前沿工作挂回各自的位置。
+      </p>
+
+      <h2>先把这张图画清楚</h2>
+
+      <p>
+        用一个具体任务贯穿全程：机械臂去抓桌上的杯子，放进柜子里。
+      </p>
+
+      <p>
+        机器人此刻看到一张图，这是它的当前状态 <code>s_t</code>。它要决定手怎么动，办法是先在脑子里试、再动真的。它脑子里有一个 <strong>world model</strong>：给它「现在长这样 + 我打算这么动」，它能想象「下一刻会变成什么样」。这个想象器是<strong>学出来的，所以会犯错</strong>。
+      </p>
+
+      <p>
+        机器人在脑子里试很多套动作方案，每套叫一个 <strong>candidate action sequence</strong>。对每一套，用 world model 一步一步往后想象：现在 → 下一刻 → 再下一刻，这条想象出来的未来序列就是 <strong>rollout</strong>。往后想象到第几步停，那个步数就是 <strong>horizon</strong>；固定 horizon 指不管什么情况都想象固定的 H 步。
+      </p>
+
+      <p>
+        每条想象出来的未来都要打分：这条路最后能不能把杯子放进柜子。打分用 reward 加 <strong>value</strong>。value 是在想象的<strong>终点之后</strong>，估计「接下来还能拿多少分」——因为只想象了有限几步，终点之后的好坏没法继续想象，得靠一个 value 函数补上。
+      </p>
+
+      <p>
+        终点怎么跟 value 接上，是这张图的一个关键细节。value 本身也是学出来的，用 TD（时序差分）训练：让「这一步的 value」逼近「这一步的 reward 加上下一步的 value」，一环扣一环，把长期回报回灌到短视界的终点。<a href="https://arxiv.org/abs/2203.04955">TD-MPC</a> 就是这么把「短想象 + 长期价值」接起来：latent dynamics 只向前 rollout 几步，terminal value 估计更远的未来。
+      </p>
+
+      <p>
+        选分最高那套，<strong>只执行第一步</strong>，然后重新看一眼真实世界（reobserve），整个循环再来一遍。这个「想象 → 打分 → 选 → 走一步 → 再看」的搜索器，整体叫 <strong>planner / MPC</strong>。planner 就是那个在脑子里搜动作的东西。
+      </p>
+
+      <div class="figure" aria-label="World model planning loop">
+        <svg viewBox="0 0 760 240" role="img">
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#111"></path>
+            </marker>
+          </defs>
+          <rect x="18" y="42" width="126" height="58" fill="#fff" stroke="#111"></rect>
+          <text x="81" y="66" text-anchor="middle" font-size="14" font-weight="650">observe</text>
+          <text x="81" y="85" text-anchor="middle" font-size="12" fill="#666">current state</text>
+
+          <rect x="188" y="42" width="126" height="58" fill="#fff" stroke="#111"></rect>
+          <text x="251" y="66" text-anchor="middle" font-size="14" font-weight="650">sample</text>
+          <text x="251" y="85" text-anchor="middle" font-size="12" fill="#666">candidate actions</text>
+
+          <rect x="358" y="42" width="126" height="58" fill="#fff" stroke="#111"></rect>
+          <text x="421" y="66" text-anchor="middle" font-size="14" font-weight="650">rollout</text>
+          <text x="421" y="85" text-anchor="middle" font-size="12" fill="#666">world model</text>
+
+          <rect x="528" y="42" width="126" height="58" fill="#fff" stroke="#111"></rect>
+          <text x="591" y="66" text-anchor="middle" font-size="14" font-weight="650">score</text>
+          <text x="591" y="85" text-anchor="middle" font-size="12" fill="#666">reward / value</text>
+
+          <rect x="304" y="148" width="152" height="58" fill="#fafafa" stroke="#111"></rect>
+          <text x="380" y="172" text-anchor="middle" font-size="14" font-weight="650">execute</text>
+          <text x="380" y="191" text-anchor="middle" font-size="12" fill="#666">first action chunk</text>
+
+          <line x1="144" y1="71" x2="181" y2="71" stroke="#111" marker-end="url(#arrow)"></line>
+          <line x1="314" y1="71" x2="351" y2="71" stroke="#111" marker-end="url(#arrow)"></line>
+          <line x1="484" y1="71" x2="521" y2="71" stroke="#111" marker-end="url(#arrow)"></line>
+          <path d="M591 100 C591 130 488 165 462 174" fill="none" stroke="#111" marker-end="url(#arrow)"></path>
+          <path d="M304 176 C210 176 84 148 81 104" fill="none" stroke="#777" stroke-dasharray="5 5" marker-end="url(#arrow)"></path>
+
+          <text x="380" y="126" text-anchor="middle" font-size="13" fill="#444">failure appears when a high imagined score selects a bad real action</text>
+        </svg>
+        <div class="caption">
+          这张闭环图是全文的轴。world model 在 rollout 处反复被 planner 查询；虚线是执行一步后回到真实观测的 reobserve。
+        </div>
+      </div>
+
+      <h2>误差本身不可怕，可怕的是误差改变了决策</h2>
+
+      <p>
+        world model 是学出来的，想象越远、错得越多，误差一步步累积。但不同处境下，能安全想象的步数并不一样。手在空中朝杯子飞（free space），动力学平滑，模型想得远也准；手指碰到杯子开始抓（in-contact），力、摩擦、滑动一瞬间全变，模型最容易想错；杯子被柜门挡住（occlusion），当前这张图看不见杯子，模型得靠记忆；从「抓」切到「放」（subtask transition），还得判断阶段对不对。
+      </p>
+
+      <p>
+        这里要分清两种东西。<strong>普通预测误差</strong>是模型想象的未来和真实不一样：想象杯子在左，真实在右。<strong>horizon failure</strong> 是这个错误已经害 planner 选错了动作：模型想象「方案 A 能成功」，planner 信了选了 A，真机一执行 A 失败。要害在于——误差本身不可怕，可怕的是误差<strong>改变了决策</strong>。下面所有的零件，归根结底都在防这一件事。
+      </p>
+
+      <h2>七个零件，和它们各自的前沿</h2>
+
+      <p>
+        把这条闭环拆开，每个零件都能单独换、单独改。下面七节，每节先说这个零件是什么、它在哪失败，再把近半年（2026 上半年）顶级机构的工作挂上去；机构与时间均按 arXiv 与官方页核对。这是一张阅读地图，不是逐篇精读的定论：表里多数还在初读层，强结论需要回到原文核对。
+      </p>
+
+      <h3>① 用什么表示世界</h3>
+
+      <p>
+        rollout 在某个状态空间里进行：像素、物体块（object slots）、3D 点、或压缩的 latent。表示选错，后面全错——像素逼真但任务相关的状态丢了，或 latent 漂移到无意义的区域。这一年的主线是「让 latent 真的对应世界的自由度」：JEPA 把表示学得更稳、object-centric 把状态拆成持久的物体。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>论文</th><th>机构 · 时间</th><th>它改这个零件的什么</th></tr></thead>
+          <tbody>
+            <tr><td><a href="https://arxiv.org/abs/2603.04553">Latent Particle World Models</a></td><td class="org">CMU (Pathak/Held) · Technion · 2026-03 · ICLR Oral</td><td>纯视频自监督学出物体中心的 latent particle（关键点/框/掩码），用 per-particle latent action 建模随机多物体动态。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2606.19451">3D-DLP</a></td><td class="org">CMU (Pathak/Held) · 2026-06 · ICML</td><td>把 RGB-D 场景分解成一组 3D latent particle，补回 2D slot 做不到的遮挡恢复与精确几何。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2606.00439">Physical Object Understanding (Physically Controllable WM)</a></td><td class="org">Stanford NeuroAI (Yamins) · 2026-05 · CVPR Highlight</td><td>概率自回归世界模型从原始视频推断分布式状态，靠多样未来间的运动相关性发现物体与可动部件，再在 3D 上操作。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2603.14482">V-JEPA 2.1</a></td><td class="org">Meta FAIR (LeCun) · 2026-03</td><td>dense predictive loss 让视频自监督学到空间结构化、时序一致的密集 latent 特征，直接提升 action-conditioned 世界模型的 rollout 质量。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2603.19312">LeWorldModel (LeWM)</a></td><td class="org">Mila · NYU (LeCun) · 2026-03</td><td>仅用两项 loss 就能从原始像素端到端稳定训练 JEPA 世界模型，~15M 参数单卡可训，latent 可线性探出物理量。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.26379">When Does LeJEPA Learn a World Model?</a></td><td class="org">NYU (LeCun) · Brown · 2026-05</td><td>理论证明 LeJEPA 的最优 encoder 能从非线性观测线性恢复世界隐变量，为「表示是否真对应世界自由度」给地基。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.14937">Slot-MPC</a></td><td class="org">学术线 · 2026</td><td>用物体中心 slot 做预测控制，使长程规划获得物体持久性与组合性。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2601.03782">PointWorld</a></td><td class="org">学术线 · 2026</td><td>用 3D point-flow 取代像素未来，专攻接触/几何预测，可接入 MPC。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>② 哪些过去要记住</h3>
+
+      <p>
+        当前一帧看不到的事实——被遮挡的物体、早先发生的事件、已数过的个数——会让只看当前帧的策略失败。这个零件管「该往记忆里写什么」：不是把所有历史都塞进上下文，而是选关键时刻写入。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>论文</th><th>机构 · 时间</th><th>它改这个零件的什么</th></tr></thead>
+          <tbody>
+            <tr><td><a href="https://arxiv.org/abs/2606.20562">MemoryWAM</a></td><td class="org">CUHK · Tsinghua · ZJU · 2026-06</td><td>world-action 模型用混合记忆（近期帧 + 事件边界锚点帧 + 压缩 gist），在非马尔可夫长任务里既保住历史又压低延迟/显存。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2606.18960">Mem-World</a></td><td class="org">学术线 · 2026</td><td>几何索引的视觉记忆，让 rollout 在遮挡与腕部相机移动下仍保持物体持久性。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2603.03596">MEM (Multi-Scale Embodied Memory)</a></td><td class="org">Physical Intelligence · Berkeley/Stanford 等 · 2026-03</td><td>短期视觉记忆 + 长期语言记忆，让机器人在数十分钟任务里保住任务相关状态。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2606.23589">KEMO</a> · <a href="https://arxiv.org/abs/2606.20092">EventVLA</a></td><td class="org">学术线 · 2026</td><td>事件驱动的关键帧记忆：在任务状态发生变化时才写入，避免遮挡/不可观测线索丢失。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.19957">World-Ego Modeling</a></td><td class="org">多机构 · 2026-05</td><td>把持久的世界演化与机器人自身的 ego 运动分开，避免相机运动污染世界状态。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>③ 动作如何改变世界</h3>
+
+      <p>
+        这是 transition function：给状态和动作，预测下一刻。长任务里最难的是接触——抓、推、插、滑、落——动力学模式在接触瞬间离散切换；一个被平均过的 monolithic latent dynamics 会把这些切换抹平，错误沿 rollout 累积。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>论文</th><th>机构 · 时间</th><th>它改这个零件的什么</th></tr></thead>
+          <tbody>
+            <tr><td><a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a></td><td class="org">BIT · PKU · BIGAI · 2026-05</td><td>用 context-aware MoE 专家 + latent 正交化替代 monolithic 动力学，直接针对接触/模式边界被平均导致的长程漂移。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2602.06949">DreamDojo</a></td><td class="org">NVIDIA GEAR · Berkeley (Malik/Abbeel) 等 · 2026-02 · ICML</td><td>44k 小时人类视频预训练的通用世界模型，蒸馏到实时 10.81 FPS、&gt;1 分钟稳定自回归 rollout，支持遥操/策略评估/规划。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2601.21998">LingBot-VA (Causal World Modeling)</a></td><td class="org">蚂蚁 Ant Group / 灵波 · 2026-01 · RSS</td><td>自回归扩散把视频 token 与动作 token 交错进共享注意力，联合学帧预测与动作执行，闭环 rollout 用真实观测反馈抑制漂移。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2601.10827">Contact-Rich SE(2) Global Planning</a></td><td class="org">RAI Institute · CMU · MIT (Tedrake 组) · 2026-01</td><td>把接触丰富的 SE(2) 操作建成「互可达集图」，离线枚举可达朝向、在线拼接局部计划，从可行性升到近似全局最优。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2603.29315">IMPASTO</a></td><td class="org">Stanford · UT Austin · Berkeley · Columbia · 2026-03 · ICRA</td><td>自博弈学到可微像素动态模型 f(I,u)，软毛刷 + 力控接触下用 receding-horizon MPC 规划多笔轨迹（机器人油画重现）。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>④ 任务到底成没成</h3>
+
+      <p>
+        想象的画面可以看着完全对，但关键谓词其实没成立——杯子并没有真进柜子。这一年最清楚的趋势之一，就是从「画面合理」转向「事件/进度是真的」：用 event、predicate、reward model 或 verifier 检查任务有没有成，而不只看像素或 latent 距离。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>论文</th><th>机构 · 时间</th><th>它改这个零件的什么</th></tr></thead>
+          <tbody>
+            <tr><td><a href="https://arxiv.org/abs/2606.13053">EV-WM (Event-Verified WM)</a></td><td class="org">碧桂园服务 AI Lab · 复旦 · 2026-06</td><td>把 rollout 解码成结构化 event state，用任务进度/语义一致/可行性/不确定性给候选打分、门控规划——画面对但事件错正是它的核心论点。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2604.01985">World Action Verifier</a></td><td class="org">Stanford · DeepMind · CMU · Harvard · 2026-04</td><td>把动作条件预测拆成「状态合理性 + 动作可达性」两路可验证因子，用 cycle-consistency 让世界模型对自己的 rollout 谓词式自检自纠。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2602.12281">CoVer (Scaling Verification &gt; Policy)</a></td><td class="org">Stanford (Finn/Pavone) · 2026-02 · CVPR-W Best Paper Finalist</td><td>测试时对比验证器给「改写指令 × 动作候选」打分，验证指令-动作对齐并选最佳，证明扩验证比扩策略更有效。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2601.00675">RoboReward</a></td><td class="org">Stanford · Berkeley BAIR (Levine) · 2026-01</td><td>通用 VL 奖励/验证模型，用反事实重标 + 时间裁剪合成负样本，训练 VLM 评判机器人任务成没成。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2602.11291">H-WM</a></td><td class="org">学术线 · 2026</td><td>逻辑/符号状态 + 视觉子目标的分层世界模型，用任务级逻辑状态做长程一致性。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>⑤ 这段想象能信多远</h3>
+
+      <p>
+        固定 horizon 默认模型在所有状态下都能信同样远。但可信的 rollout 长度（trust horizon）随状态、任务阶段、接触模式而变。这个零件把「能信几步」变成一等的算法对象：可变长度、按不确定性自适应截断、或分层调度。<a href="../long-horizon-experiment-logic/">如何把它做成可测的实验</a>，我单独写过一篇。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>论文</th><th>机构 · 时间</th><th>它改这个零件的什么</th></tr></thead>
+          <tbody>
+            <tr><td><a href="https://arxiv.org/abs/2512.04341">NEUBAY</a></td><td class="org">Mila (Bacon) · 2026-05</td><td>按每个 (s,a) 的认知不确定性自适应截断 rollout，证明「固定长视界因价值高估崩、自适应稳」横跨 33 个数据集。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2606.21775">Variable-Length Latent World Models</a></td><td class="org">PKU (王奕森) · Amazon · 2026-06</td><td>训一个能预测任意 k 步的模型，把固定步长世界模型证明成自己的特例，并把在线自适应选 horizon 列为 future work。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2604.03208">Hierarchical Planning with Latent World Models</a></td><td class="org">Meta FAIR (LeCun) · NYU · Mila · 2026-04</td><td>共享 latent 里训多时间尺度世界模型做分层 MPC，长 horizon 的预测当短 horizon 的子目标，压住误差累积（真机 70% vs 单层 0%）。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.15603">Universal Horizon Models</a></td><td class="org">学术线 · 2026</td><td>把未来 horizon 作为显式随机变量做 offline value learning，从概念上支持 horizon-conditioned 预测。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>⑥ planner 会专挑模型的漏洞</h3>
+
+      <p>
+        world model 被动预测时没人搜它；放进 planner 后，planner 为了拿高分会主动找「模型给超高分、其实是幻觉」的动作，把模型带到训练时没见过的区域。所以可信几步不只看状态，还看 planner 多会钻空子——这是状态与 planner 共同决定的。这个零件的工作要么诊断这种利用、要么用想象闭环反过来加固模型。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>论文</th><th>机构 · 时间</th><th>它改这个零件的什么</th></tr></thead>
+          <tbody>
+            <tr><td><a href="https://arxiv.org/abs/2512.09929">Closing the Train-Test Gap</a></td><td class="org">Columbia · NYU (LeCun) · 2025-12</td><td>指出 planner 的优化把模型带到训练分布外，用 planner 诱导/对抗状态合成训练数据补回——可信度主要由 planner 驱动，不只是状态。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2602.00475">GRASP</a></td><td class="org">UC Berkeley / BAIR · 2026-04</td><td>梯度规划穿过很多步 serial rollout 反传会变脆；用虚拟状态 + 梯度重塑让学出的模型在更长 horizon 上可规划。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2605.21800">stable-worldmodel</a></td><td class="org">Mila · NYU (LeCun/Balestriero) · 2026-05</td><td>统一 MPC 评测平台，核心发现「预测准 ≠ 规划好」：planner 钻无关视觉特征的空子，干扰物一变规划成功率二次衰减。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2602.12063">VLAW</a></td><td class="org">Stanford (Finn/Liang) · Tsinghua · 2026-02</td><td>用真机在线 rollout（含失败）微调 Ctrl-World 世界模型补回物理保真度，再生成合成 rollout 改进 VLA，形成策略↔世界模型互改闭环。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2602.11075">RISE</a></td><td class="org">OpenDriveLab · HKU · Tsinghua · 2026-02 · RSS</td><td>组合式世界模型（可控动力学 + progress value）让 VLA 在想象空间里 rollout-估优势-更新，免去真实试错。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2602.10390">Affordances Enable Partial World Modeling</a></td><td class="org">Google DeepMind (Khetarpal/Precup) · 2026-02</td><td>证明意图条件 agent 必然带 affordance 信息化的「部分世界模型」，只对任务相关子集做高质量预测，降低搜索分支因子。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2603.09971">TiPToP</a></td><td class="org">MIT CSAIL (Kaelbling/Lozano-Pérez) · UPenn · 2026-03</td><td>零机器人数据，把预训练视觉模型叠到 GPU 并行 TAMP 上，正面对比「显式规划器 vs 端到端 VLA」。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2606.10025">GHOST</a></td><td class="org">CMU (Held) · UMass · 2026-06 · RSS</td><td>用高层 sub-goal 策略 + 低层控制器，把 sub-goal 当跨本体接口拉长有效规划视界，用少量人类视频泛化。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2601.14234">Q-learning with Adjoint Matching</a></td><td class="org">UC Berkeley / BAIR (Levine) · 2026-01</td><td>用 adjoint matching 把 critic 的动作梯度转成逐步目标，稳定优化扩散/流策略，避免对多步去噪反传的不稳定。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>⑦ 动作接口、评测与数据</h3>
+
+      <p>
+        这个零件不直接动想象本身，而是决定想象能不能用上：动作以什么单位输出（action chunk、latent action）、用什么 benchmark 量世界模型好不好、数据从哪来。它是其余六个零件的地基。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>论文</th><th>机构 · 时间</th><th>它改这个零件的什么</th></tr></thead>
+          <tbody>
+            <tr><td><a href="https://arxiv.org/abs/2602.08971">WorldArena</a></td><td class="org">Tsinghua FIB · SJTU · HKU · Princeton 等 · 2026-02 · CVPR Challenge</td><td>统一基准同时评世界模型的感知保真度与对下游任务的功能效用（当 data engine / policy evaluator / action planner 三种角色），揭示「感知-功能鸿沟」。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2602.12215">LDA-1B</a></td><td class="org">PKU-EPIC · BAAI · NVIDIA 等 · 2026-02 · RSS</td><td>在 DINO latent 里联合学潜动态 + 策略 + 视觉预测，用 30k+ 小时人/机异构数据把潜动态动作模型 scale 到 1B+。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2601.15282">Rethinking Video Generation for the Embodied World</a></td><td class="org">PKU DAGroup · ByteDance Seed · 2026-01 · ICML</td><td>为机器人导向视频生成造 RBench 基准（含物理可信度子指标）+ 400 万标注片段 RoVid-X 数据集。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2604.15483">π0.7</a></td><td class="org">Physical Intelligence (Levine/Finn) · 2026-04</td><td>可引导的通用机器人基础模型，用多模态上下文条件做多阶段长程厨房任务，吸收示范、次优自主数据与非机器人数据。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2606.08107">Ego-Pi</a></td><td class="org">Stanford · Meta (Finn) · 2026-06</td><td>跨本体配方：用第一人称人类视频微调 π0.5 驱动灵巧五指控制，不需新机器人数据就学到新任务语义。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2604.02523">Tune to Learn</a></td><td class="org">MIT Improbable AI (Agrawal) · 2026-04</td><td>系统研究位置控制器增益（动作接口的一颗螺丝）如何分别影响 BC / RL / sim2real 三种学习范式。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2603.06009">Preventing Learning Stagnation in PPO</a></td><td class="org">Google DeepMind · Oxford FLAIR · 2026-03</td><td>把 PPO 平台期解释为采样损失退化为劣质代理，扩到 &gt;100 万并行环境 + 协同缩放，实现跨万亿 transition 单调提升。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2606.13672">WEAVER</a></td><td class="org">CMU / Mila 信号 · 2026-06</td><td>面向操作的世界模型当策略评估器/改进器/规划器，强调高保真、长上下文、生成效率。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>另一条长时序轴：不要和机器人闭环混在一起</h2>
+
+      <p>
+        「long horizon」这个词还指另一件事：LLM / coding agent 的<strong>任务时长</strong>——一个 agent 跨很多步工具调用、跨会话维持执行状态。它和机器人世界模型的 rollout horizon 不是同一个单位，机制也不同（靠 harness、记忆、外部验证，而不是想象动力学）。下面这些放在这里单列，避免和上面的闭环混为一谈。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>论文</th><th>机构 · 时间</th><th>它在另一条轴上做什么</th></tr></thead>
+          <tbody>
+            <tr><td><a href="https://arxiv.org/abs/2602.05842">Reinforcement World Model Learning for LLM Agents</a></td><td class="org">Microsoft Research · Columbia · 2026-02</td><td>给文本态 LLM agent 学动作条件世界模型，用 sim-to-real gap 奖励对齐模拟态与真实态，比 next-token / LLM-as-judge 更抗 reward hacking。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2603.22435">CaP-X</a></td><td class="org">Berkeley · Stanford · NVIDIA 等 · 2026-03 · ICML</td><td>评测让 LLM 当 Code-as-Policy 写机器人控制程序：性能随人工抽象升、剥离则退化，靠多轮交互/执行反馈补回。</td></tr>
+            <tr><td><a href="https://arxiv.org/abs/2604.11805">Solving Physics Olympiad via RL on Simulators</a></td><td class="org">CMU (Pathak/Fragkiadaki) · 2026-04 · ICML</td><td>物理引擎当监督源对 LLM 推理链做 RL，实现对物理奥赛的零样本 sim2real——模拟器当监督，但闭环是文本推理。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>回到这张图</h2>
+
+      <p>
+        把上面几十篇放回那张闭环图，会看到一件事：大家不是在做几十个互不相干的问题，而是在改同一个回路的不同零件。表示层在让 latent 真对应世界；记忆层在选该记的关键时刻；动力学层在不把接触切换平均掉；事件层在问任务谓词是不是真的成立；trust horizon 层在量这段想象能信多远；planner 层在防优化器钻模型空子；接口与评测层在给前六个零件搭地基。
+      </p>
+
+      <p>
+        这张图也是一把筛子。读一篇新论文时，先问它动的是哪个零件、为什么改、拿什么证据证明改对了。零件清楚了，「long horizon」就不再是一个发散的形容词，而是一个具体的位置：在 planner 查询 world model 的那一刻，当前状态、候选动作和 imagined rollout 共同决定模型还能被信任多远。
+      </p>
+
+      <h2>References</h2>
+
+      <ol class="references">
+        <li>Nicklas Hansen, Xiaolong Wang, Hao Su, <a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control (TD-MPC)</a>; <a href="https://arxiv.org/abs/2310.16828">TD-MPC2</a>.</li>
+        <li>① 状态表示：<a href="https://arxiv.org/abs/2603.04553">Latent Particle World Models</a>, <a href="https://arxiv.org/abs/2606.19451">3D-DLP</a>, <a href="https://arxiv.org/abs/2606.00439">Physical Object Understanding</a>, <a href="https://arxiv.org/abs/2603.14482">V-JEPA 2.1</a>, <a href="https://arxiv.org/abs/2603.19312">LeWM</a>, <a href="https://arxiv.org/abs/2605.26379">When Does LeJEPA Learn a World Model?</a>, <a href="https://arxiv.org/abs/2605.14937">Slot-MPC</a>, <a href="https://arxiv.org/abs/2601.03782">PointWorld</a>.</li>
+        <li>② 记忆：<a href="https://arxiv.org/abs/2606.20562">MemoryWAM</a>, <a href="https://arxiv.org/abs/2606.18960">Mem-World</a>, <a href="https://arxiv.org/abs/2603.03596">MEM</a>, <a href="https://arxiv.org/abs/2606.23589">KEMO</a>, <a href="https://arxiv.org/abs/2606.20092">EventVLA</a>, <a href="https://arxiv.org/abs/2605.19957">World-Ego Modeling</a>.</li>
+        <li>③ 预测动态：<a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a>, <a href="https://arxiv.org/abs/2602.06949">DreamDojo</a>, <a href="https://arxiv.org/abs/2601.21998">LingBot-VA</a>, <a href="https://arxiv.org/abs/2601.10827">Contact-Rich SE(2) Global Planning</a>, <a href="https://arxiv.org/abs/2603.29315">IMPASTO</a>.</li>
+        <li>④ 事件验证：<a href="https://arxiv.org/abs/2606.13053">EV-WM</a>, <a href="https://arxiv.org/abs/2604.01985">World Action Verifier</a>, <a href="https://arxiv.org/abs/2602.12281">CoVer</a>, <a href="https://arxiv.org/abs/2601.00675">RoboReward</a>, <a href="https://arxiv.org/abs/2602.11291">H-WM</a>.</li>
+        <li>⑤ Trust horizon：<a href="https://arxiv.org/abs/2512.04341">NEUBAY</a>, <a href="https://arxiv.org/abs/2606.21775">Variable-Length Latent World Models</a>, <a href="https://arxiv.org/abs/2604.03208">Hierarchical Planning with Latent World Models</a>, <a href="https://arxiv.org/abs/2605.15603">Universal Horizon Models</a>.</li>
+        <li>⑥ planner–模型关系：<a href="https://arxiv.org/abs/2512.09929">Closing the Train-Test Gap</a>, <a href="https://arxiv.org/abs/2602.00475">GRASP</a>, <a href="https://arxiv.org/abs/2605.21800">stable-worldmodel</a>, <a href="https://arxiv.org/abs/2602.12063">VLAW</a>, <a href="https://arxiv.org/abs/2602.11075">RISE</a>, <a href="https://arxiv.org/abs/2602.10390">Affordances Enable Partial World Modeling</a>, <a href="https://arxiv.org/abs/2603.09971">TiPToP</a>, <a href="https://arxiv.org/abs/2606.10025">GHOST</a>, <a href="https://arxiv.org/abs/2601.14234">Q-learning with Adjoint Matching</a>.</li>
+        <li>⑦ 接口/评测/数据：<a href="https://arxiv.org/abs/2602.08971">WorldArena</a>, <a href="https://arxiv.org/abs/2602.12215">LDA-1B</a>, <a href="https://arxiv.org/abs/2601.15282">Rethinking Video Generation for the Embodied World</a>, <a href="https://arxiv.org/abs/2604.15483">π0.7</a>, <a href="https://arxiv.org/abs/2606.08107">Ego-Pi</a>, <a href="https://arxiv.org/abs/2604.02523">Tune to Learn</a>, <a href="https://arxiv.org/abs/2603.06009">Preventing Learning Stagnation in PPO</a>, <a href="https://arxiv.org/abs/2606.13672">WEAVER</a>.</li>
+        <li>另一条长时序轴：<a href="https://arxiv.org/abs/2602.05842">Reinforcement World Model Learning for LLM Agents</a>, <a href="https://arxiv.org/abs/2603.22435">CaP-X</a>, <a href="https://arxiv.org/abs/2604.11805">Solving Physics Olympiad via RL</a>.</li>
+      </ol>
+    </article>
+  </main>
+</body>
+</html>
