@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="142 篇 long-horizon world model 论文的可交互速查图：每篇挂回机器人执行闭环的一个零件，可搜索、可按失败模式筛选。是《机器人世界模型的闭环底图》一文的全量交互版。">
+<title>Long-horizon world model 论文地图（可交互速查）- Sense Wang</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Inter","Helvetica Neue","PingFang SC","Noto Sans CJK SC",Arial,sans-serif;color:#111;background:#fff;line-height:1.72;font-size:16px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+main{max-width:960px;width:100%;margin:0 auto;padding:64px 20px 110px}
+nav{margin-bottom:46px;font-size:13px}
+a{color:#111;text-underline-offset:2px}
+a:hover{opacity:.55}
+h1{font-size:38px;line-height:1.14;font-weight:700;margin-bottom:14px;letter-spacing:0;max-width:760px}
+.dek{color:#444;font-size:18px;line-height:1.6;max-width:720px;margin-bottom:22px}
+.meta{color:#999;font-size:13px;margin-bottom:22px}
+.callout{border-left:3px solid #111;padding:4px 0 4px 18px;margin:0 0 30px;font-size:15px;color:#333}
+.callout a{text-decoration:underline}
+.frame{border-top:1px solid #e5e5e5;border-bottom:1px solid #e5e5e5;padding:22px 0;margin:8px 0 4px}
+.frame h2{font-size:18px;margin:0 0 10px;font-weight:680}
+.frame p{margin:0 0 12px;font-size:15px;color:#333}
+.loop{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin:14px 0 4px}
+.loop .node{border:1px solid #ddd;border-radius:3px;padding:5px 10px;font-size:12.5px;white-space:nowrap}
+.loop .arrow{color:#bbb;font-size:13px}
+.legend{font-size:13px;color:#777;margin-top:8px}
+.controls{position:sticky;top:0;z-index:5;background:rgba(255,255,255,.97);backdrop-filter:blur(8px);padding:14px 0;border-bottom:1px solid #e5e5e5;margin:26px 0 6px}
+.search-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center}
+input[type=search]{width:100%;border:1px solid #ddd;padding:10px 12px;font-size:15px;outline:none;border-radius:3px}
+input[type=search]:focus{border-color:#999}
+.count{color:#888;font-size:13px;white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.chip{border:1px solid #ddd;background:#fff;color:#333;padding:5px 10px;font-size:12.5px;border-radius:3px;cursor:pointer}
+.chip.active{border-color:#111;background:#111;color:#fff;font-weight:600}
+.chip .c{opacity:.55;font-weight:400}
+.group{margin:40px 0 0;scroll-margin-top:150px}
+.group-title{font-size:21px;font-weight:680;margin:0 0 2px;border-top:2px solid #111;padding-top:13px}
+.group-title .en{font-size:12.5px;color:#aaa;font-weight:400;margin-left:8px}
+.intro{font-size:14.5px;color:#333;margin:8px 0 18px;max-width:780px}
+.intro b{font-weight:680}
+.intro a{text-decoration:underline}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:0 26px}
+.card{border-bottom:1px solid #eee;padding:13px 0}
+.card .nm{font-size:14.5px;font-weight:650;line-height:1.32}
+.card .nm a{text-decoration:underline;text-decoration-color:#bbb}
+.card .nm .ext{font-size:10px;opacity:.5;margin-left:2px}
+.card .yr{color:#aaa;font-size:12px;font-weight:400;margin-left:5px}
+.card .mech{font-size:13px;margin:6px 0 3px;color:#1d1d1d}
+.card .mech b{font-weight:660}
+.card .desc{font-size:13px;color:#666}
+.card .lane{display:inline-block;font-size:11px;color:#888;margin-top:6px}
+.empty{display:none;padding:30px 0;color:#888}
+footer{margin-top:54px;color:#999;font-size:12.5px;border-top:1px solid #e5e5e5;padding-top:16px;line-height:1.7}
+footer a{text-decoration:underline}
+@media(max-width:640px){.cards{grid-template-columns:1fr}.search-row{grid-template-columns:1fr}.controls{position:static}h1{font-size:29px}main{padding:46px 18px 88px}}
+</style>
+</head>
+<body>
+<main>
+<nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+<h1>Long-horizon world model 论文地图（可交互速查）</h1>
+<div class="meta">June 2026 · 142 papers · interactive</div>
+<p class="dek">把近一年 long-horizon / world model 的论文,各自落到「一个机器人做长任务」会崩的某一环上。可搜索、可按失败模式一键筛选——给你一个能在上面自由走动的速查台。</p>
+
+<div class="callout">
+这是 <a href="../long-horizon-world-model-basemap/">《机器人世界模型的闭环底图：long-horizon 论文都在改哪个零件》</a> 的<b>可交互全量版</b>。想从头读懂这张图、看每个零件的精读叙事,先读那篇散文;想快速检索 / 按失败模式过滤 / 一览全量,用这一页。
+</div>
+
+<div class="frame">
+<h2>统一框架：一条会崩的执行回路</h2>
+<p>把「长程」想成<b>一个机器人要完成一个很长的任务</b>:看见现在 → 记住过去 → 预测未来 → 验证「是不是真发生了」 → 规划下一步 → 动手 → 被评测。这条回路的<b>每一环都会崩</b>,每种崩法就是一个研究方向;下面的论文,基本都在修其中某一环。</p>
+<div class="loop">
+<span class="node">感知</span><span class="arrow">→</span>
+<span class="node">记忆 · 持久性</span><span class="arrow">→</span>
+<span class="node">预测 · 漂移 / 序列形态</span><span class="arrow">→</span>
+<span class="node">验证 · 事件</span><span class="arrow">→</span>
+<span class="node">规划 · 闭环 / 信任时域</span><span class="arrow">→</span>
+<span class="node">行动 · 时间抽象</span><span class="arrow">→</span>
+<span class="node">评测 · 什么才是对的指标</span>
+</div>
+<p class="legend">对应散文里的「七个零件」,这里再把<b>序列模型形态</b>(Transformer 当世界模型)与<b>评测</b>单拎成两个横切抽屉,另加一个旁支:LLM / 编码 agent 的「长程」。共 9 个抽屉。点带 ↗ 的论文名跳 arXiv。</p>
+</div>
+
+<div class="controls">
+<div class="search-row">
+<input type="search" id="q" placeholder="搜论文名 / 机制 / 关键词（horizon、verifier、token、对象、记忆…）">
+<span class="count" id="count"></span>
+</div>
+<div class="chips" id="chips"></div>
+</div>
+
+<div id="list"></div>
+<div class="empty" id="empty">没有匹配的论文。换个词试试。</div>
+
+<footer>
+来源:作者本地 long-horizon 研究语料 + 2026 上半年近期检索(一手 arXiv / 项目页核对)。论文名带 ↗ 的指向 arXiv;部分经典锚点未附链接以避免误链。标「2026近期」的多为最新预印本,落地复现待观察;Genie 3 仅官方博客、参数为二手。这是一张<b>阅读地图,不是逐篇精读的定论</b>——强结论请回到原文。配套散文见 <a href="../long-horizon-world-model-basemap/">闭环底图</a>。
+</footer>
+</main>
+
+<script>
+const GROUPS=[
+ {k:'drift',t:'预测 · 滚动漂移',en:'Rollout drift'},
+ {k:'sequence',t:'预测 · 序列模型形态 / Transformer 当世界模型',en:'World model as a sequence model'},
+ {k:'planning',t:'规划 · 闭环被钻空子',en:'Closed-loop planning'},
+ {k:'trust',t:'规划 · 信任时域',en:'Trust horizon'},
+ {k:'verify',t:'验证 · 事件是否真发生',en:'Event / environment verification'},
+ {k:'abstraction',t:'行动 · 时间抽象 / 高层动作',en:'Temporal abstraction'},
+ {k:'persistence',t:'记忆 · 物体与状态持久',en:'Object / state persistence'},
+ {k:'eval',t:'评测 · 什么才是对的指标',en:'Evaluation & the right metric'},
+ {k:'llm',t:'旁支 · LLM / 编码 agent 的「长程」',en:'LLM / coding-agent analog'},
+];
+const INTROS={
+ drift:'<b>问题</b>:模型把预测喂回自己,一步小误差滚成多步大误差。从 Dyna 用想象经验、PETS 用集成不确定性、MBPO 只信短 rollout,到 PlaNet/Dreamer 把预测搬进潜空间;2026 的新动作是 PRISM-WM 按接触模式拆动力学、PointWorld 改预测 3D 点流,以及一个集体诊断——「teacher forcing 是原罪」,于是 Persistent-RWM / AR Forcing 让模型在自己的 rollout 上训练。',
+ sequence:'<b>问题</b>:当世界模型变成逐帧/逐 token 续写的自回归序列模型,它一夜继承了语言模型的全部病(exposure bias、漂移、训练5秒推理1分钟就崩)和全部药。Genie 3 把一致性做成自回归涌现;RELIC 反手把相机位姿当 token 塞回 KV;NextLat 点破「预测下一个 token 不会逼模型学出干净的世界状态」;WorldVLA 让世界模型与策略成为同一条 token 流的两种读法。',
+ planning:'<b>问题</b>:模型当考官看着没问题,但规划器会专挑它的盲区下手——想象里高分、真环境失败。从 MPC/CEM/MPPI 的控制接口,到 TD-MPC/MuZero 用短时域+终端价值,再到 2026 把「未来」和「价值」塞进同一个生成模型(Cosmos Policy、DreamZero),规划退化成「自己采样、自己打分」;另一支(V-JEPA2、Latent Geometry)在抽象 latent 里规划、把搜索摊销掉以求快。',
+ trust:'<b>问题</b>:系统不知道「这次预测还能信几步」。这是把虚的「长程」变成可测量的关键。从 PETS/MOPO 的不确定性与悲观,到 2026 把 horizon 当一等变量重新打开——NEUBAY 把它拉长、HWM 实测它随状态/尺度变化、Universal Horizon Models 把它做成可采样变量;还冒出一个真分叉:<b>拉长 horizon + 控方差</b> vs <b>近处训好就蕴含远处可达</b>(Horizon Generalization)。',
+ verify:'<b>问题</b>:未来画面看着合理,但「抽屉到底开没开」这种任务事件根本没发生。机器人侧从符号规划(STRIPS/TAMP)、SayCan/Code-as-Policies 的语言计划+可供性,到 2026 的 EV-WM/H-WM 把谓词/逻辑状态当验证信号;最锋利的是 WAV——利用「逆向比正向便宜」把预测拆成可独立审计的因子;以及一个回旋镖问题:用世界模型评策略本身有系统性偏差,<b>谁来验证验证者</b>。',
+ abstraction:'<b>问题</b>:与其让底层模型撑 500 步,不如换一个更粗的动作单位。从 Options/Feudal/HIRO 的经典分层,到 Diffusion Policy/ACT 的动作块、RT/OpenVLA/pi0 的语言条件策略,再到 2026 的 Puppeteer 两级世界模型、LoHo-Manip 的轨迹条件+重规划、Lifting Embodied WM 把规划抬到路点层——本质都是「改变有效时域」。',
+ persistence:'<b>问题</b>:长任务里物体身份、遮挡事实、子任务进度会丢,只看当前帧的策略会崩。从 Slot Attention/OP3/C-SWM 的对象中心表示,到 2026 的 MEM 多尺度记忆、Keyframe/KEMO/EventVLA 的事件关键帧、Mem-World 的 surfel 几何记忆、World-Ego 把「持久世界」和「自我相机运动」拆开——争论的是记忆该用什么<b>底物</b>(显式3D图 vs 几何索引 vs 纯潜循环)。',
+ eval:'<b>问题</b>:到底该用什么指标判断一个世界模型好不好?从把世界模型当策略评估器(WorldEval、WorldGym),到 2026 把「保真度≠控制有用性」做成量化 gap(WorldArena)、在驾驶域复现(WorldLens)、在表示层给出机制(重建与动作相关性正交);最终指标收敛到<b>排序相关(MMRV)</b>——能不能把几个策略排对座次,而非画得多真。',
+ llm:'<b>旁支</b>:「长程」在语言 / 编码 agent 里同名但不同义——表现为上下文/状态持久、verifier 设计、planner 被钻空子。放这里是为了看见同构,它不是机器人世界模型主语料,聊机器人时当类比看即可。',
+};
+const A='https://arxiv.org/abs/';
+const P=[
+{nm:'Dyna',yr:1990,g:'drift',lane:'经典RL',mech:'混合真实与想象经验',desc:'最早提出用模型生成的想象转移补充真实经验。',tag:'经典锚点'},
+{nm:'PILCO',yr:2011,g:'drift',lane:'经典RL',mech:'概率动力学+不确定性',desc:'早期高样本效率、带不确定性的基于模型控制。',tag:'经典锚点'},
+{nm:'Deep Visual Foresight',yr:2017,g:'drift',lane:'机器人WM',mech:'视频预测+MPC',desc:'经典机器人视频预测规划,视频世界模型规划的祖先。',tag:'经典锚点'},
+{nm:'Visual MPC / DNA-CDNA-SNA',yr:2018,g:'drift',lane:'机器人WM',mech:'动作条件视频预测',desc:'暴露了纯像素 rollout 用于操作的早期局限。',tag:'经典锚点'},
+{nm:'PlaNet',yr:2019,g:'drift',lane:'经典RL',mech:'潜空间动力学+规划',desc:'把规划从像素搬进紧凑潜状态。',tag:'经典锚点'},
+{nm:'SimPLe',yr:2019,g:'drift',lane:'经典RL',mech:'学习视频模型做RL',desc:'早期 Atari 像素世界模型,误差累积明显。',tag:'经典锚点'},
+{nm:'MBPO',yr:2019,g:'drift',lane:'经典RL',mech:'短模型 rollout',desc:'「短想象 rollout 避免长程误差累积」的经典论证。',tag:'经典锚点'},
+{nm:'Dreamer',yr:2020,g:'drift',lane:'经典RL',mech:'潜空间想象',desc:'在想象的潜 rollout 中学行为。',tag:'经典锚点'},
+{nm:'DreamerV2',yr:2021,g:'drift',lane:'经典RL',mech:'离散潜想象',desc:'视觉控制上更强的长想象行为学习。',tag:'经典锚点'},
+{nm:'IRIS',yr:2022,g:'drift',lane:'序列形态',mech:'token化Transformer世界模型',desc:'图像 token 世界模型做样本高效 RL。',tag:'经典锚点'},
+{nm:'DreamerV3',yr:2023,g:'drift',lane:'经典RL',mech:'可扩展潜想象',desc:'强力通用世界模型 RL 基线。',tag:'经典锚点'},
+{nm:'DreamerPro / policy-shaped prediction',yr:2025,g:'drift',lane:'经典RL',mech:'任务聚焦预测',desc:'只预测对控制重要的、忽略干扰。',tag:'2025'},
+{nm:'PRISM-WM',yr:2026,g:'drift',lane:'机器人WM',u:'2512.08411',mech:'组合式 MoE 动力学+潜正交',desc:'用 context-aware 专家替代 monolithic 动力学,治接触/模式边界被平均导致的长程漂移。',tag:'2026近期'},
+{nm:'WEAVER',yr:2026,g:'drift',lane:'机器人WM',u:'2606.13672',mech:'操作WM(评估/改进/规划)',desc:'保真+一致+效率同时拿,与真实成功率 0.87 相关。',tag:'2026近期'},
+{nm:'DreamDojo',yr:2026,g:'drift',lane:'机器人WM',u:'2602.06949',mech:'44k 小时人类视频预训练通用WM',desc:'蒸馏到实时 10.81 FPS、>1 分钟稳定自回归 rollout。',tag:'2026近期'},
+{nm:'LingBot-VA (Causal World Modeling)',yr:2026,g:'drift',lane:'机器人WM',u:'2601.21998',mech:'视频token与动作token交错共享注意力',desc:'闭环 rollout 用真实观测反馈抑制漂移。',tag:'2026近期'},
+{nm:'AR Forcing',yr:2026,g:'drift',lane:'机器人WM',mech:'自回归 rollout 稳定化',desc:'压住长时域导航/视频生成的漂移。',tag:'2026近期'},
+{nm:'PointWorld',yr:2026,g:'drift',lane:'机器人WM',u:'2601.03782',mech:'3D 点流世界模型',desc:'预测动作条件下的 3D 场景流,绕开像素、可接 MPC。',tag:'2026近期'},
+{nm:'Persistent Robot World Models',yr:2026,g:'drift',lane:'机器人WM',u:'2603.25685',mech:'在自己 rollout 上做 RL',desc:'把训练目标从单步精度移到自回归长时域表现,治漂移。',tag:'2026近期'},
+{nm:'IMPASTO',yr:2026,g:'drift',lane:'机器人WM',u:'2603.29315',mech:'自博弈学可微像素动态+力控MPC',desc:'软毛刷接触下 receding-horizon 规划多笔轨迹(机器人油画)。',tag:'2026近期'},
+{nm:'Genie Envisioner',yr:2025,g:'drift',lane:'机器人WM',mech:'统一世界基础模型(操作)',desc:'近期视频/世界基础模型线,需细审。',tag:'2025'},
+
+{nm:'Self Forcing',yr:2025,g:'sequence',lane:'序列形态',u:'2506.08009',mech:'在自己生成的帧上训练',desc:'弥合自回归视频的 exposure bias,单卡实时且匹配扩散质量。',tag:'2025'},
+{nm:'Genie 3',yr:2025,g:'sequence',lane:'序列形态',mech:'实时可交互自回归世界模型',desc:'空间一致性靠自回归涌现而非显式 3D(参数为二手)。',tag:'2025'},
+{nm:'RELIC',yr:2025,g:'sequence',lane:'序列形态',u:'2512.04040',mech:'KV 压缩历史+位姿 token',desc:'把几何线索显式注入序列,在序列框架里拿回 3D 一致性。',tag:'2025'},
+{nm:'Astra',yr:2026,g:'sequence',lane:'序列形态',u:'2512.08931',mech:'自回归去噪',desc:'时间维自回归 + 帧内扩散去噪融合,因果与画质兼得。',tag:'2026近期'},
+{nm:'NextLat',yr:2026,g:'sequence',lane:'序列形态',u:'2511.05963',mech:'预测自己的下一个 latent',desc:'latent 收敛到 belief state,给 Transformer 注入循环归纳偏置。',tag:'2026近期'},
+{nm:'Improving Transformer World Models',yr:2025,g:'sequence',lane:'序列形态',u:'2502.01591',mech:'Dyna-warmup+稳定tokenizer+block teacher forcing',desc:'token 化 TWM 在 Craftax 上超 DreamerV3。',tag:'2025'},
+{nm:'Masked Latent Transformer (Δ-IRIS 系)',yr:2025,g:'sequence',lane:'序列形态',u:'2507.04075',mech:'latent 空间掩码预测',desc:'缩短 token 序列、训练提速一个量级。',tag:'2025'},
+{nm:'In-context World Models',yr:2026,g:'sequence',lane:'序列形态',u:'2509.22353',mech:'上下文涌现 ICL',desc:'换环境=换上下文,一个序列模型+不同 context=不同世界。',tag:'2026近期'},
+{nm:'SSM–Transformer Hybrid WM',yr:2025,g:'sequence',lane:'序列形态',u:'2512.06983',mech:'SSM 动力学+Transformer 全局检索',desc:'兼顾流式效率与全局回忆,缓解二次注意力成本。',tag:'2025'},
+{nm:'WorldVLA / RynnVLA-002',yr:2026,g:'sequence',lane:'序列形态',u:'2506.21539',mech:'共享词表统一 VLA+WM',desc:'世界模型与策略是同一条 token 流的两种读法。',tag:'2026近期'},
+{nm:'PAN',yr:2025,g:'sequence',lane:'序列形态',u:'2511.09057',mech:'LLM latent 主干+视频扩散解码',desc:'用语言驱动「脑内思想实验」,长程可交互。',tag:'2025'},
+
+{nm:'MPC / 滚动时域控制',yr:1980,g:'planning',lane:'经典控制',mech:'每步重规划',desc:'TD-MPC/PETS/MPPI 等背后的控制接口。',tag:'经典锚点'},
+{nm:'Cross-Entropy Method (CEM)',yr:1999,g:'planning',lane:'经典控制',mech:'采样优化器',desc:'学习动力学上常用的动作序列采样优化器。',tag:'经典锚点'},
+{nm:'MPPI',yr:2016,g:'planning',lane:'经典控制',mech:'随机最优控制',desc:'机器人里重要的采样式 MPC 基线。',tag:'经典锚点'},
+{nm:'MuZero',yr:2020,g:'planning',lane:'经典RL',mech:'价值/奖励/策略模型+搜索',desc:'不重建观测也能用任务相关潜动力学做规划。',tag:'经典锚点'},
+{nm:'TD-MPC',yr:2022,g:'planning',lane:'经典RL',u:'2203.04955',mech:'任务导向潜 MPC+价值自举',desc:'短时域规划+终端价值,这条算法主干。',tag:'经典锚点'},
+{nm:'TD-MPC2',yr:2024,g:'planning',lane:'经典RL',u:'2310.16828',mech:'可扩展潜 MPC',desc:'Newt/Puppeteer 的直系祖先。',tag:'经典锚点'},
+{nm:'Cosmos Policy',yr:2026,g:'planning',lane:'机器人WM',u:'2601.16163',mech:'视频模型预测动作/未来/价值',desc:'用 latent frame 注入,一个视频模型当策略+世界+价值。',tag:'2026近期'},
+{nm:'DreamZero (World Action Models)',yr:2026,g:'planning',lane:'机器人WM',u:'2602.15922',mech:'联合视频-动作预测',desc:'世界-动作模型本身就是零样本策略,7Hz 闭环。',tag:'2026近期'},
+{nm:'tau0-WM',yr:2026,g:'planning',lane:'机器人WM',mech:'视频-动作WM+测试时计算',desc:'想象作为按需调用的计算,latent 默认、要才渲染。',tag:'2026近期'},
+{nm:'GRASP',yr:2026,g:'planning',lane:'机器人WM',u:'2602.00475',mech:'虚拟状态梯度规划',desc:'用虚拟状态+梯度重塑让学出的模型在更长 horizon 上可规划。',tag:'2026近期'},
+{nm:'Closing the Train-Test Gap',yr:2025,g:'planning',lane:'机器人WM',u:'2512.09929',mech:'为规划器轨迹做训练期数据合成',desc:'planner 优化把模型带出训练分布,用诱导/对抗状态补回。',tag:'2025'},
+{nm:'V-JEPA 2 / V-JEPA 2-AC',yr:2025,g:'planning',lane:'序列形态',u:'2506.09985',mech:'latent 预测+轻量动作 predictor',desc:'不生成像素,在抽象 latent 里做 MPC,比视频生成快约 16×。',tag:'2025'},
+{nm:'Latent Geometry (Amortizing Planning)',yr:2026,g:'planning',lane:'经典RL',u:'2605.08732',mech:'目标条件逆动力学+剩余 horizon 输入',desc:'把在线搜索摊销成前馈映射,省 100×。',tag:'2026近期'},
+{nm:'Compositional Planning with Jumpy WM',yr:2026,g:'planning',lane:'经典RL',u:'2602.19634',mech:'跳步世界模型组合策略',desc:'跨时间尺度一致,把已训策略当时间扩展动作来拼。',tag:'2026近期'},
+{nm:'LCDrive (Latent CoT WM)',yr:2026,g:'planning',lane:'序列形态',u:'2512.10226',mech:'latent 链式思维世界建模',desc:'把推理放进动作对齐的 latent,而非自然语言 CoT。',tag:'2026近期'},
+{nm:'WMPO',yr:2025,g:'planning',lane:'机器人WM',u:'2511.09515',mech:'在世界模型想象里给 VLA 做 RL',desc:'无需真机交互,像素级预测复用预训练视觉,涌现自我纠错。',tag:'2025'},
+{nm:'RISE',yr:2026,g:'planning',lane:'机器人WM',u:'2602.11075',mech:'组合式WM(可控动力学+progress value)',desc:'让 VLA 在想象空间 rollout-估优势-更新,免真实试错。',tag:'2026近期'},
+{nm:'VLAW',yr:2026,g:'planning',lane:'机器人WM',u:'2602.12063',mech:'真机在线 rollout 微调WM',desc:'策略↔世界模型互改闭环,补回物理保真度。',tag:'2026近期'},
+{nm:'stable-worldmodel',yr:2026,g:'planning',lane:'机器人WM',u:'2605.21800',mech:'统一 MPC 评测平台',desc:'核心发现「预测准≠规划好」:planner 钻无关视觉特征空子。',tag:'2026近期'},
+{nm:'GHOST',yr:2026,g:'planning',lane:'VLA',u:'2606.10025',mech:'高层子目标+低层控制器',desc:'把子目标当跨本体接口拉长有效规划视界。',tag:'2026近期'},
+{nm:'Affordances Enable Partial World Modeling',yr:2026,g:'planning',lane:'综述/理论',u:'2602.10390',mech:'意图条件→部分世界模型',desc:'只对任务相关子集做高质量预测,降搜索分支因子。',tag:'2026近期'},
+
+{nm:'PETS',yr:2018,g:'trust',lane:'经典RL',mech:'集成不确定性',desc:'不确定性感知基于模型控制的核心基线。',tag:'经典锚点'},
+{nm:'MOPO / MOReL',yr:2020,g:'trust',lane:'经典RL',mech:'不确定性惩罚 / 悲观 MDP',desc:'离线 MBRL 对分布漂移下模型误差的回应。',tag:'经典锚点'},
+{nm:'COMBO',yr:2021,g:'trust',lane:'经典RL',mech:'保守离线价值',desc:'不确定性/悲观 vs 自适应信任的有用对照。',tag:'经典锚点'},
+{nm:'RAMBO',yr:2022,g:'trust',lane:'经典RL',mech:'对抗模型训练',desc:'让离线学到的模型更鲁棒。',tag:'经典锚点'},
+{nm:'NEUBAY',yr:2026,g:'trust',lane:'经典RL',u:'2512.04341',mech:'按 (s,a) 不确定性自适应截断',desc:'证明固定长视界因价值高估崩、自适应稳,横跨 33 数据集。',tag:'2026近期'},
+{nm:'Variable-Length Latent World Models',yr:2026,g:'trust',lane:'经典RL',u:'2606.21775',mech:'可变规划时域',desc:'训一个能预测任意 k 步的模型,把固定步长证明成特例。',tag:'2026近期'},
+{nm:'Universal Horizon Models',yr:2026,g:'trust',lane:'经典RL',u:'2605.15603',mech:'任意时域未来采样',desc:'把未来 horizon 作为显式随机变量做 offline value learning。',tag:'2026近期'},
+{nm:'TD-Flow',yr:2025,g:'trust',lane:'经典RL',u:'2503.09817',mech:'flow-matching 几何时域模型',desc:'靠降梯度方差,把可信预测从 20–50 步推到 5× 长。',tag:'2025'},
+{nm:'Horizon Generalization in RL',yr:2025,g:'trust',lane:'经典RL',u:'2501.02709',mech:'规划不变性',desc:'近处训好+不变性→远目标自动可达,不需长 rollout。',tag:'2025'},
+{nm:'Hierarchical Planning with Latent WM (HWM)',yr:2026,g:'trust',lane:'经典RL',u:'2604.03208',mech:'多尺度 latent 世界模型',desc:'长 horizon 当短 horizon 的子目标,真机 70% vs 单层 0%。',tag:'2026近期'},
+
+{nm:'STRIPS / PDDL planning',yr:1971,g:'verify',lane:'符号规划',mech:'符号前条件/效果',desc:'定义了事件/谓词规划的词汇。',tag:'经典锚点'},
+{nm:'Task and Motion Planning (TAMP)',yr:2010,g:'verify',lane:'符号规划',mech:'符号任务+几何运动',desc:'逻辑高层+低层可行性的机器人祖先。',tag:'经典锚点'},
+{nm:'SayCan',yr:2022,g:'verify',lane:'语言计划',mech:'LLM 计划+可供性打分',desc:'桥接语言计划与物理可行。',tag:'经典锚点'},
+{nm:'Code as Policies',yr:2022,g:'verify',lane:'语言计划',mech:'可执行策略代码',desc:'计划可检查/可执行,物理验证仍在外部。',tag:'经典锚点'},
+{nm:'VoxPoser',yr:2023,g:'verify',lane:'语言计划',mech:'语言条件可供性图',desc:'把语言约束变成空间价值图。',tag:'经典锚点'},
+{nm:'ReKep',yr:2024,g:'verify',lane:'语言计划',mech:'关键点约束',desc:'用可复用空间约束结构化长操作。',tag:'经典锚点'},
+{nm:'EV-WM (Event-Verified WM)',yr:2026,g:'verify',lane:'机器人WM',u:'2606.13053',mech:'谓词/事件验证',desc:'把 rollout 解码成事件状态打分、门控规划——画面对但事件错正是核心论点。',tag:'2026近期'},
+{nm:'World Action Verifier (WAV)',yr:2026,g:'verify',lane:'机器人WM',u:'2604.01985',mech:'前向-逆向不对称自检',desc:'拆成可独立验证的因子;验证比生成便宜,cycle-consistency 自纠。',tag:'2026近期'},
+{nm:'CoVer (Scaling Verification > Policy)',yr:2026,g:'verify',lane:'机器人WM',u:'2602.12281',mech:'测试时对比验证器打分',desc:'验证指令-动作对齐,证明扩验证比扩策略更有效。',tag:'2026近期'},
+{nm:'RoboReward',yr:2026,g:'verify',lane:'机器人WM',u:'2601.00675',mech:'通用 VL 奖励/验证模型',desc:'反事实重标+时间裁剪合成负样本,训 VLM 评判任务成没成。',tag:'2026近期'},
+{nm:'H-WM',yr:2026,g:'verify',lane:'机器人WM',u:'2602.11291',mech:'逻辑+视觉分层 WM',desc:'用符号/逻辑状态当长时域抗漂移的检查点。',tag:'2026近期'},
+{nm:'IPR-1 (Interactive Physical Reasoner)',yr:2025,g:'verify',lane:'序列形态',u:'2511.15407',mech:'WM rollout 打分强化 VLM + PhysCode',desc:'会预测≠懂物理,把预测绑到物理动作编码而非像素相似度。',tag:'2025'},
+{nm:'Agentic World Modeling',yr:2026,g:'verify',lane:'综述/立场',u:'2604.22748',mech:'交互证据修正(L1→L2→L3)',desc:'从被动预测走向会因预测失败而改写自己的 agent。',tag:'2026近期'},
+{nm:'Cortex 2.0',yr:2026,g:'verify',lane:'机器人WM',u:'2604.20246',mech:'真实↔想象共享表示打分',desc:'给反应式 VLA 加未来评估,提长程可靠性。',tag:'2026近期'},
+
+{nm:'Options framework',yr:1999,g:'abstraction',lane:'分层RL',mech:'时间扩展动作',desc:'缩短有效时域的经典形式化。',tag:'经典锚点'},
+{nm:'Feudal Networks',yr:2017,g:'abstraction',lane:'分层RL',mech:'管理者-工人目标',desc:'高层给低层设目标的范式。',tag:'经典锚点'},
+{nm:'HIRO',yr:2018,g:'abstraction',lane:'分层RL',mech:'off-policy 高层目标',desc:'连续控制分层基线。',tag:'经典锚点'},
+{nm:'HAC',yr:2019,g:'abstraction',lane:'分层RL',mech:'多层目标条件层级',desc:'直击长时域稀疏奖励。',tag:'经典锚点'},
+{nm:'HER',yr:2017,g:'abstraction',lane:'分层RL',mech:'事后目标',desc:'稀疏长时域目标学习的关键技巧。',tag:'经典锚点'},
+{nm:'Diffusion Policy',yr:2023,g:'abstraction',lane:'VLA',mech:'动作块去噪',desc:'现代机器人操作的重要基础策略类。',tag:'经典锚点'},
+{nm:'ACT (Action Chunking Transformers)',yr:2023,g:'abstraction',lane:'VLA',mech:'块化动作',desc:'改变控制时间单位的重要工作。',tag:'经典锚点'},
+{nm:'RT-1 / RT-2',yr:2023,g:'abstraction',lane:'VLA',mech:'语言条件 / VLM→动作',desc:'语言到动作 grounding 的关键 VLA 基线。',tag:'经典锚点'},
+{nm:'Octo / OpenVLA',yr:2024,g:'abstraction',lane:'VLA',mech:'开源通用策略 / VLA',desc:'策略评测与长任务扩展常用基线。',tag:'经典锚点'},
+{nm:'pi0',yr:2025,g:'abstraction',lane:'VLA',mech:'通用机器人基础策略',desc:'工业相关长操作 VLA 基线。',tag:'经典锚点'},
+{nm:'π0.7',yr:2026,g:'abstraction',lane:'VLA',u:'2604.15483',mech:'可引导通用机器人基础模型',desc:'多模态上下文条件做多阶段长程厨房任务。',tag:'2026近期'},
+{nm:'Ego-Pi',yr:2026,g:'abstraction',lane:'VLA',u:'2606.08107',mech:'第一人称人类视频微调',desc:'不需新机器人数据驱动灵巧五指控制学新任务语义。',tag:'2026近期'},
+{nm:'Puppeteer',yr:2025,g:'abstraction',lane:'机器人WM',mech:'两级人形世界模型',desc:'视觉全身人形控制的分层世界模型(低层跟踪+高层视觉)。',tag:'2025'},
+{nm:'Psi-Zero',yr:2026,g:'abstraction',lane:'VLA',mech:'分阶段人类视频+人形数据',desc:'长时域人形 loco-manip 策略锚点,动作块化。',tag:'2026近期'},
+{nm:'EgoHumanoid',yr:2026,g:'abstraction',lane:'VLA',mech:'野外第一视角示范+对齐',desc:'用无机器人人类示范扩展长任务。',tag:'2026近期'},
+{nm:'ULTRA',yr:2026,g:'abstraction',lane:'VLA',mech:'统一多模态人形控制器',desc:'桥接稠密跟踪与稀疏自主目标。',tag:'2026近期'},
+{nm:'VIRAL',yr:2025,g:'abstraction',lane:'VLA',mech:'大规模视觉 sim-to-real',desc:'视觉 sim-to-real 下的长时域人形 loco-manip。',tag:'2025'},
+{nm:'A2A (Action-to-Action Flow Matching)',yr:2026,g:'abstraction',lane:'VLA',mech:'流策略的动作历史先验',desc:'用历史动作替噪声初值,降推理延迟、稳动作块。',tag:'2026近期'},
+{nm:'LAPO (Learning to Act without Actions)',yr:2024,g:'abstraction',lane:'VLA',mech:'无动作视频学潜动作',desc:'让纯视频行为可用于未来策略/世界模型。',tag:'经典锚点'},
+{nm:'LoHo-Manip',yr:2026,g:'abstraction',lane:'VLA',mech:'任务管理 VLM+轨迹条件 VLA',desc:'用进度跟踪+重规划扩展短 VLA 到长程。',tag:'2026近期'},
+{nm:'Long-VLA',yr:2026,g:'abstraction',lane:'VLA',mech:'阶段感知输入掩码',desc:'端到端设计的长时域 VLA。',tag:'2026近期'},
+{nm:'Anticipation-VLA',yr:2026,g:'abstraction',lane:'VLA',mech:'子目标预期',desc:'长操作的子目标生成候选。',tag:'2026近期'},
+{nm:'Lifting Embodied World Models',yr:2026,g:'abstraction',lane:'机器人WM',mech:'路点/高层动作空间',desc:'改变动作单位降低规划负担、稳长程。',tag:'2026近期'},
+{nm:'SMP (Score-Matching Motion Priors)',yr:2026,g:'abstraction',lane:'动作先验',mech:'冻结分数匹配动作先验',desc:'可复用、任务无关的动作自然度先验/奖励。',tag:'2026近期'},
+{nm:'AMP',yr:2021,g:'abstraction',lane:'动作先验',mech:'对抗动作先验',desc:'经典动作自然度先验。',tag:'经典锚点'},
+{nm:'AnySkill',yr:2024,g:'abstraction',lane:'动作先验',mech:'开放词表物理技能',desc:'用语言/CLIP 奖励组合底层技能。',tag:'经典锚点'},
+{nm:'GMR (General Motion Retargeting)',yr:2025,g:'abstraction',lane:'数据基建',mech:'动作重定向',desc:'参考轨迹不可行会让长序列失败。',tag:'2025'},
+{nm:'SPIDER',yr:2026,g:'abstraction',lane:'数据基建',mech:'物理感知重定向',desc:'把人类示范变成动力学可行的机器人轨迹。',tag:'2026近期'},
+{nm:'GHOST (sub-goal cross-embodiment)',yr:2026,g:'abstraction',lane:'VLA',u:'2606.10025',mech:'子目标当跨本体接口',desc:'用少量人类视频泛化,拉长有效规划视界。',tag:'2026近期'},
+
+{nm:'Slot Attention',yr:2020,g:'persistence',lane:'对象中心',mech:'槽/实体',desc:'持久对象的核心槽词汇。',tag:'经典锚点'},
+{nm:'OP3',yr:2019,g:'persistence',lane:'对象中心',mech:'对象中心视频动力学',desc:'对象中心世界模型祖先。',tag:'经典锚点'},
+{nm:'C-SWM',yr:2020,g:'persistence',lane:'对象中心',mech:'对比结构化动力学',desc:'学对象结构化动力学做规划/控制。',tag:'经典锚点'},
+{nm:'SlotFormer',yr:2022,g:'persistence',lane:'对象中心',mech:'槽动力学 Transformer',desc:'长对象槽 rollout 基线。',tag:'经典锚点'},
+{nm:'Latent Particle World Models',yr:2026,g:'persistence',lane:'对象中心',u:'2603.04553',mech:'纯视频学物体中心 latent particle',desc:'per-particle latent action 建模随机多物体动态。',tag:'2026近期'},
+{nm:'3D-DLP',yr:2026,g:'persistence',lane:'对象中心',u:'2606.19451',mech:'RGB-D 分解成 3D latent particle',desc:'补回 2D slot 做不到的遮挡恢复与精确几何。',tag:'2026近期'},
+{nm:'Slot-MPC',yr:2026,g:'persistence',lane:'对象中心',u:'2605.14937',mech:'对象槽+MPC',desc:'对象槽让预测/控制更可组合,接对象持久性到预测控制。',tag:'2026近期'},
+{nm:'MEM (Multi-Scale Embodied Memory)',yr:2026,g:'persistence',lane:'记忆',u:'2603.03596',mech:'多尺度具身记忆',desc:'短期视觉+长期语言记忆,长任务保持记忆数十分钟。',tag:'2026近期'},
+{nm:'MemoryWAM',yr:2026,g:'persistence',lane:'记忆',u:'2606.20562',mech:'混合记忆(近期帧+事件锚点+gist)',desc:'非马尔可夫长任务里既保住历史又压低延迟/显存。',tag:'2026近期'},
+{nm:'KEMO',yr:2026,g:'persistence',lane:'记忆',u:'2606.23589',mech:'事件驱动关键帧记忆',desc:'任务状态变化时才写入,避免遮挡线索丢失。',tag:'2026近期'},
+{nm:'EventVLA',yr:2026,g:'persistence',lane:'记忆',u:'2606.20092',mech:'事件驱动视觉证据记忆',desc:'遮挡/不可观时保住任务证据。',tag:'2026近期'},
+{nm:'Mem-World',yr:2026,g:'persistence',lane:'机器人WM',u:'2606.18960',mech:'surfel 索引视觉记忆',desc:'记忆该怎么索引(几何/腕部视角)比存多少更重要。',tag:'2026近期'},
+{nm:'World-Ego Modeling',yr:2026,g:'persistence',lane:'机器人WM',u:'2605.19957',mech:'世界/自我分离',desc:'把持久世界动态与机器人自我相机运动分开,治长程漂移。',tag:'2026近期'},
+{nm:'Physical Object Understanding',yr:2026,g:'persistence',lane:'对象中心',u:'2606.00439',mech:'概率自回归WM推断分布式状态',desc:'靠多样未来间运动相关性发现物体与可动部件。',tag:'2026近期'},
+{nm:'HumanNet',yr:2026,g:'persistence',lane:'数据基建',mech:'百万小时人类中心视频',desc:'长行为与人到机器迁移的数据底座。',tag:'2026近期'},
+{nm:'Training Diffusion Policies with Long Context',yr:2026,g:'persistence',lane:'VLA',mech:'长历史策略上下文',desc:'与历史长度/持久性直接相关,避免重复失败动作。',tag:'2026近期'},
+{nm:'ENACT',yr:2025,g:'persistence',lane:'序列形态',u:'2511.20937',mech:'世界建模=序列重排',desc:'用排序探针测对象持久性:不生成也能查「有没有世界模型」。',tag:'2025'},
+
+{nm:'WorldEval',yr:2025,g:'eval',lane:'评测',u:'2505.19017',mech:'世界模型当真实策略评估器',desc:'强弱策略在生成视频评测里排序与真实一致;需 latent action 才动作可控。',tag:'2025'},
+{nm:'WorldGym / Evaluating Robot Policies in a WM',yr:2025,g:'eval',lane:'评测',u:'2506.00613',mech:'块自回归 rollout 当代理环境',desc:'一张真实初始帧即可评策略;发现系统性高估 OOD 策略。',tag:'2025'},
+{nm:'Scalable Policy Evaluation with Video WMs',yr:2025,g:'eval',lane:'评测',u:'2511.11520',mech:'预训练视频模型+VLM 评判',desc:'复用互联网视频,绕开昂贵成对 video-action 数据。',tag:'2025'},
+{nm:'WorldArena',yr:2026,g:'eval',lane:'评测',u:'2602.08971',mech:'感知+功能效用统一基准',desc:'量化 perception–functionality gap:高画质≠强具身能力。',tag:'2026近期'},
+{nm:'WorldLens (Driving WM eval)',yr:2026,g:'eval',lane:'评测',u:'2605.10858',mech:'驾驶 WM 全面评测',desc:'视觉真实≠行为真实;大规模训练提画质却损害任务对齐。',tag:'2026近期'},
+{nm:'Prediction over Reconstruction',yr:2026,g:'eval',lane:'评测',u:'2606.07687',mech:'逆动力学探针比预训练目标',desc:'机制级结论:重建保真度与动作相关性在表示层正交。',tag:'2026近期'},
+{nm:'dWorldEval',yr:2026,g:'eval',lane:'评测',u:'2604.22152',mech:'离散扩散 WM+进度 token',desc:'把「成功」内化为模型自预测的进度信号,事件成第一类公民。',tag:'2026近期'},
+{nm:'Evaluating Gemini Robotics in Veo',yr:2026,g:'eval',lane:'评测',u:'2512.10675',mech:'视频基础模型全谱评策略',desc:'1600+ 真实评测校准,目标定位为排序准确而非绝对成功率。',tag:'2026近期'},
+{nm:'RoboWM-Bench',yr:2026,g:'eval',lane:'评测',u:'2604.19092',mech:'可执行性验证基准',desc:'把生成视频转成可执行动作去验:视觉合理≠可执行。',tag:'2026近期'},
+{nm:'Rethinking Video Generation for the Embodied World',yr:2026,g:'eval',lane:'评测',u:'2601.15282',mech:'RBench 基准+RoVid-X 数据',desc:'为机器人导向视频生成造含物理可信度子指标的基准。',tag:'2026近期'},
+{nm:'WM for Robot Learning / Manipulation Survey',yr:2026,g:'eval',lane:'综述',mech:'机器人 WM 分类/评测',desc:'把动作条件一致性与长时域可靠性当核心挑战。',tag:'2026近期'},
+
+{nm:'OpenAI Codex long-horizon guide',yr:2026,g:'llm',lane:'LLM类比',mech:'AGENTS.md / 续跑 / compaction',desc:'长编码任务需要持久工件与可复现验证。',tag:'2026近期'},
+{nm:'Anthropic: harnesses for long-running agents',yr:2026,g:'llm',lane:'LLM类比',mech:'harness+进度文件+测试',desc:'多小时/天 agent 的外部验证与跨会话交接。',tag:'2026近期'},
+{nm:'Mage (Memory as Execution State)',yr:2026,g:'llm',lane:'LLM类比',mech:'状态树记忆',desc:'把记忆当执行状态数据结构,隔离错误级联。',tag:'2026近期'},
+{nm:'Reinforcement WM Learning for LLM Agents',yr:2026,g:'llm',lane:'LLM类比',u:'2602.05842',mech:'文本态 LLM agent 学动作条件WM',desc:'用 sim-to-real gap 奖励对齐模拟态与真实态,抗 reward hacking。',tag:'2026近期'},
+{nm:'SWE-Marathon',yr:2026,g:'llm',lane:'LLM类比',mech:'超长 repo 任务基准',desc:'长工具调用轨迹+多层隐藏验证。',tag:'2026近期'},
+{nm:'Odysseys',yr:2026,g:'llm',lane:'LLM类比',mech:'长网页导航基准',desc:'浏览器轨迹作为长时域有状态规划。',tag:'2026近期'},
+{nm:'Graph-of-Skills',yr:2026,g:'llm',lane:'LLM类比',mech:'技能依赖检索',desc:'长任务需要流程依赖跟踪,而非纯语义检索。',tag:'2026近期'},
+{nm:'CaP-X',yr:2026,g:'llm',lane:'LLM类比',u:'2603.22435',mech:'评测 LLM 当 Code-as-Policy',desc:'性能随人工抽象升、剥离则退化,靠交互/执行反馈补回。',tag:'2026近期'},
+];
+
+const list=document.getElementById('list'),chipsEl=document.getElementById('chips'),countEl=document.getElementById('count'),qEl=document.getElementById('q'),emptyEl=document.getElementById('empty');
+let active='all';
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function card(p){
+ const nm=p.u?`<a href="${A}${p.u}" target="_blank" rel="noopener">${esc(p.nm)}<span class="ext">↗</span></a>`:esc(p.nm);
+ return `<div class="card"><div class="nm">${nm}<span class="yr">${p.yr} · ${p.tag}</span></div>`+
+ `<div class="mech"><b>机制</b>：${esc(p.mech)}</div>`+
+ `<div class="desc">${esc(p.desc)}</div>`+
+ `<div class="lane">${esc(p.lane)}</div></div>`;
+}
+function render(){
+ const q=qEl.value.trim().toLowerCase();
+ let shown=0,html='';
+ for(const G of GROUPS){
+  if(active!=='all'&&active!==G.k)continue;
+  let items=P.filter(p=>p.g===G.k);
+  if(q)items=items.filter(p=>(p.nm+p.mech+p.desc+p.lane).toLowerCase().includes(q));
+  if(!items.length)continue;
+  items.sort((a,b)=>a.yr-b.yr);
+  shown+=items.length;
+  html+=`<section class="group"><div class="group-title">${esc(G.t)}<span class="en">${esc(G.en)} · ${items.length}</span></div>`+
+   `<div class="intro">${INTROS[G.k]||''}</div>`+
+   `<div class="cards">${items.map(card).join('')}</div></section>`;
+ }
+ list.innerHTML=html;
+ emptyEl.style.display=shown?'none':'block';
+ countEl.textContent=`共 ${P.length} 篇 · 显示 ${shown}`;
+}
+function buildChips(){
+ const mk=(k,label,n)=>`<span class="chip${active===k?' active':''}" data-k="${k}">${label} <span class="c">${n}</span></span>`;
+ let h=mk('all','全部',P.length);
+ for(const G of GROUPS)h+=mk(G.k,G.t.split('·').pop().trim(),P.filter(p=>p.g===G.k).length);
+ chipsEl.innerHTML=h;
+ chipsEl.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{active=c.dataset.k;buildChips();render();window.scrollTo({top:0,behavior:'smooth'})});
+}
+qEl.addEventListener('input',render);
+buildChips();render();
+</script>
+</body>
+</html>
