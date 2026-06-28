@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>近期学习汇报：从读论文到形成问题 - Sense Wang</title>
+  <meta name="description" content="一份面向学长的阶段性学习汇报：从按论文路线读文章，到围绕长任务问题组织机器人世界模型文献、问题和实验。">
+  <style>
+    :root {
+      --bg: #fbfbf8;
+      --ink: #151515;
+      --muted: #66625b;
+      --quiet: #8c877e;
+      --line: #d8d3c8;
+      --soft: #f0eee8;
+      --accent: #111;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.78;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: inherit;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.2em;
+    }
+
+    .page {
+      width: min(100%, 880px);
+      margin: 0 auto;
+      padding: 32px 28px 84px;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: center;
+      padding-bottom: 56px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .top a {
+      text-decoration: none;
+    }
+
+    .top a:hover {
+      text-decoration: underline;
+      text-underline-offset: 0.25em;
+    }
+
+    .label {
+      color: var(--quiet);
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin: 0 0 18px;
+    }
+
+    .nowrap {
+      white-space: nowrap;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 780px;
+      font-size: clamp(34px, 6vw, 56px);
+      line-height: 1.08;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 22px 0 0;
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 19px;
+      line-height: 1.7;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      margin: 34px 0 58px;
+      color: var(--quiet);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .meta span {
+      white-space: nowrap;
+    }
+
+    article {
+      max-width: 760px;
+    }
+
+    p {
+      margin: 0 0 24px;
+    }
+
+    .plain-note {
+      margin: 38px 0;
+      padding: 0 0 0 18px;
+      border-left: 2px solid var(--accent);
+      color: #2c2b28;
+    }
+
+    .plain-note p {
+      margin-bottom: 14px;
+    }
+
+    .plain-note p:last-child {
+      margin-bottom: 0;
+    }
+
+    h2 {
+      margin: 54px 0 20px;
+      font-size: 22px;
+      line-height: 1.3;
+      letter-spacing: 0;
+    }
+
+    .materials {
+      margin-top: 54px;
+      padding-top: 30px;
+      border-top: 1px solid var(--line);
+    }
+
+    .materials h2 {
+      margin-top: 0;
+    }
+
+    .materials p {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.65;
+      margin-bottom: 18px;
+    }
+
+    .link-row {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      gap: 18px;
+      padding: 14px 0;
+      border-top: 1px solid var(--soft);
+    }
+
+    .link-row:first-of-type {
+      border-top: 0;
+    }
+
+    .link-title {
+      color: var(--quiet);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .link-body {
+      font-size: 15px;
+      line-height: 1.65;
+    }
+
+    .link-body a {
+      margin-right: 14px;
+      white-space: nowrap;
+    }
+
+    footer {
+      max-width: 760px;
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+      color: var(--quiet);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 680px) {
+      body {
+        font-size: 16px;
+        line-height: 1.78;
+      }
+
+      .page {
+        padding: 24px 20px 64px;
+      }
+
+      .top {
+        padding-bottom: 42px;
+      }
+
+      .subtitle {
+        font-size: 17px;
+      }
+
+      .meta {
+        margin-bottom: 42px;
+      }
+
+      .link-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+
+      .link-body a {
+        display: inline-block;
+        margin-bottom: 4px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <nav class="top" aria-label="页面导航">
+      <a href="/">Sense Wang</a>
+      <span>阶段性学习汇报 · 2026.06</span>
+    </nav>
+
+    <article>
+      <p class="label">给学长的阶段性汇报</p>
+      <h1>近期学习汇报：从读论文到<span class="nowrap">形成问题</span></h1>
+      <p class="subtitle">
+        这份页面主要想说清楚一件事：过去这段时间，我不是只在增加阅读量，而是在慢慢改变阅读方式。最开始是按论文路线一篇篇读，后来意识到，读论文最好还是心里带着一个问题，知道自己想往哪里推进。
+      </p>
+      <div class="meta">
+        <span>Sense Wang</span>
+        <span>2026.06</span>
+        <span>机器人世界模型 / 长任务问题</span>
+      </div>
+
+      <p>
+        一开始我做的事情很朴素，就是读论文。先沿着论文路线读了几篇，比如 <a href="/writing/td-mpc-world-model/">TD-MPC</a>、<a href="/writing/prism-wm/">PRISM-WM</a>、<a href="/writing/puppeteer/">Puppeteer</a>，后来又看了 <a href="/writing/cosmos-policy/">Cosmos Policy</a>、<a href="https://arxiv.org/abs/2511.19584">Newt</a> 这类更近期的工作。那时我的主要目标还是把方法本身看懂：世界模型在机器人里到底怎么用，规划器怎么接上去，模型预测的未来又怎么变成动作。
+      </p>
+
+      <p>
+        读了几篇之后，我开始觉得，如果只是继续按顺序读下一篇，很容易变成收集名词。每篇论文都有自己的结构、数据、实验和关键词，但如果我心里没有一个想回答的问题，它们就会在脑子里散开。对我来说，更有效的方式应该是：先找到一个值得推进的问题，再带着这个问题回去读论文。因为最终不是为了“读完很多篇”，而是希望能从里面长出一个可以讨论、可以实验、也可能有创新空间的方向。
+      </p>
+
+      <p>
+        所以后来我把重心从“读某一篇论文”转成了“找问题”。这个过程中，我看了几类材料。两个综述对我帮助比较大：一个是 <a href="https://arxiv.org/abs/2606.00133">World Models: A Comprehensive Survey</a>，一个是 <a href="https://arxiv.org/abs/2605.00080">World Model for Robot Learning: A Comprehensive Survey</a>。它们让我意识到，机器人里的世界模型不只是“预测未来画面”，更重要的是它能不能稳定服务行动：能不能被规划器使用，能不能在闭环里纠错，能不能支撑真实任务。
+      </p>
+
+      <p>
+        同时，我也看了一些工业界信号，比如 NVIDIA 关于 <a href="https://developer.nvidia.com/blog/pretrained-to-imagine-fine-tuned-to-act-the-rise-of-world-action-models/">World Action Model</a> 的文章、<a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy</a>，以及 <a href="https://arxiv.org/abs/2606.02800">Cosmos 3</a> 这种更平台化的工作。这些材料给我的感觉是，大家都在把模型从“会想象”往“能行动”推。这样看，长任务问题就开始变成一个很自然的问题：如果任务很长，模型和策略到底在哪些地方会失真、漂移或者失去判断力？
+      </p>
+
+      <div class="plain-note">
+        <p>
+          我现在还不能说已经确定了最终题目。更准确地说，我是在把注意力收束到一个问题附近：机器人世界模型做长任务时，失败不是一个单点，而是一串接口一起承压。
+        </p>
+      </div>
+
+      <p>
+        Long Horizon 这个词也让我产生了一个好奇：语言模型智能体里也在讲长任务，比如长工具调用、长时间编码、跨多轮任务保持状态；机器人世界模型里也在讲长任务，比如预测越滚越偏、闭环规划、任务阶段推进。它们是不是同一个问题？我先写了 <a href="/writing/long-horizon/">Two Long Horizons</a>，再写了 <a href="/writing/long-horizon-map/">From Rollout to Context</a>，主要就是想把这两个语境对齐一下：相似的地方是都要在长过程中保持可靠，不同的地方是机器人要面对物理状态、动作和环境反馈。
+      </p>
+
+      <p>
+        既然开始关注长任务，我就想知道近期大家到底在做什么。于是我把机器人世界模型、机器人策略、视觉语言动作模型、类人机器人、记忆机制这些方向的论文放在一起，做了一篇 <a href="/writing/long-horizon-research-matrix/">Long Horizon：机器人世界模型的研究矩阵</a>。这一步不是为了把所有论文都讲完，而是先回答一个很现实的问题：如果我要进入这个方向，别人已经把问题切成了哪些块？有人在改模型，有人在改规划，有人在改记忆，有人在改动作接口，也有人在做更大规模的平台。
+      </p>
+
+      <p>
+        但只知道“大家在做什么”还不够。下一步更关键的是：这些主张是怎么被实验验证的？一篇论文如果说自己解决了长任务问题，它到底设计了什么任务、用了什么平台、跟谁比、看哪些指标、消融实验拆掉了什么？所以我又写了 <a href="/writing/long-horizon-experiment-logic/">Long Horizon World Models：从主张到实验</a>。这篇对我很重要，因为它把阅读从“理解方法”往“理解证据”推进了一步。
+      </p>
+
+      <p>
+        再往后，我发现 Long Horizon 本身还是太大。如果直接说“我要解决 Long Horizon”，这个说法很容易空。于是我尝试把它拆得更细，写了 <a href="/writing/long-horizon-world-model-interfaces/">Long-horizon world model 的五个接口</a>，也写了 <a href="/writing/long-horizon-failure-modes/">Long Horizon Is Not One Problem</a>。这里我想表达的是，长任务失败可能发生在不同位置：模型预测会漂，规划器会利用模型错误，任务阶段需要被验证，动作空间可能太底层，物体和历史状态也可能丢失。把这些接口拆开以后，问题才更像可以被实验切中的问题。
+      </p>
+
+      <p>
+        最近我又试着把这些论文放回一个更大的机器人叙事里，写了 <a href="/writing/long-horizon-world-model-basemap/">机器人世界模型的闭环底图：long-horizon 论文都在改哪个零件</a>。这篇其实是在问：如果一个机器人要完成长任务，它是不是都要经历“观察当前状态、想象未来、给未来打分、选动作、执行、再观察”这样一个闭环？如果是，那么近期论文看起来很分散，但其实都可以放回这条闭环上：有的在改表示，有的在改预测，有的在改记忆，有的在改验证，有的在改动作层级。
+      </p>
+
+      <p>
+        所以这两周的变化，对我来说不是从一个确定结论走向另一个确定结论，而是从“我在读哪些论文”，慢慢变成“我带着什么问题读这些论文”。现在我更愿意用几个问题去检查一篇论文：它认为旧系统在哪里失败？它改了哪个接口？它怎么证明这个失败真的存在？它的实验能不能被我借来继续推进？我觉得这比单纯积累论文列表更踏实一些。
+      </p>
+
+      <p>
+        接下来我想继续做的，是把少数几篇核心论文读深，而不是继续横向铺开。尤其是 TD-MPC、PRISM-WM、Puppeteer、Newt、Cosmos Policy，以及近期那些围绕事件验证、记忆、可信预测长度、闭环规划的工作。我希望最后能形成一个更具体的研究问题：它足够小，可以做实验；也足够重要，能放回机器人世界模型和 Physical AI 的大叙事里。
+      </p>
+
+      <section class="materials" aria-labelledby="materials-title">
+        <h2 id="materials-title">相关材料</h2>
+        <p>
+          下面这些链接不是为了把页面变成博客目录，而是方便汇报时回到具体材料。前半部分是我这段时间写出的中间产物，后半部分是对我形成问题意识比较关键的外部来源。
+        </p>
+
+        <div class="link-row">
+          <div class="link-title">最初读的论文</div>
+          <div class="link-body">
+            <a href="/writing/td-mpc-world-model/">TD-MPC</a>
+            <a href="/writing/prism-wm/">PRISM-WM</a>
+            <a href="/writing/puppeteer/">Puppeteer</a>
+            <a href="/writing/cosmos-policy/">Cosmos Policy</a>
+            <a href="https://arxiv.org/abs/2511.19584">Newt</a>
+          </div>
+        </div>
+
+        <div class="link-row">
+          <div class="link-title">问题浮现</div>
+          <div class="link-body">
+            <a href="/writing/long-horizon/">Two Long Horizons</a>
+            <a href="/writing/long-horizon-map/">From Rollout to Context</a>
+          </div>
+        </div>
+
+        <div class="link-row">
+          <div class="link-title">研究整理</div>
+          <div class="link-body">
+            <a href="/writing/long-horizon-research-matrix/">研究矩阵</a>
+            <a href="/writing/long-horizon-experiment-logic/">从主张到实验</a>
+            <a href="/writing/long-horizon-world-model-interfaces/">五个接口</a>
+            <a href="/writing/long-horizon-failure-modes/">不是一个问题</a>
+            <a href="/writing/long-horizon-world-model-basemap/">闭环底图</a>
+          </div>
+        </div>
+
+        <div class="link-row">
+          <div class="link-title">外部来源</div>
+          <div class="link-body">
+            <a href="https://arxiv.org/abs/2606.00133">World Models Survey</a>
+            <a href="https://arxiv.org/abs/2605.00080">Robot Learning Survey</a>
+            <a href="https://developer.nvidia.com/blog/pretrained-to-imagine-fine-tuned-to-act-the-rise-of-world-action-models/">NVIDIA World Action Model</a>
+            <a href="https://arxiv.org/abs/2606.02800">Cosmos 3</a>
+          </div>
+        </div>
+      </section>
+    </article>
+
+    <footer>
+      这是一份阶段性汇报页，主要用于讨论学习路线和问题意识；页面未放入公开写作目录。
+    </footer>
+  </main>
+</body>
+</html>
