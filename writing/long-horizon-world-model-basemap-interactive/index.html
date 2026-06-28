@@ -308,7 +308,7 @@ function buildChips(){
  let h=mk('all','全部',P.length);
  for(const G of GROUPS)h+=mk(G.k,G.t.split('·').pop().trim(),P.filter(p=>p.g===G.k).length);
  chipsEl.innerHTML=h;
- chipsEl.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{active=c.dataset.k;buildChips();render();window.scrollTo({top:0,behavior:'smooth'})});
+ chipsEl.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{active=c.dataset.k;buildChips();render();const ct=document.querySelector('.controls');if(ct&&window.scrollY>ct.offsetTop)window.scrollTo({top:ct.offsetTop})});
 }
 qEl.addEventListener('input',render);
 buildChips();render();
