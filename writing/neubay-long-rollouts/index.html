@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="NEUBAY removes explicit conservatism from offline model-based RL and lets long-horizon rollouts control value overestimation: a posterior over world models decides how far to roll out, and the discount factor demotes the one term that overestimates.">
+<title>Long-horizon rollouts as overestimation control — Sense Wang</title>
+<script>
+  MathJax = { tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] }, svg: { fontCache: 'global' } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif; color: #111; background: #fff; line-height: 1.78; font-size: 17px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+main { max-width: 760px; width: 100%; margin: 0 auto; padding: 72px 20px 112px; }
+nav { margin-bottom: 40px; font-size: 13px; display: flex; justify-content: space-between; align-items: baseline; }
+nav .switch a { color: #999; }
+nav .switch a.on { color: #111; text-decoration: underline; text-underline-offset: 2px; }
+a { color: #111; text-decoration-color: #bbb; text-underline-offset: 2px; }
+a:hover { opacity: .55; }
+h1 { font-size: 42px; line-height: 1.12; font-weight: 700; margin-bottom: 16px; letter-spacing: 0; }
+h2 { font-size: 25px; line-height: 1.28; margin: 56px 0 15px; font-weight: 650; }
+p { margin-bottom: 17px; }
+.meta { color: #999; font-size: 13px; margin-bottom: 26px; }
+.dek { color: #444; font-size: 19px; line-height: 1.6; margin-bottom: 44px; }
+.note { border-left: 3px solid #111; color: #333; font-size: 15px; line-height: 1.72; margin: 26px 0 30px; padding: 2px 0 2px 18px; }
+.note .note-title { color: #777; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 6px; }
+figure { margin: 40px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 26px 0 18px; }
+figure svg { display: block; width: 100%; height: auto; }
+figcaption { color: #777; font-size: 13px; line-height: 1.55; margin-top: 14px; }
+.mjx-container { overflow-x: auto; overflow-y: hidden; }
+.eqwrap { margin: 26px 0 30px; }
+.table-wrap { margin: 26px 0 10px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
+th { color: #555; font-size: 12px; letter-spacing: .03em; text-transform: uppercase; font-weight: 600; background: #fafafa; }
+td:first-child { font-weight: 600; }
+.refs { color: #555; font-size: 15px; margin: 10px 0 0 20px; }
+.refs li { margin-bottom: 9px; }
+.lang[data-lang="zh"] { display: none; }
+strong { font-weight: 680; }
+/* svg shared */
+.s-ink { fill: #111; }
+.s-dim { fill: #999; }
+.s-line { stroke: #111; fill: none; }
+.s-faint { stroke: #d8d8d8; fill: none; }
+.s-acc { fill: #2f5f55; }
+.s-accs { stroke: #2f5f55; fill: none; }
+.s-lab { font-size: 12px; fill: #555; }
+.s-lab-s { font-size: 11px; fill: #888; }
+@media (max-width: 560px) {
+  main { padding: 46px 18px 88px; }
+  h1 { font-size: 31px; } h2 { font-size: 22px; margin-top: 46px; } body { font-size: 16px; } .dek { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+<main>
+<nav>
+  <span><a href="../">Writing</a> / <a href="../../">Sense Wang</a></span>
+  <span class="switch"><a href="#" data-set="en" class="on">English</a> · <a href="#" data-set="zh">中文</a></span>
+</nav>
+
+<!-- ============ ENGLISH ============ -->
+<article class="lang" data-lang="en">
+  <h1>Long-horizon rollouts as overestimation control</h1>
+  <div class="meta">June 2026 · offline model-based RL · NEUBAY</div>
+
+  <p class="dek">Offline model-based RL usually fights value overestimation with conservatism: penalize out-of-dataset actions, and keep rollouts short. NEUBAY removes the conservatism and lets a long rollout do the work. The mechanism is concrete — a posterior over world models decides how far to roll out, and the discount factor demotes the one term that overestimates.</p>
+
+  <h2>The setup: learning from a fixed dataset</h2>
+  <p>In offline RL the agent gets one batch of logged transitions and cannot collect more. A model-based agent learns a world model from that batch — a transition-and-reward function that maps a state and action to the next state and reward — and then trains a policy inside the model instead of in the real environment.</p>
+  <p>This is where value overestimation appears. The policy improves by preferring actions the model scores highly, but the model was fit on a finite dataset, so on actions the data never covered it extrapolates, and it tends to extrapolate <em>upward</em>. The optimizer then selects exactly those actions whose high score is an artifact of the model. The standard defense is conservatism: add a pessimism penalty on out-of-dataset actions, and keep the imagined rollout short so it does not wander into unsupported regions where error compounds.</p>
+
+  <h2>How far to roll out</h2>
+  <p>NEUBAY targets the rollout length directly. The value of a candidate action is estimated from an imagined rollout of horizon \(H\): a sum of model-predicted rewards along the way, plus one bootstrapped value estimate at the end to cover the rest.</p>
+  <div class="eqwrap">
+  \[ V(s_0,a_0)\;\approx\;\underbrace{\sum_{t=0}^{H-1}\gamma^{t}\,\hat r_t}_{\text{imagined rewards}}\;+\;\underbrace{\gamma^{H}\,\hat V(s_H)}_{\text{bootstrapped terminal value}} \]
+  </div>
+  <p>The two terms behave differently. The imagined rewards are low-bias when the model generalizes. The bootstrapped terminal value is the term most prone to overestimation — it is the value function reporting a number for a state the rollout has arrived at. And that term is multiplied by \(\gamma^{H}\). With a discount near \(0.99\), a one-step rollout keeps almost all of it; a several-hundred-step rollout drives it to nearly zero.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 250" role="img" aria-label="Value decomposition and discount on the terminal term">
+      <text x="0" y="20" class="s-lab" font-weight="600">A candidate action's score = imagined rewards + discounted terminal value</text>
+      <!-- reward blocks -->
+      <g>
+        <rect x="20" y="50" width="46" height="34" class="s-faint" stroke-width="1.5"/>
+        <rect x="74" y="50" width="46" height="34" class="s-faint" stroke-width="1.5"/>
+        <rect x="128" y="50" width="46" height="34" class="s-faint" stroke-width="1.5"/>
+        <text x="186" y="72" class="s-dim" font-size="16">· · ·</text>
+        <rect x="214" y="50" width="46" height="34" class="s-faint" stroke-width="1.5"/>
+        <text x="43" y="72" text-anchor="middle" class="s-lab-s">r₀</text>
+        <text x="97" y="72" text-anchor="middle" class="s-lab-s">r₁</text>
+        <text x="151" y="72" text-anchor="middle" class="s-lab-s">r₂</text>
+        <text x="237" y="72" text-anchor="middle" class="s-lab-s">r₍ₕ₋₁₎</text>
+        <text x="140" y="106" text-anchor="middle" class="s-lab">imagined rewards — low bias</text>
+        <!-- terminal value block -->
+        <rect x="300" y="44" width="120" height="46" class="s-accs" stroke-width="2"/>
+        <text x="360" y="72" text-anchor="middle" class="s-acc" font-size="13" font-weight="650">γᴴ · V(s_H)</text>
+        <text x="360" y="106" text-anchor="middle" class="s-lab">terminal value — overestimates</text>
+      </g>
+      <!-- discount curve -->
+      <text x="20" y="150" class="s-lab" font-weight="600">Weight on the terminal value, γᴴ (γ = 0.99)</text>
+      <line x1="20" y1="225" x2="700" y2="225" class="s-faint" stroke-width="1.5"/>
+      <line x1="20" y1="170" x2="20" y2="225" class="s-faint" stroke-width="1.5"/>
+      <path d="M20 172 C 160 210, 360 222, 700 224" class="s-accs" stroke-width="2.5"/>
+      <circle cx="20" cy="172" r="3" class="s-acc"/><text x="28" y="170" class="s-lab-s">H=1 → 0.99</text>
+      <circle cx="200" cy="210" r="3" class="s-acc"/><text x="208" y="206" class="s-lab-s">H=100 → 0.37</text>
+      <circle cx="540" cy="223" r="3" class="s-acc"/><text x="430" y="217" class="s-lab-s">H=500 → 0.007</text>
+    </svg>
+    <figcaption>Schematic (original). A longer rollout replaces one high-bias terminal value with a longer sum of lower-bias model rewards, because the terminal term carries weight \(\gamma^{H}\). NEUBAY makes the bias–variance version of this argument; see the analysis section of the <a href="https://arxiv.org/abs/2512.04341">paper</a>.</figcaption>
+  </figure>
+
+  <h2>Why longer rollouts lower the bias</h2>
+  <p>The paper frames this as a bias–variance trade-off on the value target. Bootstrapping from a learned value function injects the overestimation bias in a single term; relying instead on many imagined reward steps trades that bias for the model's own generalization error, which stays low when the model is accurate. Because the bootstrapped term is exponentially discounted with \(H\), extending the horizon reduces the agent's sensitivity to value-function error. Removing conservatism does not make overestimation worse here — once it is removed, the long rollout is what keeps the value target honest.</p>
+
+  <h2>What lets it go long: a posterior over world models</h2>
+  <p>A long rollout through a single learned model accumulates its errors, which is the usual reason offline methods keep rollouts short. NEUBAY avoids the single-model trap with a Bayesian treatment: instead of one world model it keeps a posterior over world models, approximated by an ensemble, and trains a history-dependent agent to maximize return averaged over that posterior. The name comes from this <strong>neutral Bayesian</strong> principle — neutral because it drops the explicit pessimism penalty, Bayesian because it represents what it does not know as a distribution over models rather than a single point estimate.</p>
+  <p>The ensemble also supplies the stopping rule. Where the data is dense the ensemble members agree, so epistemic uncertainty is low; where the data thins out they disagree. NEUBAY rolls out until that disagreement crosses an uncertainty threshold \(\zeta\), then truncates. The horizon is therefore adaptive and state-dependent: it is long in well-supported regions and short where the model stops being trustworthy.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 250" role="img" aria-label="Posterior over world models and uncertainty-based truncation">
+      <text x="0" y="18" class="s-lab" font-weight="600">A posterior over world models: agreement in-distribution, disagreement out-of-distribution</text>
+      <line x1="40" y1="210" x2="690" y2="210" class="s-faint" stroke-width="1.5"/>
+      <text x="40" y="230" class="s-lab-s">rollout step →</text>
+      <!-- converging then diverging ensemble lines -->
+      <path d="M40 120 C 200 118, 320 116, 420 110" class="s-accs" stroke-width="1.4" opacity=".9"/>
+      <path d="M40 122 C 200 122, 320 130, 540 70"  class="s-accs" stroke-width="1.4" opacity=".55"/>
+      <path d="M40 121 C 200 120, 320 124, 540 150" class="s-accs" stroke-width="1.4" opacity=".55"/>
+      <path d="M40 123 C 200 124, 320 138, 600 40"  class="s-accs" stroke-width="1.4" opacity=".35"/>
+      <path d="M40 120 C 200 119, 320 120, 600 185" class="s-accs" stroke-width="1.4" opacity=".35"/>
+      <!-- region labels -->
+      <text x="150" y="160" text-anchor="middle" class="s-lab">in-distribution: models agree</text>
+      <text x="150" y="176" text-anchor="middle" class="s-lab-s">low uncertainty</text>
+      <text x="560" y="205" text-anchor="middle" class="s-lab">out-of-distribution: models diverge</text>
+      <!-- threshold and truncation -->
+      <line x1="430" y1="30" x2="430" y2="210" stroke="#111" stroke-width="1.3" stroke-dasharray="4 4"/>
+      <text x="438" y="44" class="s-lab" font-weight="600">uncertainty &gt; ζ</text>
+      <text x="438" y="60" class="s-lab-s">→ truncate the rollout here</text>
+      <circle cx="430" cy="110" r="4" class="s-ink"/>
+    </svg>
+    <figcaption>Schematic (original). The ensemble approximates the posterior; its spread is the epistemic uncertainty. The rollout runs until the spread exceeds \(\zeta\), so the effective horizon is decided by where the model stops agreeing with itself.</figcaption>
+  </figure>
+
+  <h2>Evidence: 33 datasets and one decisive ablation</h2>
+  <p>NEUBAY is evaluated on 33 datasets across four offline suites — D4RL locomotion (12), and the NeoRL locomotion (9), Adroit (6), and AntMaze (6) benchmarks — against 15 baselines spanning conservative model-free methods (CQL, IQL, EDAC, ReBRAC), conservative model-based methods (MOPO, COMBO, RAMBO, MOBILE, and others), and Bayesian-inspired methods (APE-V, MAPLE, CBOP, MoDAP). Without an explicit conservatism penalty it stays competitive on standard data and is strongest on low-quality datasets, where conservative methods tend to fail.</p>
+  <p>The ablation that carries the central claim is on the uncertainty threshold \(\zeta\), because \(\zeta\) sets how far the rollout runs. Tightening it shortens the horizon and the failure mode that appears is severe value overestimation; loosening it produces horizons in the tens-to-hundreds of steps and recovers performance. The paper notes these horizons run counter to the conventional preference for short rollouts.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 210" role="img" aria-label="Effect of the uncertainty threshold on horizon and score">
+      <text x="0" y="18" class="s-lab" font-weight="600">D4RL locomotion score vs. threshold ζ (numbers from the paper, Table 2)</text>
+      <line x1="60" y1="170" x2="690" y2="170" class="s-faint" stroke-width="1.5"/>
+      <line x1="60" y1="40" x2="60" y2="170" class="s-faint" stroke-width="1.5"/>
+      <!-- bar zeta=0.9 -->
+      <rect x="150" y="132" width="120" height="38" class="s-faint" stroke-width="1.5" fill="#f4f4f4"/>
+      <text x="210" y="156" text-anchor="middle" class="s-ink" font-size="15" font-weight="650">22.5</text>
+      <text x="210" y="188" text-anchor="middle" class="s-lab">ζ = 0.9 · short rollout</text>
+      <text x="210" y="120" text-anchor="middle" class="s-lab-s">failure mode: overestimation</text>
+      <!-- bar zeta=1.0 -->
+      <rect x="430" y="48" width="120" height="122" class="s-accs" stroke-width="2" fill="#e8f0ed"/>
+      <text x="490" y="92" text-anchor="middle" class="s-acc" font-size="15" font-weight="650">80.1</text>
+      <text x="490" y="188" text-anchor="middle" class="s-lab">ζ = 1.0 · horizon ≈ 64–512</text>
+    </svg>
+    <figcaption>Schematic (original); the two scores and the 64–512-step horizon are reported in the paper, <a href="https://arxiv.org/abs/2512.04341">Table 2</a>. Forcing the rollout short collapses performance through overestimation; allowing long adaptive rollouts recovers it.</figcaption>
+  </figure>
+
+  <div class="note">
+    <div class="note-title">Components</div>
+    <p>The default ensemble size is large — \(N = 100\) world models, with layer normalization inside each — and the paper reports that reducing it to 20 or 5 degrades performance. The posterior is maintained over the joint reward–transition model, not over the value function; the value function is the agent's own estimate trained on top.</p>
+  </div>
+
+  <h2>Limitations</h2>
+  <p>The threshold \(\zeta\) is a hyperparameter, so "how far to trust the model" is set rather than learned end-to-end. The \(N = 100\) ensemble is computationally heavy, and the argument leans on the ensemble's spread being a faithful stand-in for epistemic uncertainty, which is not guaranteed in high-dimensional learned models. The result also sits in tension with the online latent-MPC line, where <a href="https://arxiv.org/abs/2203.04955">TD-MPC</a> deliberately keeps the rollout short and invests in an accurate terminal value instead — the same overestimation problem, addressed from the opposite end of the horizon.</p>
+
+  <h2>References</h2>
+  <ol class="refs">
+    <li>NEUBAY: <a href="https://arxiv.org/abs/2512.04341">Long-Horizon Model-Based Offline Reinforcement Learning Without Explicit Conservatism</a> (arXiv:2512.04341). Code: <a href="https://github.com/twni2016/neubay">github.com/twni2016/neubay</a>.</li>
+    <li>Contrast on the short-horizon end: <a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control (TD-MPC)</a>.</li>
+  </ol>
+</article>
+
+<!-- ============ 中文 ============ -->
+<article class="lang" data-lang="zh">
+  <h1>想象得越长，价值高估反而越小</h1>
+  <div class="meta">2026 年 6 月 · 离线 model-based RL · NEUBAY</div>
+
+  <p class="dek">离线 model-based RL 通常用保守来对付价值高估：惩罚数据集没覆盖的动作，并把 rollout 砍短。NEUBAY 去掉了保守，改让长 rollout 来做这件事。机制很具体——对 world model 维护一个后验来决定 rollout 走多远，而折扣因子让唯一会高估的那一项变得很小。</p>
+
+  <h2>设定：只能用一批固定数据</h2>
+  <p>离线 RL 里，agent 只拿到一批记录下来的转移，不能再去采集。model-based 的做法是先从这批数据学一个 world model——一个把状态和动作映射到下一刻状态与奖励的转移-奖励函数——然后在模型内部训练策略，真实环境不再参与训练。</p>
+  <p>价值高估就出在这里。策略靠偏好模型给高分的动作来改进，但模型是在有限数据上拟合的，对数据没覆盖的动作只能外推，而且往往<em>向上</em>外推。优化器随后正好选中这些"高分只是模型假象"的动作。标准对策是保守：对数据集外的动作加一个悲观惩罚，并把想象的 rollout 砍短，避免它走进缺乏支撑、误差累积的区域。</p>
+
+  <h2>rollout 要走多远</h2>
+  <p>NEUBAY 直接作用在 rollout 长度这个变量上。一个候选动作的价值，来自一段 horizon 为 \(H\) 的想象 rollout：沿途若干步模型预测的奖励之和，再在终点补一个 bootstrapped 价值估计来覆盖后面。</p>
+  <div class="eqwrap">
+  \[ V(s_0,a_0)\;\approx\;\underbrace{\sum_{t=0}^{H-1}\gamma^{t}\,\hat r_t}_{\text{imagined rewards}}\;+\;\underbrace{\gamma^{H}\,\hat V(s_H)}_{\text{terminal value}} \]
+  </div>
+  <p>这两项性质不同。模型泛化得还行时，想象奖励是低偏差的。而终端价值是最容易高估的一项——它是价值函数对 rollout 走到的那个状态报出来的数。关键在于这一项乘了 \(\gamma^{H}\)。折扣取 \(0.99\) 左右时，一步 rollout 几乎原样保留它；走几百步则把它折扣到接近零。</p>
+
+  <figure>
+    <svg viewBox="0 0 720 250" role="img" aria-label="价值分解与终端项的折扣">
+      <text x="0" y="20" class="s-lab" font-weight="600">一个候选动作的分 = 想象奖励之和 + 被折扣的终端价值</text>
+      <g>
+        <rect x="20" y="50" width="46" height="34" class="s-faint" stroke-width="1.5"/>
+        <rect x="74" y="50" width="46" height="34" class="s-faint" stroke-width="1.5"/>
+        <rect x="128" y="50" width="46" height="34" class="s-faint" stroke-width="1.5"/>
+        <text x="186" y="72" class="s-dim" font-size="16">· · ·</text>
+        <rect x="214" y="50" width="46" height="34" class="s-faint" stroke-width="1.5"/>
+        <text x="43" y="72" text-anchor="middle" class="s-lab-s">r₀</text>
+        <text x="97" y="72" text-anchor="middle" class="s-lab-s">r₁</text>
+        <text x="151" y="72" text-anchor="middle" class="s-lab-s">r₂</text>
+        <text x="237" y="72" text-anchor="middle" class="s-lab-s">r₍ₕ₋₁₎</text>
+        <text x="140" y="106" text-anchor="middle" class="s-lab">想象奖励 — 低偏差</text>
+        <rect x="300" y="44" width="120" height="46" class="s-accs" stroke-width="2"/>
+        <text x="360" y="72" text-anchor="middle" class="s-acc" font-size="13" font-weight="650">γᴴ · V(s_H)</text>
+        <text x="360" y="106" text-anchor="middle" class="s-lab">终端价值 — 会高估</text>
+      </g>
+      <text x="20" y="150" class="s-lab" font-weight="600">终端价值的权重 γᴴ（γ = 0.99）</text>
+      <line x1="20" y1="225" x2="700" y2="225" class="s-faint" stroke-width="1.5"/>
+      <line x1="20" y1="170" x2="20" y2="225" class="s-faint" stroke-width="1.5"/>
+      <path d="M20 172 C 160 210, 360 222, 700 224" class="s-accs" stroke-width="2.5"/>
+      <circle cx="20" cy="172" r="3" class="s-acc"/><text x="28" y="170" class="s-lab-s">H=1 → 0.99</text>
+      <circle cx="200" cy="210" r="3" class="s-acc"/><text x="208" y="206" class="s-lab-s">H=100 → 0.37</text>
+      <circle cx="540" cy="223" r="3" class="s-acc"/><text x="430" y="217" class="s-lab-s">H=500 → 0.007</text>
+    </svg>
+    <figcaption>原创示意图。rollout 越长，就用一段更长的低偏差模型奖励替换掉那一个高偏差的终端价值，因为终端项带着权重 \(\gamma^{H}\)。NEUBAY 给出的是它的 bias–variance 版本，见<a href="https://arxiv.org/abs/2512.04341">原文</a>的分析部分。</figcaption>
+  </figure>
+
+  <h2>为什么走得越长，偏差越低</h2>
+  <p>原文把它写成价值目标上的一个 bias–variance 权衡。从学到的价值函数 bootstrap，会把高估偏差集中在一项里；改成依赖许多步想象奖励，则是用模型自身的泛化误差换掉那项偏差，而模型准确时这个误差很低。由于 bootstrapped 项随 \(H\) 指数折扣，拉长 horizon 就降低了 agent 对价值函数误差的敏感度。去掉保守在这里并不会让高估变严重——恰恰是去掉之后，长 rollout 才是抑制价值目标高估的那个机制。</p>
+
+  <h2>敢走长的前提：对 world model 维护一个后验</h2>
+  <p>用单个学到的模型走长 rollout 会累积它的误差，这正是离线方法通常把 rollout 砍短的原因。NEUBAY 用贝叶斯的方式绕开单模型陷阱：不是一个 world model，而是对 world model 维护一个后验，用 ensemble 近似，再训练一个依赖历史的 agent，去最大化在这个后验上平均的回报。名字就来自这个 <strong>neutral Bayesian</strong>（中性贝叶斯）原则——neutral，因为它去掉了显式悲观惩罚；Bayesian，因为它把"自己不知道的部分"表示成模型上的一个分布，用一群模型代替单点估计。</p>
+  <p>ensemble 同时给出停止规则。数据稠密处，成员们意见一致，epistemic uncertainty 低；数据稀疏处，它们彼此发散。NEUBAY 一直 rollout，直到这种分歧超过不确定性阈值 \(\zeta\)，然后截断。于是 horizon 是自适应、状态依赖的：在有支撑的区域里很长，在模型不再可信处则很短。</p>
+
+  <figure>
+    <svg viewBox="0 0 720 250" role="img" aria-label="world model 的后验与基于不确定性的截断">
+      <text x="0" y="18" class="s-lab" font-weight="600">world model 的后验：分布内一致，分布外发散</text>
+      <line x1="40" y1="210" x2="690" y2="210" class="s-faint" stroke-width="1.5"/>
+      <text x="40" y="230" class="s-lab-s">rollout 步数 →</text>
+      <path d="M40 120 C 200 118, 320 116, 420 110" class="s-accs" stroke-width="1.4" opacity=".9"/>
+      <path d="M40 122 C 200 122, 320 130, 540 70"  class="s-accs" stroke-width="1.4" opacity=".55"/>
+      <path d="M40 121 C 200 120, 320 124, 540 150" class="s-accs" stroke-width="1.4" opacity=".55"/>
+      <path d="M40 123 C 200 124, 320 138, 600 40"  class="s-accs" stroke-width="1.4" opacity=".35"/>
+      <path d="M40 120 C 200 119, 320 120, 600 185" class="s-accs" stroke-width="1.4" opacity=".35"/>
+      <text x="150" y="160" text-anchor="middle" class="s-lab">分布内：模型一致</text>
+      <text x="150" y="176" text-anchor="middle" class="s-lab-s">不确定性低</text>
+      <text x="560" y="205" text-anchor="middle" class="s-lab">分布外：模型发散</text>
+      <line x1="430" y1="30" x2="430" y2="210" stroke="#111" stroke-width="1.3" stroke-dasharray="4 4"/>
+      <text x="438" y="44" class="s-lab" font-weight="600">不确定性 &gt; ζ</text>
+      <text x="438" y="60" class="s-lab-s">→ 在这里截断 rollout</text>
+      <circle cx="430" cy="110" r="4" class="s-ink"/>
+    </svg>
+    <figcaption>原创示意图。ensemble 近似后验，它的离散程度就是 epistemic uncertainty。rollout 一直走到离散程度超过 \(\zeta\)，所以有效 horizon 由"模型在哪一步不再与自己一致"决定。</figcaption>
+  </figure>
+
+  <h2>证据：33 个数据集和一个决定性消融</h2>
+  <p>NEUBAY 在四个离线套件、共 33 个数据集上评测——D4RL locomotion（12），以及 NeoRL 的 locomotion（9）、Adroit（6）、AntMaze（6）——对比 15 个 baseline，覆盖保守的 model-free 方法（CQL、IQL、EDAC、ReBRAC）、保守的 model-based 方法（MOPO、COMBO、RAMBO、MOBILE 等）以及贝叶斯路线（APE-V、MAPLE、CBOP、MoDAP）。在没有显式保守惩罚的情况下，它在标准数据上保持有竞争力，并在低质量数据集上最强——而保守方法在这类数据上往往失败。</p>
+  <p>承担核心论点的消融是关于不确定性阈值 \(\zeta\) 的，因为 \(\zeta\) 决定 rollout 走多远。把它收紧会缩短 horizon，随之出现的失败模式正是严重的价值高估；放松它则得到几十到几百步的 horizon，性能恢复。原文指出这些 horizon 与"偏好短 rollout"的常规直觉相反。</p>
+
+  <figure>
+    <svg viewBox="0 0 720 210" role="img" aria-label="不确定性阈值对 horizon 与分数的影响">
+      <text x="0" y="18" class="s-lab" font-weight="600">D4RL locomotion 分数 vs. 阈值 ζ（数字引自原文 Table 2）</text>
+      <line x1="60" y1="170" x2="690" y2="170" class="s-faint" stroke-width="1.5"/>
+      <line x1="60" y1="40" x2="60" y2="170" class="s-faint" stroke-width="1.5"/>
+      <rect x="150" y="132" width="120" height="38" class="s-faint" stroke-width="1.5" fill="#f4f4f4"/>
+      <text x="210" y="156" text-anchor="middle" class="s-ink" font-size="15" font-weight="650">22.5</text>
+      <text x="210" y="188" text-anchor="middle" class="s-lab">ζ = 0.9 · 短 rollout</text>
+      <text x="210" y="120" text-anchor="middle" class="s-lab-s">失败模式：高估</text>
+      <rect x="430" y="48" width="120" height="122" class="s-accs" stroke-width="2" fill="#e8f0ed"/>
+      <text x="490" y="92" text-anchor="middle" class="s-acc" font-size="15" font-weight="650">80.1</text>
+      <text x="490" y="188" text-anchor="middle" class="s-lab">ζ = 1.0 · horizon ≈ 64–512</text>
+    </svg>
+    <figcaption>原创示意图；两个分数与 64–512 步的 horizon 由原文 <a href="https://arxiv.org/abs/2512.04341">Table 2</a> 报告。强行把 rollout 砍短会因高估而崩，允许长的自适应 rollout 则恢复性能。</figcaption>
+  </figure>
+
+  <div class="note">
+    <div class="note-title">组件</div>
+    <p>默认 ensemble 很大——\(N = 100\) 个 world model，每个内部带 layer normalization——原文报告把它降到 20 或 5 会变差。后验维护在"奖励-转移联合模型"上；价值函数是 agent 在其上训练的自有估计。</p>
+  </div>
+
+  <h2>局限</h2>
+  <p>阈值 \(\zeta\) 是超参数，所以"模型该被信任多远"由人手设定，没有端到端学出来。\(N = 100\) 的 ensemble 计算很重，而且论证依赖 ensemble 的离散程度能忠实代表 epistemic uncertainty，这在高维学到的模型里并不保证。这一结果也与在线 latent-MPC 路线形成张力：<a href="https://arxiv.org/abs/2203.04955">TD-MPC</a> 故意把 rollout 砍短，转而投入一个准确的终端价值——同一个高估问题，从 horizon 的相反一端处理。</p>
+
+  <h2>参考</h2>
+  <ol class="refs">
+    <li>NEUBAY：<a href="https://arxiv.org/abs/2512.04341">Long-Horizon Model-Based Offline Reinforcement Learning Without Explicit Conservatism</a>（arXiv:2512.04341）。代码：<a href="https://github.com/twni2016/neubay">github.com/twni2016/neubay</a>。</li>
+    <li>短 horizon 一端的对照：<a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control (TD-MPC)</a>。</li>
+  </ol>
+</article>
+
+<script>
+(function () {
+  const links = document.querySelectorAll('.switch a[data-set]');
+  const panels = document.querySelectorAll('.lang');
+  function set(lang) {
+    panels.forEach(p => p.style.display = (p.dataset.lang === lang) ? 'block' : 'none');
+    links.forEach(a => a.classList.toggle('on', a.dataset.set === lang));
+    try { localStorage.setItem('writing-language', lang); } catch (e) {}
+    document.documentElement.lang = (lang === 'zh') ? 'zh-CN' : 'en';
+  }
+  links.forEach(a => a.addEventListener('click', e => { e.preventDefault(); set(a.dataset.set); }));
+  let saved = 'en';
+  try { saved = localStorage.getItem('writing-language') || 'en'; } catch (e) {}
+  set(saved);
+})();
+</script>
+</main>
+</body>
+</html>
