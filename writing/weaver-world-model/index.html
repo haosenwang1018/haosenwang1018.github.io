@@ -114,6 +114,11 @@ strong { font-weight: 680; }
     <figcaption>Schematic (original) of the WEAVER pipeline; the paper's figures give the full architecture, see the <a href="https://arxiv.org/abs/2606.13672">paper</a>.</figcaption>
   </figure>
 
+  <figure>
+    <img src="assets/weaver-fig2-architecture.png" alt="WEAVER architecture">
+    <figcaption>Figure 2 from WEAVER (Jain et al., <a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>), CC BY 4.0 — the world model encodes memory, history, and an action sequence to imagine future rollouts in latent space.</figcaption>
+  </figure>
+
   <h2>One model, three downstream uses</h2>
   <p>The same world model is read three ways. <strong>Policy evaluation</strong>: replay a recorded real action trajectory open-loop inside WEAVER and record the predicted reward. <strong>Policy improvement</strong>: sample action chunks, forward-simulate them, compute a Monte-Carlo advantage from the reward and critic heads, keep the best rollout above a threshold, and distill it into the base policy. <strong>Test-time planning</strong>: a single-chunk best-of-N — sample candidate action chunks, imagine their outcomes, and execute the highest-advantage one, all scored in latent space without an external judge.</p>
 
@@ -130,6 +135,11 @@ strong { font-weight: 680; }
   </table>
   </div>
   <p>The main world-model baseline is Ctrl-World (a 1.5B diffusion model trained on DROID), which WEAVER reports Pareto-dominating on fidelity versus speed; the policy-improvement base is the π0.5 foundation model. WEAVER itself is pretrained on DROID (~1M steps on 4×H100 for about 10 days) and runs imagination at roughly 5 Hz.</p>
+
+  <figure>
+    <img src="assets/weaver-fig5-fvd-vs-time.png" alt="FVD versus inference time, WEAVER vs Ctrl-World">
+    <figcaption>Figure 5 from WEAVER (<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>), CC BY 4.0 — FVD (lower is more faithful) versus inference time; WEAVER sits below and to the left of Ctrl-World: more faithful and faster at once.</figcaption>
+  </figure>
 
   <h2>Limitations</h2>
   <p>WEAVER leans on pretrained components — an SD3 VAE encoder/decoder and a distilled reward model — so their coverage bounds it. The "all three at once" claim is relative to prior world models on the paper's own manipulation suite and real-robot tasks, not a universal result. The version read here does not list author affiliations. As with any single real-robot system, the numbers come from its own task suite, and the boundary worth keeping is that a more faithful, faster simulator is a better substrate for evaluation and planning, not a replacement for the verification and trust-horizon questions that sit on top of it.</p>
@@ -202,6 +212,11 @@ strong { font-weight: 680; }
     <figcaption>原创示意图。论文给出完整架构图，见<a href="https://arxiv.org/abs/2606.13672">原文</a>。</figcaption>
   </figure>
 
+  <figure>
+    <img src="assets/weaver-fig2-architecture.png" alt="WEAVER 架构">
+    <figcaption>图 2，引自 WEAVER（Jain 等，<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>），CC BY 4.0——世界模型编码记忆、history 与动作序列，在 latent 空间想象未来 rollout。</figcaption>
+  </figure>
+
   <h2>一个模型，三种下游用法</h2>
   <p>同一个世界模型被读三遍。<strong>策略评估</strong>：把记录下来的真实动作轨迹在 WEAVER 里开环重放，记录预测的 reward。<strong>策略改进</strong>：采一批动作块，前向模拟，用 reward + critic 算 Monte-Carlo advantage，留下超过阈值的最好 rollout，蒸馏进 base policy。<strong>测试时规划</strong>：single-chunk best-of-N——采若干候选动作块，想象各自结果，执行 advantage 最高的那个，全程在 latent 空间打分，不用外部裁判。</p>
 
@@ -218,6 +233,11 @@ strong { font-weight: 680; }
   </table>
   </div>
   <p>主要的世界模型 baseline 是 Ctrl-World（一个 1.5B 的扩散模型，在 DROID 上训练），WEAVER 报告在"保真 vs 速度"上 Pareto 压过它；策略改进的基座是 π0.5。WEAVER 自己在 DROID 上预训练（约 1M 步，4×H100 约 10 天），想象以约 5 Hz 运行。</p>
+
+  <figure>
+    <img src="assets/weaver-fig5-fvd-vs-time.png" alt="FVD 对推理时间，WEAVER vs Ctrl-World">
+    <figcaption>图 5，引自 WEAVER（<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>），CC BY 4.0——FVD（越低越保真）对推理时间；WEAVER 在 Ctrl-World 的左下方：更保真，也更快。</figcaption>
+  </figure>
 
   <h2>局限</h2>
   <p>WEAVER 依赖预训练组件——SD3 VAE 的 encoder/decoder 和一个蒸馏来的 reward model——它们的覆盖范围限定了它的上限。"三者同时拿到"这个说法，是相对以前的世界模型、在它自己的操作任务套件与真机任务上成立的，不是一个普适结论。我读到的版本没有列作者机构。和任何单一真机系统一样，数字来自它自己的任务集。要记住的边界是：一个更保真、更快的模拟器，是评估与规划更好的底座，但它取代不了在它之上的验证与信任时域问题。</p>

@@ -164,6 +164,11 @@ strong { font-weight: 680; }
     <figcaption>Schematic (original); the two scores and the 64–512-step horizon are reported in the paper, <a href="https://arxiv.org/abs/2512.04341">Table 2</a>. Forcing the rollout short collapses performance through overestimation; allowing long adaptive rollouts recovers it.</figcaption>
   </figure>
 
+  <figure>
+    <img src="assets/neubay-fig1-adaptive-horizon.png" alt="Adaptive long-horizon rollouts improve performance and lower estimated Q">
+    <figcaption>Figure 1 from NEUBAY (<a href="https://arxiv.org/abs/2512.04341">arXiv:2512.04341</a>), CC BY 4.0 — adaptive long-horizon rollouts improve performance (left) while lowering the estimated Q-value on the offline dataset (middle): longer rollouts suppress overestimation.</figcaption>
+  </figure>
+
   <div class="note">
     <div class="note-title">Components</div>
     <p>The default ensemble size is large — \(N = 100\) world models, with layer normalization inside each — and the paper reports that reducing it to 20 or 5 degrades performance. The posterior is maintained over the joint reward–transition model, not over the value function; the value function is the agent's own estimate trained on top.</p>
@@ -272,6 +277,11 @@ strong { font-weight: 680; }
       <text x="490" y="188" text-anchor="middle" class="s-lab">ζ = 1.0 · horizon ≈ 64–512</text>
     </svg>
     <figcaption>原创示意图；两个分数与 64–512 步的 horizon 由原文 <a href="https://arxiv.org/abs/2512.04341">Table 2</a> 报告。强行把 rollout 砍短会因高估而崩，允许长的自适应 rollout 则恢复性能。</figcaption>
+  </figure>
+
+  <figure>
+    <img src="assets/neubay-fig1-adaptive-horizon.png" alt="自适应长 rollout 提升性能并压低估计 Q 值">
+    <figcaption>图 1，引自 NEUBAY（<a href="https://arxiv.org/abs/2512.04341">arXiv:2512.04341</a>），CC BY 4.0——自适应长 rollout 提升性能（左），同时压低离线数据集上估计的 Q 值（中）：长 rollout 抑制了高估。</figcaption>
   </figure>
 
   <div class="note">
