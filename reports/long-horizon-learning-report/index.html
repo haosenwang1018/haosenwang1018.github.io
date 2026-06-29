@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>6月16日到6月28日学习成果汇报 - Sense Wang</title>
-  <meta name="description" content="6月16日到6月28日关于机器人世界模型和长任务问题的阶段性学习成果汇报。">
+  <title>6.16-6.28：学习成果汇报 - Sense Wang</title>
+  <meta name="description" content="6.16-6.28：关于机器人世界模型和长任务问题的阶段性学习成果汇报。">
   <style>
     :root {
       --bg: #fbfbf8;
@@ -232,16 +232,13 @@
 <body>
   <main class="page">
     <nav class="top" aria-label="页面导航">
-      <a href="/">Sense Wang</a>
-      <span>学习成果汇报 · 2026.06.16-06.28</span>
+      <a href="https://sensewang.com/">Sense Wang</a>
+      <span>学习成果汇报 · 6.16-6.28</span>
     </nav>
 
     <article>
       <p class="label">给学长的阶段性汇报</p>
-      <h1><span class="nowrap">6月16日到6月28日</span>学习成果汇报</h1>
-      <p class="subtitle">
-        这段时间我主要围绕机器人世界模型和长任务问题做了一轮阅读与整理。前面先按论文路线读，后面开始意识到，继续往下读之前，需要先把自己想追的问题收束出来。
-      </p>
+      <h1><span class="nowrap">6.16-6.28：</span>学习成果汇报</h1>
       <div class="meta">
         <span>Sense Wang</span>
         <span>2026.06</span>
@@ -249,19 +246,23 @@
       </div>
 
       <p>
-        一开始就是读论文。先沿着论文路线读了几篇，比如 <a href="/writing/td-mpc-world-model/">TD-MPC</a>、<a href="/writing/prism-wm/">PRISM-WM</a>、<a href="/writing/puppeteer/">Puppeteer</a>，后来又看了 <a href="/writing/cosmos-policy/">Cosmos Policy</a>、<a href="https://arxiv.org/abs/2511.19584">Newt</a> 这类更近期的工作。（因为我之前对机器人和 Physical AI 的理解有限，过往比较浅的积累也更多在语言模型上，所以控制相关内容读得比较吃力，很多名词和系统关系在第一次读时不能彻底理解和记住。）当时我的主要目标，是先把方法本身看懂：世界模型在机器人里怎么用，规划器怎么接上去，模型预测的未来怎么变成动作。
+        一开始就是读论文。先沿着论文路线读了几篇：<a href="https://arxiv.org/pdf/2203.04955">TD-MPC</a>、<a href="https://arxiv.org/pdf/2512.08411">PRISM-WM</a>、<a href="https://arxiv.org/pdf/2405.18418">Puppeteer</a>、<a href="https://arxiv.org/pdf/2601.16163">Cosmos Policy</a>、<a href="https://arxiv.org/pdf/2511.19584">Newt</a>。（对机器人和 Physical AI 的理解有限，过往比较浅的积累也更多在语言模型上，所以控制相关内容读得比较吃力，很多名词和系统关系在第一次读时不能彻底理解和记住。）当时我的主要目标，是先把方法本身看懂，以及把一些名词和地基搞清楚：世界模型在机器人里怎么用，规划器怎么接上去，模型预测的未来怎么变成动作。
       </p>
 
       <p>
-        读了几篇之后，我开始觉得，如果只是继续按顺序读下一篇，很容易变成收集名词。每篇论文都有自己的结构、数据、实验和关键词，但如果我心里没有一个想回答的问题，它们就会在脑子里散开。对我来说，更有效的方式应该是：先找到一个值得推进的问题，再带着这个问题回去读论文。因为最终不是为了“读完很多篇”，而是希望能从里面长出一个可以讨论、可以实验、也可能有创新空间的方向。
+        这个阶段也写了几篇技术博客：<a href="https://sensewang.com/writing/td-mpc-world-model/">TD-MPC：世界模型不必还原世界</a>、<a href="https://sensewang.com/writing/prism-wm/">PRISM-WM：世界模型不能把接触平均掉</a>、<a href="https://sensewang.com/writing/puppeteer/">Puppeteer：把 humanoid 控制拆成两层 world model</a>、<a href="https://sensewang.com/writing/cosmos-policy/">Cosmos Policy：视频模型怎样输出机器人动作</a>。
       </p>
 
       <p>
-        所以后来我把重心从“读某一篇论文”转成了“找问题”。这个过程中，我看了几类材料。两个综述对我帮助比较大：一个是 <a href="https://arxiv.org/abs/2606.00133">World Models: A Comprehensive Survey</a>，一个是 <a href="https://arxiv.org/abs/2605.00080">World Model for Robot Learning: A Comprehensive Survey</a>。它们让我意识到，机器人里的世界模型不只是“预测未来画面”，更重要的是它能不能稳定服务行动：能不能被规划器使用，能不能在闭环里纠错，能不能支撑真实任务。
+        但是这样很容易变成收集名词，而且漫无目的地读对系统性理解和记忆并不有效，也很难激发点子。而且对我来说，更有效的方式可能是：先找到一个值得推进的问题，再带着这个问题回去读论文。因为最终推进不是为了“读完很多篇”，而是希望能从里面长出一个可以讨论、可以实验、也可能有创新空间的方向。
       </p>
 
       <p>
-        同时，我也看了一些工业界信号，比如 NVIDIA 关于 <a href="https://developer.nvidia.com/blog/pretrained-to-imagine-fine-tuned-to-act-the-rise-of-world-action-models/">World Action Model</a> 的文章、<a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy</a>，以及 <a href="https://arxiv.org/abs/2606.02800">Cosmos 3</a> 这种更平台化的工作。这些材料给我的感觉是，大家都在把模型从“会想象”往“能行动”推。这样看，长任务问题就开始变成一个很自然的问题：如果任务很长，模型和策略到底在哪些地方会失真、漂移或者失去判断力？
+        于是后来我把重心倾斜到了“先找问题”。那段时间我花了一些时间去搜材料、选方向，再把相关论文补回来读。下面是在这个过程中对我影响比较大的一些信号：<a href="https://arxiv.org/abs/2606.00133">World Models: A Comprehensive Survey</a>、NVIDIA 的 <a href="https://developer.nvidia.com/blog/pretrained-to-imagine-fine-tuned-to-act-the-rise-of-world-action-models/">World Action Model</a>、<a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy</a> 和 <a href="https://arxiv.org/abs/2606.02800">Cosmos 3</a>。他们共同指向的不是“世界模型能生成未来”本身，而是更长时程的行动闭环：模型想象出的未来要在多步任务里保持一致，要能支持动作选择、策略评估和纠错。此外，还做了一下多源研究 <a href="https://sensewang.com/reports/four-school-ai-timeline/">Stanford / CMU / MIT 近期顶会研究时间轴</a>，把三校近半年 615 篇可枚举顶会论文按主题摊开看：其中世界模型 / 机器人 / VLA 有 42 篇，其中的工作经常落在闭环规划、记忆、事件验证和可信预测长度这些问题上。（btw，World Models 综述里把 long-horizon consistency and error compounding 放在挑战列表的第一位，也许这也是选择他的一个原因：）
+      </p>
+
+      <p>
+        还有一个更底层的原因是 RSI，也就是 recursive self-improvement。我现在的判断是，不管是 language model 里的 agent，还是 Physical AI 里的机器人系统，如果最终要走向能持续自我改进的系统，都绕不开长时程里的可信问题：目标不能漂，状态不能丢，反馈不能被错误模型带偏，过程还要尽量高效，并且和人的预期保持对齐。这样看，Long Horizon 对我来说就不只是“任务变长”这么简单，而是在问一个系统怎样在很长的过程中保持可信、利用反馈、不断修正自己。于是我开始觉得，不管从学术还是工业的角度，Long Horizon 都是一个比较好的切入点。
       </p>
 
       <div class="plain-note">
@@ -271,23 +272,23 @@
       </div>
 
       <p>
-        Long Horizon 这个词也让我产生了一个好奇：语言模型智能体里也在讲长任务，比如长工具调用、长时间编码、跨多轮任务保持状态；机器人世界模型里也在讲长任务，比如预测越滚越偏、闭环规划、任务阶段推进。它们是不是同一个问题？我先写了 <a href="/writing/long-horizon/">Two Long Horizons</a>，再写了 <a href="/writing/long-horizon-map/">From Rollout to Context</a>，主要就是想把这两个语境对齐一下：相似的地方是都要在长过程中保持可靠，不同的地方是机器人要面对物理状态、动作和环境反馈。
+        Long Horizon 这个词也让我产生了一个好奇：语言模型智能体里也在讲长任务，比如长工具调用、长时间编码、跨多轮任务保持状态；机器人世界模型里也在讲长任务，比如预测越滚越偏、闭环规划、任务阶段推进。它们是不是同一个问题？我先写了 <a href="https://sensewang.com/writing/long-horizon/">Two Long Horizons</a>，再写了 <a href="https://sensewang.com/writing/long-horizon-map/">From Rollout to Context</a>，主要就是想把这两个语境对齐一下：相似的地方是都要在长过程中保持可靠，不同的地方是机器人要面对物理状态、动作和环境反馈。
       </p>
 
       <p>
-        既然开始关注长任务，我就想知道近期大家到底在做什么。于是我把机器人世界模型、机器人策略、视觉语言动作模型、类人机器人、记忆机制这些方向的论文放在一起，做了一篇 <a href="/writing/long-horizon-research-matrix/">Long Horizon：机器人世界模型的研究矩阵</a>。这一步不是为了把所有论文都讲完，而是先回答一个很现实的问题：如果我要进入这个方向，别人已经把问题切成了哪些块？有人在改模型，有人在改规划，有人在改记忆，有人在改动作接口，也有人在做更大规模的平台。
+        既然开始关注长任务，我就想知道近期大家到底在做什么。于是我把机器人世界模型、机器人策略、视觉语言动作模型、类人机器人、记忆机制这些方向的论文放在一起，做了一篇 <a href="https://sensewang.com/writing/long-horizon-research-matrix/">Long Horizon：机器人世界模型的研究矩阵</a>。这一步不是为了把所有论文都讲完，而是先回答一个很现实的问题：如果我要进入这个方向，别人已经把问题切成了哪些块？有人在改模型，有人在改规划，有人在改记忆，有人在改动作接口，也有人在做更大规模的平台。
       </p>
 
       <p>
-        但只知道“大家在做什么”还不够。下一步更关键的是：这些主张是怎么被实验验证的？一篇论文如果说自己解决了长任务问题，它到底设计了什么任务、用了什么平台、跟谁比、看哪些指标、消融实验拆掉了什么？所以我又写了 <a href="/writing/long-horizon-experiment-logic/">Long Horizon World Models：从主张到实验</a>。这篇对我很重要，因为它把阅读从“理解方法”往“理解证据”推进了一步。
+        但只知道“大家在做什么”还不够。下一步更关键的是：这些主张是怎么被实验验证的？一篇论文如果说自己解决了长任务问题，它到底设计了什么任务、用了什么平台、跟谁比、看哪些指标、消融实验拆掉了什么？所以我又写了 <a href="https://sensewang.com/writing/long-horizon-experiment-logic/">Long Horizon World Models：从主张到实验</a>。这篇对我很重要，因为它把阅读从“理解方法”往“理解证据”推进了一步。
       </p>
 
       <p>
-        再往后，我发现 Long Horizon 本身还是太大。如果直接说“我要解决 Long Horizon”，这个说法很容易空。于是我尝试把它拆得更细，写了 <a href="/writing/long-horizon-world-model-interfaces/">Long-horizon world model 的五个接口</a>，也写了 <a href="/writing/long-horizon-failure-modes/">Long Horizon Is Not One Problem</a>。这里我想表达的是，长任务失败可能发生在不同位置：模型预测会漂，规划器会利用模型错误，任务阶段需要被验证，动作空间可能太底层，物体和历史状态也可能丢失。把这些接口拆开以后，问题才更像可以被实验切中的问题。
+        再往后，我发现 Long Horizon 本身还是太大。如果直接说“我要解决 Long Horizon”，这个说法很容易空。于是我尝试把它拆得更细，写了 <a href="https://sensewang.com/writing/long-horizon-world-model-interfaces/">Long-horizon world model 的五个接口</a>，也写了 <a href="https://sensewang.com/writing/long-horizon-failure-modes/">Long Horizon Is Not One Problem</a>。这里我想表达的是，长任务失败可能发生在不同位置：模型预测会漂，规划器会利用模型错误，任务阶段需要被验证，动作空间可能太底层，物体和历史状态也可能丢失。把这些接口拆开以后，问题才更像可以被实验切中的问题。
       </p>
 
       <p>
-        最近我又试着把这些论文放回一个更大的机器人叙事里，写了 <a href="/writing/long-horizon-world-model-basemap/">机器人世界模型的闭环底图：long-horizon 论文都在改哪个零件</a>。这篇其实是在问：如果一个机器人要完成长任务，它是不是都要经历“观察当前状态、想象未来、给未来打分、选动作、执行、再观察”这样一个闭环？如果是，那么近期论文看起来很分散，但其实都可以放回这条闭环上：有的在改表示，有的在改预测，有的在改记忆，有的在改验证，有的在改动作层级。
+        最近我又试着把这些论文放回一个更大的机器人叙事里，写了 <a href="https://sensewang.com/writing/long-horizon-world-model-basemap/">机器人世界模型的闭环底图：long-horizon 论文都在改哪个零件</a>。这篇其实是在问：如果一个机器人要完成长任务，它是不是都要经历“观察当前状态、想象未来、给未来打分、选动作、执行、再观察”这样一个闭环？如果是，那么近期论文看起来很分散，但其实都可以放回这条闭环上：有的在改表示，有的在改预测，有的在改记忆，有的在改验证，有的在改动作层级。
       </p>
 
       <p>
@@ -307,30 +308,30 @@
         <div class="link-row">
           <div class="link-title">最初读的论文</div>
           <div class="link-body">
-            <a href="/writing/td-mpc-world-model/">TD-MPC</a>
-            <a href="/writing/prism-wm/">PRISM-WM</a>
-            <a href="/writing/puppeteer/">Puppeteer</a>
-            <a href="/writing/cosmos-policy/">Cosmos Policy</a>
-            <a href="https://arxiv.org/abs/2511.19584">Newt</a>
+            <a href="https://arxiv.org/pdf/2203.04955">TD-MPC</a>
+            <a href="https://arxiv.org/pdf/2512.08411">PRISM-WM</a>
+            <a href="https://arxiv.org/pdf/2405.18418">Puppeteer</a>
+            <a href="https://arxiv.org/pdf/2601.16163">Cosmos Policy</a>
+            <a href="https://arxiv.org/pdf/2511.19584">Newt</a>
           </div>
         </div>
 
         <div class="link-row">
           <div class="link-title">问题浮现</div>
           <div class="link-body">
-            <a href="/writing/long-horizon/">Two Long Horizons</a>
-            <a href="/writing/long-horizon-map/">From Rollout to Context</a>
+            <a href="https://sensewang.com/writing/long-horizon/">Two Long Horizons</a>
+            <a href="https://sensewang.com/writing/long-horizon-map/">From Rollout to Context</a>
           </div>
         </div>
 
         <div class="link-row">
           <div class="link-title">研究整理</div>
           <div class="link-body">
-            <a href="/writing/long-horizon-research-matrix/">研究矩阵</a>
-            <a href="/writing/long-horizon-experiment-logic/">从主张到实验</a>
-            <a href="/writing/long-horizon-world-model-interfaces/">五个接口</a>
-            <a href="/writing/long-horizon-failure-modes/">不是一个问题</a>
-            <a href="/writing/long-horizon-world-model-basemap/">闭环底图</a>
+            <a href="https://sensewang.com/writing/long-horizon-research-matrix/">研究矩阵</a>
+            <a href="https://sensewang.com/writing/long-horizon-experiment-logic/">从主张到实验</a>
+            <a href="https://sensewang.com/writing/long-horizon-world-model-interfaces/">五个接口</a>
+            <a href="https://sensewang.com/writing/long-horizon-failure-modes/">不是一个问题</a>
+            <a href="https://sensewang.com/writing/long-horizon-world-model-basemap/">闭环底图</a>
           </div>
         </div>
 
