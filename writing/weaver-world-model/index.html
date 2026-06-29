@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="WEAVER is a multi-view latent world model for robotic manipulation that aims to be faithful, consistent over long horizons, and fast at once — so one model can do policy evaluation, policy improvement, and test-time planning.">
+<title>WEAVER: a world model that is faithful, consistent, and fast at once — Sense Wang</title>
+<script>
+  MathJax = { tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] }, svg: { fontCache: 'global' } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif; color: #111; background: #fff; font-size: 17px; line-height: 1.78; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+main { max-width: 760px; width: 100%; margin: 0 auto; padding: 72px 20px 112px; }
+nav { margin-bottom: 40px; font-size: 13px; display: flex; justify-content: space-between; align-items: baseline; }
+nav .switch a { color: #999; }
+nav .switch a.on { color: #111; text-decoration: underline; text-underline-offset: 2px; }
+a { color: #111; text-decoration-color: #bbb; text-underline-offset: 2px; }
+a:hover { opacity: .55; }
+h1 { font-size: 42px; line-height: 1.12; font-weight: 700; margin-bottom: 16px; }
+h2 { font-size: 25px; line-height: 1.28; margin: 56px 0 15px; font-weight: 650; }
+p { margin-bottom: 17px; }
+.meta { color: #999; font-size: 13px; margin-bottom: 26px; }
+.dek { color: #444; font-size: 19px; line-height: 1.6; margin-bottom: 44px; }
+.note { border-left: 3px solid #111; color: #333; font-size: 15px; line-height: 1.72; margin: 26px 0 30px; padding: 2px 0 2px 18px; }
+.note .note-title { color: #777; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 6px; }
+figure { margin: 40px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 26px 0 18px; }
+figure svg { display: block; width: 100%; height: auto; }
+figcaption { color: #777; font-size: 13px; line-height: 1.55; margin-top: 14px; }
+.table-wrap { margin: 26px 0 10px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
+th { color: #555; font-size: 12px; letter-spacing: .03em; text-transform: uppercase; font-weight: 600; background: #fafafa; }
+td:first-child { font-weight: 600; width: 26%; }
+.refs { color: #555; font-size: 15px; margin: 10px 0 0 20px; }
+.refs li { margin-bottom: 9px; }
+.lang[data-lang="zh"] { display: none; }
+strong { font-weight: 680; }
+.s-faint{stroke:#d8d8d8;fill:none;} .s-acc{fill:#2f5f55;} .s-accs{stroke:#2f5f55;fill:none;}
+.s-box{fill:#fff;stroke:#111;stroke-width:1.4;} .s-boxa{fill:#e8f0ed;stroke:#2f5f55;stroke-width:1.6;}
+.s-lab{font-size:12px;fill:#222;} .s-lab-s{font-size:10px;fill:#777;}
+@media (max-width: 560px){ main{padding:46px 18px 88px;} h1{font-size:30px;} h2{font-size:22px;margin-top:46px;} body{font-size:16px;} .dek{font-size:18px;} td:first-child{width:34%;} }
+</style>
+</head>
+<body>
+<main>
+<nav>
+  <span><a href="../">Writing</a> / <a href="../../">Sense Wang</a></span>
+  <span class="switch"><a href="#" data-set="en" class="on">English</a> · <a href="#" data-set="zh">中文</a></span>
+</nav>
+
+<!-- ===================== ENGLISH ===================== -->
+<article class="lang" data-lang="en">
+  <h1>WEAVER: a world model that is faithful, consistent, and fast at once</h1>
+  <div class="meta">June 2026 · world models · robotic manipulation · WEAVER (arXiv:2606.13672)</div>
+
+  <p class="dek">A learned simulator is useful for robotics — to evaluate a policy, improve it, or plan at test time — only if it is faithful, coherent over long horizons, and fast, all at the same time. Prior robot world models give up at least one. WEAVER is a multi-view latent world model that, on its own real-robot setup, reaches all three together.</p>
+
+  <h2>Three desiderata, and why prior models miss at least one</h2>
+  <p>A world model can drive three downstream uses with little real interaction: <strong>policy evaluation</strong>, <strong>policy improvement</strong>, and <strong>test-time planning</strong>. To deliver them, the paper argues a world model must jointly satisfy three properties — <strong>fidelity</strong> (simulated trajectories correlate with reality), <strong>consistency</strong> (they stay coherent over long horizons), and <strong>efficiency</strong> (they are produced quickly).</p>
+  <p>The claim is that no prior robot world model has all three. Video-generation world models are high-fidelity but slow. JEPA-style latent models may not decode into the images needed to score an arbitrary visuomotor policy. The state-of-the-art manipulation world model Ctrl-World runs far slower than real time, which rules out test-time planning and makes policy improvement expensive. Manipulation makes the tension worse: multiple camera views, occlusions, and a need for physically faithful state rather than good-looking frames.</p>
+
+  <h2>How WEAVER reaches all three</h2>
+  <p>WEAVER (World Estimation Across Views for Embodied Reasoning, 928M parameters) is a multi-view latent world model, and each desideratum maps to a specific design choice.</p>
+  <p><strong>Fidelity</strong> — every camera view (external and wrist) is encoded into patch tokens by a pretrained Stable Diffusion 3 VAE encoder; proprioceptive state is projected to a token and concatenated. WEAVER predicts both views and, unlike Ctrl-World, explicitly predicts future proprioceptive state, which the paper argues matters for contact-rich and deformable manipulation.</p>
+  <p><strong>Dynamics and objective</strong> — given a sparse long-term memory (every k-th past latent) plus a short recent history and an h-step action plan, a 2D transformer autoregressively generates the next h latents, trained with a flow-matching loss (predict the velocity of the latent flow toward the ground-truth next latents).</p>
+  <p><strong>Consistency</strong> — Diffusion Forcing (independent noise levels per future step) keeps long rollouts coherent rather than collapsing.</p>
+  <p><strong>Efficiency</strong> — SPRINT blocks drop patch tokens aggressively, KV-caching reuses memory/history tokens across denoising steps, and a rectified-flow distillation step (WEAVER-REFLOW) cuts generation to a few forward passes; imagination runs at about 5 Hz.</p>
+  <p><strong>Scoring without decoding</strong> — a reward head distilled from an off-the-shelf reward model scores rewards directly on latents plus the language instruction, and a critic estimates returns beyond the imagined horizon. So scoring a candidate future does not require decoding frames and calling a separate VLM judge.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 320" role="img" aria-label="WEAVER pipeline">
+      <rect class="s-box" x="6" y="40" width="120" height="76" rx="7"/>
+      <text class="s-lab" x="66" y="66" text-anchor="middle" font-weight="650">observation</text>
+      <text class="s-lab-s" x="66" y="84" text-anchor="middle">multi-view RGB</text>
+      <text class="s-lab-s" x="66" y="98" text-anchor="middle">+ proprioception</text>
+      <rect class="s-box" x="160" y="40" width="120" height="76" rx="7"/>
+      <text class="s-lab" x="220" y="70" text-anchor="middle" font-weight="650">SD3 VAE</text>
+      <text class="s-lab-s" x="220" y="88" text-anchor="middle">→ latent zₜ</text>
+      <rect class="s-box" x="314" y="40" width="150" height="76" rx="7"/>
+      <text class="s-lab" x="389" y="62" text-anchor="middle" font-weight="650">flow-matching</text>
+      <text class="s-lab-s" x="389" y="80" text-anchor="middle">2D transformer dynamics</text>
+      <text class="s-lab-s" x="389" y="94" text-anchor="middle">future latents (h steps)</text>
+      <text class="s-lab-s" x="389" y="108" text-anchor="middle">+ memory / history</text>
+      <rect class="s-box" x="498" y="40" width="120" height="76" rx="7"/>
+      <text class="s-lab" x="558" y="66" text-anchor="middle" font-weight="650">reward + critic</text>
+      <text class="s-lab-s" x="558" y="84" text-anchor="middle">score on latents</text>
+      <text class="s-lab-s" x="558" y="98" text-anchor="middle">(no VLM decode)</text>
+      <line x1="126" y1="78" x2="156" y2="78" class="s-accs" stroke-width="1.8" marker-end="url(#v)"/>
+      <line x1="280" y1="78" x2="310" y2="78" class="s-accs" stroke-width="1.8" marker-end="url(#v)"/>
+      <line x1="464" y1="78" x2="494" y2="78" class="s-accs" stroke-width="1.8" marker-end="url(#v)"/>
+      <!-- three downstream uses -->
+      <rect class="s-boxa" x="120" y="200" width="150" height="58" rx="7"/>
+      <text class="s-acc" x="195" y="225" text-anchor="middle" font-weight="650" font-size="12.5">policy evaluation</text>
+      <text class="s-lab-s" x="195" y="243" text-anchor="middle">replay, record reward</text>
+      <rect class="s-boxa" x="285" y="200" width="150" height="58" rx="7"/>
+      <text class="s-acc" x="360" y="225" text-anchor="middle" font-weight="650" font-size="12.5">policy improvement</text>
+      <text class="s-lab-s" x="360" y="243" text-anchor="middle">advantage → distill</text>
+      <rect class="s-boxa" x="450" y="200" width="150" height="58" rx="7"/>
+      <text class="s-acc" x="525" y="225" text-anchor="middle" font-weight="650" font-size="12.5">test-time planning</text>
+      <text class="s-lab-s" x="525" y="243" text-anchor="middle">best-of-N</text>
+      <path d="M558 116 C558 160 360 165 360 198" class="s-accs" stroke-width="1.6" marker-end="url(#v)"/>
+      <line x1="220" y1="180" x2="220" y2="198" class="s-faint" stroke-width="1.2"/>
+      <line x1="525" y1="180" x2="525" y2="198" class="s-faint" stroke-width="1.2"/>
+      <path d="M360 178 L220 178 L220 198" class="s-faint" stroke-width="1.2" fill="none"/>
+      <path d="M360 178 L525 178 L525 198" class="s-faint" stroke-width="1.2" fill="none"/>
+      <text class="s-lab-s" x="64" y="150">fidelity: multi-view + proprio</text>
+      <text class="s-lab-s" x="318" y="150">consistency: Diffusion Forcing</text>
+      <text class="s-lab-s" x="500" y="150">efficiency: SPRINT / ReFlow</text>
+      <text class="s-lab-s" x="360" y="288" text-anchor="middle">one model, read three ways</text>
+      <defs><marker id="v" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f5f55"/></marker></defs>
+    </svg>
+    <figcaption>Schematic (original) of the WEAVER pipeline; the paper's figures give the full architecture, see the <a href="https://arxiv.org/abs/2606.13672">paper</a>.</figcaption>
+  </figure>
+
+  <h2>One model, three downstream uses</h2>
+  <p>The same world model is read three ways. <strong>Policy evaluation</strong>: replay a recorded real action trajectory open-loop inside WEAVER and record the predicted reward. <strong>Policy improvement</strong>: sample action chunks, forward-simulate them, compute a Monte-Carlo advantage from the reward and critic heads, keep the best rollout above a threshold, and distill it into the base policy. <strong>Test-time planning</strong>: a single-chunk best-of-N — sample candidate action chunks, imagine their outcomes, and execute the highest-advantage one, all scored in latent space without an external judge.</p>
+
+  <h2>Evidence</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Downstream use</th><th>Result (real hardware)</th></tr></thead>
+    <tbody>
+      <tr><td>Policy evaluation</td><td>ρ = 0.870 correlation between WEAVER's score and real-world success rate</td></tr>
+      <tr><td>Policy improvement</td><td>+38% real-world success on top of the π0.5 robot foundation model</td></tr>
+      <tr><td>Test-time planning</td><td>+14% real-world success, with a 5–10× speedup over prior world models</td></tr>
+      <tr><td>Out-of-distribution</td><td>better than prior world models on OOD scenarios</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>The main world-model baseline is Ctrl-World (a 1.5B diffusion model trained on DROID), which WEAVER reports Pareto-dominating on fidelity versus speed; the policy-improvement base is the π0.5 foundation model. WEAVER itself is pretrained on DROID (~1M steps on 4×H100 for about 10 days) and runs imagination at roughly 5 Hz.</p>
+
+  <h2>Limitations</h2>
+  <p>WEAVER leans on pretrained components — an SD3 VAE encoder/decoder and a distilled reward model — so their coverage bounds it. The "all three at once" claim is relative to prior world models on the paper's own manipulation suite and real-robot tasks, not a universal result. The version read here does not list author affiliations. As with any single real-robot system, the numbers come from its own task suite, and the boundary worth keeping is that a more faithful, faster simulator is a better substrate for evaluation and planning, not a replacement for the verification and trust-horizon questions that sit on top of it.</p>
+
+  <h2>References</h2>
+  <ol class="refs">
+    <li>WEAVER: <a href="https://arxiv.org/abs/2606.13672">WEAVER, Better, Faster, Longer: An Effective World Model for Robotic Manipulation</a> (arXiv:2606.13672). Code, models, and videos on the project page linked from the paper.</li>
+    <li>Main world-model baseline: Ctrl-World. Policy-improvement base model: π0.5.</li>
+  </ol>
+</article>
+
+<!-- ===================== 中文 ===================== -->
+<article class="lang" data-lang="zh">
+  <h1>WEAVER：一个同时做到保真、一致、快的世界模型</h1>
+  <div class="meta">2026 年 6 月 · 世界模型 · 机器人操作 · WEAVER (arXiv:2606.13672)</div>
+
+  <p class="dek">一个学出来的模拟器要对机器人有用——评估策略、改进策略、测试时规划——前提是它同时做到保真、长时域一致、且快。以前的机器人世界模型总要放弃其中至少一项。WEAVER 是一个多视角 latent 世界模型，在它自己的真机 setup 上把三者一起拿到。</p>
+
+  <h2>三个 desiderata，以及为什么以前的模型至少缺一个</h2>
+  <p>世界模型能用很少的真实交互驱动三件下游事：<strong>策略评估</strong>、<strong>策略改进</strong>、<strong>测试时规划</strong>。论文主张，要交付这三件，世界模型必须同时满足三个属性——<strong>fidelity（保真，模拟轨迹和现实相关）</strong>、<strong>consistency（一致，长时域连贯）</strong>、<strong>efficiency（高效，生成得快）</strong>。</p>
+  <p>它的论点是：以前没有任何机器人世界模型三者兼备。视频生成式世界模型保真高但慢；JEPA 式 latent 模型的潜表示不一定能 decode 成评估任意视觉运动策略所需的图像；当前最强的操作世界模型 Ctrl-World 远慢于实时，因此做不了测试时规划、也让策略改进很贵。操作场景让矛盾更尖锐：多个相机视角、遮挡，而且需要物理上忠实的状态，光有好看的画面不够。</p>
+
+  <h2>WEAVER 怎么把三者一起拿到</h2>
+  <p>WEAVER（World Estimation Across Views for Embodied Reasoning，928M 参数）是一个多视角 latent 世界模型，每个 desideratum 都对应一个具体设计。</p>
+  <p><strong>保真</strong>——每个相机视角（外部 + 腕部）由一个预训练的 Stable Diffusion 3 VAE encoder 编成 patch tokens，本体感受状态投影成一个 token 拼接进去。WEAVER 同时预测两个视角，并且不同于 Ctrl-World，它<strong>显式预测未来的本体感受状态</strong>——论文认为这对接触密集与可变形操作很关键。</p>
+  <p><strong>动力学与目标</strong>——给一个稀疏的长期记忆（每隔 k 步取一个过去 latent）加一小段近期 history 和一个 h 步动作计划，一个 2D transformer 自回归地生成接下来 h 个 latent，用 flow-matching 损失训练（预测 latent 流向真值的速度）。</p>
+  <p><strong>一致</strong>——Diffusion Forcing（每个未来步独立的噪声水平）让长 rollout 保持连贯，不塌掉。</p>
+  <p><strong>高效</strong>——SPRINT 块激进地丢弃 patch token，KV-cache 在去噪步之间复用记忆/history token，再加一个 rectified-flow 蒸馏步骤（WEAVER-REFLOW）把生成压到几次前向；想象以约 5 Hz 运行。</p>
+  <p><strong>不解码就打分</strong>——一个 reward head 从现成 reward model 蒸馏，直接在 latent 加语言指令上打 reward，一个 critic 估计想象 horizon 之外的回报。于是给一个候选未来打分，不需要 decode 出画面再叫一个 VLM 来判。</p>
+
+  <figure>
+    <svg viewBox="0 0 720 320" role="img" aria-label="WEAVER 流程">
+      <rect class="s-box" x="6" y="40" width="120" height="76" rx="7"/>
+      <text class="s-lab" x="66" y="66" text-anchor="middle" font-weight="650">观测</text>
+      <text class="s-lab-s" x="66" y="84" text-anchor="middle">多视角 RGB</text>
+      <text class="s-lab-s" x="66" y="98" text-anchor="middle">+ 本体感受</text>
+      <rect class="s-box" x="160" y="40" width="120" height="76" rx="7"/>
+      <text class="s-lab" x="220" y="70" text-anchor="middle" font-weight="650">SD3 VAE</text>
+      <text class="s-lab-s" x="220" y="88" text-anchor="middle">→ latent zₜ</text>
+      <rect class="s-box" x="314" y="40" width="150" height="76" rx="7"/>
+      <text class="s-lab" x="389" y="62" text-anchor="middle" font-weight="650">flow-matching</text>
+      <text class="s-lab-s" x="389" y="80" text-anchor="middle">2D transformer 动力学</text>
+      <text class="s-lab-s" x="389" y="94" text-anchor="middle">未来 latent（h 步）</text>
+      <text class="s-lab-s" x="389" y="108" text-anchor="middle">+ 记忆 / history</text>
+      <rect class="s-box" x="498" y="40" width="120" height="76" rx="7"/>
+      <text class="s-lab" x="558" y="66" text-anchor="middle" font-weight="650">reward + critic</text>
+      <text class="s-lab-s" x="558" y="84" text-anchor="middle">在 latent 上打分</text>
+      <text class="s-lab-s" x="558" y="98" text-anchor="middle">（不解码 VLM）</text>
+      <line x1="126" y1="78" x2="156" y2="78" class="s-accs" stroke-width="1.8" marker-end="url(#vz)"/>
+      <line x1="280" y1="78" x2="310" y2="78" class="s-accs" stroke-width="1.8" marker-end="url(#vz)"/>
+      <line x1="464" y1="78" x2="494" y2="78" class="s-accs" stroke-width="1.8" marker-end="url(#vz)"/>
+      <rect class="s-boxa" x="120" y="200" width="150" height="58" rx="7"/>
+      <text class="s-acc" x="195" y="225" text-anchor="middle" font-weight="650" font-size="12.5">策略评估</text>
+      <text class="s-lab-s" x="195" y="243" text-anchor="middle">重放，记录 reward</text>
+      <rect class="s-boxa" x="285" y="200" width="150" height="58" rx="7"/>
+      <text class="s-acc" x="360" y="225" text-anchor="middle" font-weight="650" font-size="12.5">策略改进</text>
+      <text class="s-lab-s" x="360" y="243" text-anchor="middle">advantage → 蒸馏</text>
+      <rect class="s-boxa" x="450" y="200" width="150" height="58" rx="7"/>
+      <text class="s-acc" x="525" y="225" text-anchor="middle" font-weight="650" font-size="12.5">测试时规划</text>
+      <text class="s-lab-s" x="525" y="243" text-anchor="middle">best-of-N</text>
+      <path d="M558 116 C558 160 360 165 360 198" class="s-accs" stroke-width="1.6" marker-end="url(#vz)"/>
+      <path d="M360 178 L220 178 L220 198" class="s-faint" stroke-width="1.2" fill="none"/>
+      <path d="M360 178 L525 178 L525 198" class="s-faint" stroke-width="1.2" fill="none"/>
+      <text class="s-lab-s" x="64" y="150">保真：多视角 + 本体感受</text>
+      <text class="s-lab-s" x="318" y="150">一致：Diffusion Forcing</text>
+      <text class="s-lab-s" x="500" y="150">高效：SPRINT / ReFlow</text>
+      <text class="s-lab-s" x="360" y="288" text-anchor="middle">一个模型，三种读法</text>
+      <defs><marker id="vz" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f5f55"/></marker></defs>
+    </svg>
+    <figcaption>原创示意图。论文给出完整架构图，见<a href="https://arxiv.org/abs/2606.13672">原文</a>。</figcaption>
+  </figure>
+
+  <h2>一个模型，三种下游用法</h2>
+  <p>同一个世界模型被读三遍。<strong>策略评估</strong>：把记录下来的真实动作轨迹在 WEAVER 里开环重放，记录预测的 reward。<strong>策略改进</strong>：采一批动作块，前向模拟，用 reward + critic 算 Monte-Carlo advantage，留下超过阈值的最好 rollout，蒸馏进 base policy。<strong>测试时规划</strong>：single-chunk best-of-N——采若干候选动作块，想象各自结果，执行 advantage 最高的那个，全程在 latent 空间打分，不用外部裁判。</p>
+
+  <h2>证据</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>下游用法</th><th>结果（真机）</th></tr></thead>
+    <tbody>
+      <tr><td>策略评估</td><td>WEAVER 的打分与真实成功率相关系数 ρ = 0.870</td></tr>
+      <tr><td>策略改进</td><td>在 π0.5 机器人基础模型之上，真机成功率 +38%</td></tr>
+      <tr><td>测试时规划</td><td>真机成功率 +14%，且比之前的世界模型快 5–10×</td></tr>
+      <tr><td>分布外</td><td>OOD 场景上优于之前的世界模型</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>主要的世界模型 baseline 是 Ctrl-World（一个 1.5B 的扩散模型，在 DROID 上训练），WEAVER 报告在"保真 vs 速度"上 Pareto 压过它；策略改进的基座是 π0.5。WEAVER 自己在 DROID 上预训练（约 1M 步，4×H100 约 10 天），想象以约 5 Hz 运行。</p>
+
+  <h2>局限</h2>
+  <p>WEAVER 依赖预训练组件——SD3 VAE 的 encoder/decoder 和一个蒸馏来的 reward model——它们的覆盖范围限定了它的上限。"三者同时拿到"这个说法，是相对以前的世界模型、在它自己的操作任务套件与真机任务上成立的，不是一个普适结论。我读到的版本没有列作者机构。和任何单一真机系统一样，数字来自它自己的任务集。要记住的边界是：一个更保真、更快的模拟器，是评估与规划更好的底座，但它取代不了在它之上的验证与信任时域问题。</p>
+
+  <h2>参考</h2>
+  <ol class="refs">
+    <li>WEAVER：<a href="https://arxiv.org/abs/2606.13672">WEAVER, Better, Faster, Longer: An Effective World Model for Robotic Manipulation</a>（arXiv:2606.13672）。代码、模型、视频见原文链接的项目页。</li>
+    <li>主要世界模型 baseline：Ctrl-World。策略改进基座：π0.5。</li>
+  </ol>
+</article>
+
+<script>
+(function () {
+  const links = document.querySelectorAll('.switch a[data-set]');
+  const panels = document.querySelectorAll('.lang');
+  function set(lang) {
+    panels.forEach(p => p.style.display = (p.dataset.lang === lang) ? 'block' : 'none');
+    links.forEach(a => a.classList.toggle('on', a.dataset.set === lang));
+    try { localStorage.setItem('writing-language', lang); } catch (e) {}
+    document.documentElement.lang = (lang === 'zh') ? 'zh-CN' : 'en';
+  }
+  links.forEach(a => a.addEventListener('click', e => { e.preventDefault(); set(a.dataset.set); }));
+  let saved = 'en';
+  try { saved = localStorage.getItem('writing-language') || 'en'; } catch (e) {}
+  set(saved);
+})();
+</script>
+</main>
+</body>
+</html>
