@@ -250,11 +250,11 @@
       </p>
 
       <p>
-        这个阶段也写了几篇技术博客：<a href="https://sensewang.com/writing/td-mpc-world-model/">TD-MPC：世界模型不必还原世界</a>、<a href="https://sensewang.com/writing/prism-wm/">PRISM-WM：世界模型不能把接触平均掉</a>、<a href="https://sensewang.com/writing/puppeteer/">Puppeteer：把 humanoid 控制拆成两层 world model</a>、<a href="https://sensewang.com/writing/cosmos-policy/">Cosmos Policy：视频模型怎样输出机器人动作</a>。
+        这个阶段也写了几篇博客作为输出，也帮助自己学习：<a href="https://sensewang.com/writing/td-mpc-world-model/">TD-MPC：世界模型不必还原世界</a>、<a href="https://sensewang.com/writing/prism-wm/">PRISM-WM：世界模型不能把接触平均掉</a>、<a href="https://sensewang.com/writing/puppeteer/">Puppeteer：把 humanoid 控制拆成两层 world model</a>、<a href="https://sensewang.com/writing/cosmos-policy/">Cosmos Policy：视频模型怎样输出机器人动作</a>。
       </p>
 
       <p>
-        但是这样很容易变成收集名词，而且漫无目的地读对系统性理解和记忆并不有效，也很难激发点子。而且对我来说，更有效的方式可能是：先找到一个值得推进的问题，再带着这个问题回去读论文。因为最终推进不是为了“读完很多篇”，而是希望能从里面长出一个可以讨论、可以实验、也可能有创新空间的方向。
+        但是这样很容易变成收集名词，而且漫无目的地读对系统性理解和记忆并不有效，也很难激发点子。对我来说，更有效的方式可能是：先找到一个值得推进的问题，再带着这个问题回去读论文。因为最终推进不是为了“读完很多篇”，而是希望能从里面长出一个可以讨论、可以实验、也可能有创新空间的方向。所以下一步是找问题。
       </p>
 
       <p>
@@ -262,21 +262,15 @@
       </p>
 
       <p>
-        还有一个更底层的原因是 RSI，也就是 recursive self-improvement。我现在的判断是，不管是 language model 里的 agent，还是 Physical AI 里的机器人系统，如果最终要走向能持续自我改进的系统，都绕不开长时程里的可信问题：目标不能漂，状态不能丢，反馈不能被错误模型带偏，过程还要尽量高效，并且和人的预期保持对齐。这样看，Long Horizon 对我来说就不只是“任务变长”这么简单，而是在问一个系统怎样在很长的过程中保持可信、利用反馈、不断修正自己。于是我开始觉得，不管从学术还是工业的角度，Long Horizon 都是一个比较好的切入点。
-      </p>
-
-      <div class="plain-note">
-        <p>
-          我现在还不能说已经确定了最终题目。更准确地说，我是在把注意力收束到一个问题附近：机器人世界模型做长任务时，失败不是一个单点，而是一串接口一起承压。
-        </p>
-      </div>
-
-      <p>
-        Long Horizon 这个词也让我产生了一个好奇：语言模型智能体里也在讲长任务，比如长工具调用、长时间编码、跨多轮任务保持状态；机器人世界模型里也在讲长任务，比如预测越滚越偏、闭环规划、任务阶段推进。它们是不是同一个问题？我先写了 <a href="https://sensewang.com/writing/long-horizon/">Two Long Horizons</a>，再写了 <a href="https://sensewang.com/writing/long-horizon-map/">From Rollout to Context</a>，主要就是想把这两个语境对齐一下：相似的地方是都要在长过程中保持可靠，不同的地方是机器人要面对物理状态、动作和环境反馈。
+        还有一个原因是 RSI（recursive self-improvement）。我现在的判断是，不管是 language model 里的 agent，还是 Physical AI 里的机器人系统，我觉得最终一定要走向能持续自我改进的系统，那就一定绕不开长时程里的可信问题：目标不能漂移，状态不能丢，反馈不能被错误模型带偏，过程还要尽量高效，并且和人的预期保持对齐。这样看，不管从学术还是工业的角度，Long Horizon 都是一个比较好的切入点。
       </p>
 
       <p>
-        既然开始关注长任务，我就想知道近期大家到底在做什么。于是我把机器人世界模型、机器人策略、视觉语言动作模型、类人机器人、记忆机制这些方向的论文放在一起，做了一篇 <a href="https://sensewang.com/writing/long-horizon-research-matrix/">Long Horizon：机器人世界模型的研究矩阵</a>。这一步不是为了把所有论文都讲完，而是先回答一个很现实的问题：如果我要进入这个方向，别人已经把问题切成了哪些块？有人在改模型，有人在改规划，有人在改记忆，有人在改动作接口，也有人在做更大规模的平台。
+        于是最开始从自己平时接触比较多的语言模型里的 RL 入手对比：语言模型智能体里也在讲长任务，比如长工具调用、长时间编码、跨多轮任务保持状态；机器人世界模型里也在讲长任务，比如预测越滚越偏、闭环规划、任务阶段推进。它们是不是同一个问题？于是写了两篇文章梳理了一下这个问题：<a href="https://sensewang.com/writing/long-horizon/">Two Long Horizons</a> 主要比较两个领域里的“长任务”到底长在哪里，核心 insight 是 long horizon 不只是时间变长，而是系统要在更长链条里保持目标、状态和反馈不漂；<a href="https://sensewang.com/writing/long-horizon-map/">From Rollout to Context</a> 则把 robot world model 的 rollout 和 LLM agent 的 context 放在一起看，说明相似的地方是都要在长过程中保持可靠，不同的地方是机器人还要面对物理状态、动作和环境反馈。不过这是这两周比较早期写的，所以涉及的还比较浅显。
+      </p>
+
+      <p>
+        既然开始关注长任务，我觉得知道近期到底在做什么、关注什么方向是必要的。于是我做了两份整理：一篇是 <a href="https://sensewang.com/writing/long-horizon-research-matrix/">Long Horizon：机器人世界模型的研究矩阵</a>，用来看大家把这个问题拆成哪些方向；另一篇是 <a href="https://sensewang.com/writing/long-horizon-paper-tiers/">Long Horizon：152 篇世界模型论文阅读梯队</a>，把这些论文的重要性和阅读优先级汇总起来。
       </p>
 
       <p>
