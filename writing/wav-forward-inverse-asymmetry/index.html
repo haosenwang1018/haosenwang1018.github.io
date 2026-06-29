@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="WAV decomposes action-conditioned prediction into two independently verifiable factors — state plausibility and action reachability — exploiting the forward-inverse asymmetry to let a world model find its own errors and choose which interactions to collect.">
+<title>WAV: verifying actions through forward-inverse asymmetry — Sense Wang</title>
+<script>
+  MathJax = { tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] }, svg: { fontCache: 'global' } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif; color: #111; background: #fff; font-size: 17px; line-height: 1.78; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+main { max-width: 760px; width: 100%; margin: 0 auto; padding: 72px 20px 112px; }
+nav { margin-bottom: 40px; font-size: 13px; display: flex; justify-content: space-between; align-items: baseline; }
+nav .switch a { color: #999; }
+nav .switch a.on { color: #111; text-decoration: underline; text-underline-offset: 2px; }
+a { color: #111; text-decoration-color: #bbb; text-underline-offset: 2px; }
+a:hover { opacity: .55; }
+h1 { font-size: 42px; line-height: 1.12; font-weight: 700; margin-bottom: 16px; }
+h2 { font-size: 25px; line-height: 1.28; margin: 56px 0 15px; font-weight: 650; }
+p { margin-bottom: 17px; }
+.meta { color: #999; font-size: 13px; margin-bottom: 26px; }
+.dek { color: #444; font-size: 19px; line-height: 1.6; margin-bottom: 44px; }
+.note { border-left: 3px solid #111; color: #333; font-size: 15px; line-height: 1.72; margin: 26px 0 30px; padding: 2px 0 2px 18px; }
+.note .note-title { color: #777; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 6px; }
+figure { margin: 40px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 26px 0 18px; }
+figure svg { display: block; width: 100%; height: auto; }
+figcaption { color: #777; font-size: 13px; line-height: 1.55; margin-top: 14px; }
+.eqwrap { margin: 24px 0 28px; }
+.mjx-container { overflow-x: auto; overflow-y: hidden; }
+.table-wrap { margin: 26px 0 10px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
+th { color: #555; font-size: 12px; letter-spacing: .03em; text-transform: uppercase; font-weight: 600; background: #fafafa; }
+td:first-child { font-weight: 600; width: 26%; }
+.refs { color: #555; font-size: 15px; margin: 10px 0 0 20px; }
+.refs li { margin-bottom: 9px; }
+.lang[data-lang="zh"] { display: none; }
+strong { font-weight: 680; }
+.s-ink{fill:#111;} .s-faint{stroke:#d8d8d8;fill:none;} .s-acc{fill:#2f5f55;} .s-accs{stroke:#2f5f55;fill:none;}
+.s-box{fill:#fff;stroke:#111;stroke-width:1.4;} .s-boxa{fill:#e8f0ed;stroke:#2f5f55;stroke-width:1.6;}
+.s-lab{font-size:12.5px;fill:#222;} .s-lab-s{font-size:10.5px;fill:#777;}
+@media (max-width: 560px){ main{padding:46px 18px 88px;} h1{font-size:31px;} h2{font-size:22px;margin-top:46px;} body{font-size:16px;} .dek{font-size:18px;} td:first-child{width:34%;} }
+</style>
+</head>
+<body>
+<main>
+<nav>
+  <span><a href="../">Writing</a> / <a href="../../">Sense Wang</a></span>
+  <span class="switch"><a href="#" data-set="en" class="on">English</a> · <a href="#" data-set="zh">中文</a></span>
+</nav>
+
+<!-- ===================== ENGLISH ===================== -->
+<article class="lang" data-lang="en">
+  <h1>WAV: verifying actions through forward-inverse asymmetry</h1>
+  <div class="meta">June 2026 · world models · robot data collection · WAV (arXiv:2604.01985)</div>
+
+  <p class="dek">Predicting a full future from a state and an action is hard; inferring which action could have produced an observed change is often easier. WAV names this difficulty gap the forward-inverse asymmetry, and turns it into a way for a world model to find its own errors and decide which interactions to collect next.</p>
+
+  <h2>Why a world model must be reliable off the expert path</h2>
+  <p>Policy learning mostly cares about good actions: how to grasp the cup, how to place the block. A world model is queried over a far wider space, because planners, reinforcement learning, and policy evaluation all probe suboptimal, exploratory, and random actions. Those actions are exactly what action-labeled robot data underrepresents, and that data is expensive. So the operative question is: given many candidate actions, which one, once executed, would most expose the model's prediction errors and add the most information to training?</p>
+  <p>The common answer is uncertainty or learning progress. The difficulty is that those signals come from the current world model itself, which is least able to judge its own errors precisely in the unfamiliar regions that matter most. WAV changes the direction of verification instead.</p>
+
+  <h2>The asymmetry: verifying is easier than predicting</h2>
+  <p>Write an action-conditioned world model as \(\hat s_{t+1}=f_\theta(s_t,a_t)\). Direct forward prediction is hard on three counts: the output space is large (object positions, occlusions, contacts, background), the environment is stochastic, and the low-data regions are precisely where the model is weakest. WAV decomposes the prediction into two factors that can each be verified on their own:</p>
+  <div class="eqwrap">
+  \[ p(s_{t+1}\mid s_t,a_t)\ \propto\ \underbrace{p(s_{t+1}\mid s_t)}_{\text{state plausibility}}\ \cdot\ \underbrace{p(a_t\mid s_t,s_{t+1})}_{\text{action reachability}} \]
+  </div>
+  <p><strong>State plausibility</strong> asks whether a future looks like something the environment actually produces; it carries no action label, so it can be learned from large amounts of action-free video. <strong>Action reachability</strong> asks which action could have caused a given change; it is an inverse-dynamics question that ignores most visual detail. The paper grounds the asymmetry in two reasons these are more tractable than full forward prediction: action-free data is far more available, and action-relevant features are lower-dimensional — so WAV uses a sparse inverse model that reads only a subset of state features.</p>
+
+  <figure>
+    <svg viewBox="0 0 720 300" role="img" aria-label="WAV forward-inverse cycle">
+      <rect class="s-box" x="8" y="40" width="120" height="62" rx="7"/>
+      <text class="s-lab" x="68" y="68" text-anchor="middle" font-weight="650">state</text>
+      <text class="s-lab-s" x="68" y="86" text-anchor="middle">sₜ</text>
+      <rect class="s-box" x="168" y="34" width="150" height="74" rx="7"/>
+      <text class="s-lab" x="243" y="60" text-anchor="middle" font-weight="650">video prior</text>
+      <text class="s-lab-s" x="243" y="78" text-anchor="middle">sample subgoals</text>
+      <text class="s-acc" x="243" y="96" text-anchor="middle" font-size="11.5">p(s′ | s)</text>
+      <rect class="s-box" x="358" y="34" width="150" height="74" rx="7"/>
+      <text class="s-lab" x="433" y="60" text-anchor="middle" font-weight="650">sparse inverse</text>
+      <text class="s-lab-s" x="433" y="78" text-anchor="middle">infer action</text>
+      <text class="s-lab-s" x="433" y="96" text-anchor="middle">p(a | s, s′)</text>
+      <rect class="s-box" x="548" y="34" width="150" height="74" rx="7"/>
+      <text class="s-lab" x="623" y="60" text-anchor="middle" font-weight="650">forward WM</text>
+      <text class="s-lab-s" x="623" y="78" text-anchor="middle">predict outcome</text>
+      <text class="s-lab-s" x="623" y="96" text-anchor="middle">f_θ(s, a)</text>
+      <line x1="128" y1="71" x2="164" y2="71" class="s-accs" stroke-width="1.8" marker-end="url(#w)"/>
+      <line x1="318" y1="71" x2="354" y2="71" class="s-accs" stroke-width="1.8" marker-end="url(#w)"/>
+      <line x1="508" y1="71" x2="544" y2="71" class="s-accs" stroke-width="1.8" marker-end="url(#w)"/>
+      <!-- cycle consistency / discrepancy -->
+      <rect class="s-boxa" x="250" y="190" width="220" height="64" rx="7"/>
+      <text class="s-acc" x="360" y="216" text-anchor="middle" font-weight="650" font-size="13">cycle consistency → discrepancy</text>
+      <text class="s-lab-s" x="360" y="236" text-anchor="middle">dist(subgoal, forward rollout)</text>
+      <rect class="s-box" x="512" y="190" width="186" height="64" rx="7"/>
+      <text class="s-lab" x="605" y="216" text-anchor="middle" font-weight="650">execute the top action</text>
+      <text class="s-lab-s" x="605" y="236" text-anchor="middle">append new transition</text>
+      <path d="M243 108 C243 150 330 158 360 188" class="s-accs" stroke-width="1.6" marker-end="url(#w)"/>
+      <path d="M623 108 C623 150 470 156 446 188" class="s-accs" stroke-width="1.6" marker-end="url(#w)"/>
+      <line x1="470" y1="222" x2="508" y2="222" class="s-accs" stroke-width="1.8" marker-end="url(#w)"/>
+      <path d="M605 254 C605 282 120 286 68 104" stroke="#999" stroke-width="1.2" fill="none" stroke-dasharray="5 5" marker-end="url(#wg)"/>
+      <text class="s-lab-s" x="300" y="282" text-anchor="middle">update the world model, repeat</text>
+      <defs>
+        <marker id="w" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f5f55"/></marker>
+        <marker id="wg" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#999"/></marker>
+      </defs>
+    </svg>
+    <figcaption>Schematic (original) of the WAV loop; the paper's figure gives the full diagram, see the <a href="https://arxiv.org/abs/2604.01985">paper</a>. The forward model sits last, so candidates stay anchored to plausible, reachable futures.</figcaption>
+  </figure>
+
+  <h2>The WAV loop</h2>
+  <p>From the current state, WAV samples a set of plausible subgoals from the video prior, lets the sparse inverse model infer an action for each, and rolls those actions forward with the current world model. It then enforces cycle consistency among the proposed subgoals, the inferred actions, and the forward rollouts, and executes the action with the largest discrepancy — the one the model currently fails to follow. The resulting real transition is appended to the dataset. Putting the forward model last keeps candidate futures anchored to plausible, reachable states, rather than letting an unreliable forward model drift off the real state distribution. WAV does not remove the need for environment interaction; it changes how the data budget is spent, so each executed action is the one most likely to teach the model something.</p>
+
+  <h2>Evidence</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Study</th><th>What it tests</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>MiniGrid robustness</td><td>Is the sparse inverse model easier to learn and more robust than forward prediction?</td><td>With fewer samples, more objects, and noisy floors, the sparse inverse model infers actions more stably — supporting the asymmetry.</td></tr>
+      <tr><td>MiniGrid active learning</td><td>Does selecting transitions with WAV reduce world-model error faster?</td><td>WAV approaches an Oracle and beats Random, Uncertainty, Progress, and a vanilla IDM; it reaches rare but informative interaction actions.</td></tr>
+      <tr><td>RoboMimic / ManiSkill</td><td>Does it transfer to continuous-control manipulation?</td><td>On six tasks the paper reports 32-frame prediction MSE; WAV is the strongest non-Oracle method, with a larger margin in the low-data regime.</td></tr>
+      <tr><td>OOD adaptation</td><td>Can an existing world model adapt to new visuals/objects with little target data?</td><td>On RoboMimic Can shifts, ~200 target trajectories give lower prediction error and higher reward; policy improves by about 22%.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>The headline across nine tasks over MiniGrid, RoboMimic, and ManiSkill: WAV reaches 2× sample efficiency and improves downstream policy performance by over 22%. The boundary worth keeping: the evidence is from simulation and benchmarks. WAV is a data-collection and world-model quality-control mechanism; it does not yet demonstrate long-horizon deployment on a real factory robot.</p>
+
+  <h2>Limitations</h2>
+  <p>WAV depends on a good subgoal generator: if the video prior proposes implausible futures, the inverse and forward checks inherit the error. The sparse inverse model assumes action effects are identifiable from a small set of features, which breaks under complex contact, multi-object chains, or several actions producing the same visual change. And it is a self-improving framework that still needs environment interaction — the gain is making each real transition more worthwhile, not removing interaction.</p>
+
+  <h2>References</h2>
+  <ol class="refs">
+    <li>WAV: <a href="https://arxiv.org/abs/2604.01985">World Action Verifier: Self-Improving World Models via Forward-Inverse Asymmetry</a> (arXiv:2604.01985). <a href="https://world-action-verifier.github.io/">Project page</a>.</li>
+    <li>Benchmarks: <a href="https://robomimic.github.io/">RoboMimic</a>, <a href="https://maniskill.ai/">ManiSkill</a>.</li>
+  </ol>
+</article>
+
+<!-- ===================== 中文 ===================== -->
+<article class="lang" data-lang="zh">
+  <h1>WAV：用 forward-inverse asymmetry 验证动作</h1>
+  <div class="meta">2026 年 6 月 · 世界模型 · 机器人数据采集 · WAV (arXiv:2604.01985)</div>
+
+  <p class="dek">从状态和动作预测一个完整未来很难；反推"哪个动作可能造成这个变化"往往更容易。WAV 把这种难度差叫作 forward-inverse asymmetry，并把它做成一个让世界模型发现自己错误、决定下一批该采哪些交互的循环。</p>
+
+  <h2>为什么世界模型必须在非专家动作上也可靠</h2>
+  <p>策略学习主要关心好动作：怎么抓起杯子、怎么把方块放到目标区。世界模型被查询的范围宽得多——规划器、强化学习、策略评估都会去试探次优动作、探索动作、随机动作。而这些动作，正是带动作标签的机器人数据最缺的，且这类数据很贵。于是问题是：现在有一批候选动作，哪一个一旦真实执行，最能暴露模型的预测错误、给训练带来最大信息量？</p>
+  <p>常见答案是 uncertainty 或 learning progress。难点在于这些信号大多来自当前世界模型自己，而它恰恰在最关键的陌生区域里最难判断自己错在哪。WAV 改的是验证的方向。</p>
+
+  <h2>不对称：验证比预测更容易</h2>
+  <p>把动作条件世界模型写成 \(\hat s_{t+1}=f_\theta(s_t,a_t)\)。直接做 forward 预测难在三层：输出空间大（物体位置、遮挡、接触、背景），环境有随机性，而低数据区恰恰是模型最弱的地方。WAV 把这个预测拆成两个可以各自验证的因子：</p>
+  <div class="eqwrap">
+  \[ p(s_{t+1}\mid s_t,a_t)\ \propto\ \underbrace{p(s_{t+1}\mid s_t)}_{\text{state plausibility}}\ \cdot\ \underbrace{p(a_t\mid s_t,s_{t+1})}_{\text{action reachability}} \]
+  </div>
+  <p><strong>State plausibility</strong> 问的是：这个未来像不像环境里真会发生的未来？它不带动作标签，可以从大量 action-free video 学。<strong>Action reachability</strong> 问的是：如果真变成这个未来，哪个动作可能造成它？这是 inverse dynamics，可以忽略大部分视觉细节。论文把这种不对称落到两点上：action-free 数据可得性更高，且 action-relevant 特征维度更低——所以 WAV 用一个 sparse inverse model，只读取一部分状态特征。</p>
+
+  <figure>
+    <svg viewBox="0 0 720 300" role="img" aria-label="WAV forward-inverse 循环">
+      <rect class="s-box" x="8" y="40" width="120" height="62" rx="7"/>
+      <text class="s-lab" x="68" y="68" text-anchor="middle" font-weight="650">当前状态</text>
+      <text class="s-lab-s" x="68" y="86" text-anchor="middle">sₜ</text>
+      <rect class="s-box" x="168" y="34" width="150" height="74" rx="7"/>
+      <text class="s-lab" x="243" y="60" text-anchor="middle" font-weight="650">视频先验</text>
+      <text class="s-lab-s" x="243" y="78" text-anchor="middle">采样 subgoals</text>
+      <text class="s-acc" x="243" y="96" text-anchor="middle" font-size="11.5">p(s′ | s)</text>
+      <rect class="s-box" x="358" y="34" width="150" height="74" rx="7"/>
+      <text class="s-lab" x="433" y="60" text-anchor="middle" font-weight="650">稀疏 inverse</text>
+      <text class="s-lab-s" x="433" y="78" text-anchor="middle">反推动作</text>
+      <text class="s-lab-s" x="433" y="96" text-anchor="middle">p(a | s, s′)</text>
+      <rect class="s-box" x="548" y="34" width="150" height="74" rx="7"/>
+      <text class="s-lab" x="623" y="60" text-anchor="middle" font-weight="650">forward WM</text>
+      <text class="s-lab-s" x="623" y="78" text-anchor="middle">预测结果</text>
+      <text class="s-lab-s" x="623" y="96" text-anchor="middle">f_θ(s, a)</text>
+      <line x1="128" y1="71" x2="164" y2="71" class="s-accs" stroke-width="1.8" marker-end="url(#wz)"/>
+      <line x1="318" y1="71" x2="354" y2="71" class="s-accs" stroke-width="1.8" marker-end="url(#wz)"/>
+      <line x1="508" y1="71" x2="544" y2="71" class="s-accs" stroke-width="1.8" marker-end="url(#wz)"/>
+      <rect class="s-boxa" x="250" y="190" width="220" height="64" rx="7"/>
+      <text class="s-acc" x="360" y="216" text-anchor="middle" font-weight="650" font-size="13">cycle consistency → 差异</text>
+      <text class="s-lab-s" x="360" y="236" text-anchor="middle">dist(subgoal, forward rollout)</text>
+      <rect class="s-box" x="512" y="190" width="186" height="64" rx="7"/>
+      <text class="s-lab" x="605" y="216" text-anchor="middle" font-weight="650">执行差异最大的动作</text>
+      <text class="s-lab-s" x="605" y="236" text-anchor="middle">加回新 transition</text>
+      <path d="M243 108 C243 150 330 158 360 188" class="s-accs" stroke-width="1.6" marker-end="url(#wz)"/>
+      <path d="M623 108 C623 150 470 156 446 188" class="s-accs" stroke-width="1.6" marker-end="url(#wz)"/>
+      <line x1="470" y1="222" x2="508" y2="222" class="s-accs" stroke-width="1.8" marker-end="url(#wz)"/>
+      <path d="M605 254 C605 282 120 286 68 104" stroke="#999" stroke-width="1.2" fill="none" stroke-dasharray="5 5" marker-end="url(#wgz)"/>
+      <text class="s-lab-s" x="300" y="282" text-anchor="middle">更新世界模型，重复</text>
+      <defs>
+        <marker id="wz" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f5f55"/></marker>
+        <marker id="wgz" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#999"/></marker>
+      </defs>
+    </svg>
+    <figcaption>原创示意图。论文给出完整框架图，见<a href="https://arxiv.org/abs/2604.01985">原文</a>。forward model 放在最后，让候选未来锚在"合理且可达"的状态上。</figcaption>
+  </figure>
+
+  <h2>WAV 的循环</h2>
+  <p>从当前状态出发，WAV 先由视频先验采一组合理 subgoal，让 sparse inverse model 给每个 subgoal 反推一个动作，再用当前世界模型把这些动作 rollout 出去。然后它在"提出的 subgoal、反推的动作、forward rollout"三者之间强制 cycle consistency，执行其中差异最大的那个动作——也就是模型当前最跟不上的那个。真实执行得到的 transition 加回数据集。把 forward model 放在循环末端，能让候选未来锚在合理、可达的状态上；否则一个还不可靠的 forward model 会漂出真实状态分布。WAV 不取消环境交互；它改变的是数据预算的花法，让每次执行的都是最可能教会模型东西的那个动作。</p>
+
+  <h2>证据</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>实验</th><th>验证什么</th><th>结论</th></tr></thead>
+    <tbody>
+      <tr><td>MiniGrid 稳健性</td><td>sparse inverse 是否比 forward 预测更易学、更抗复杂场景与噪声？</td><td>样本少、物体多、noisy floors 增加时，sparse inverse 的动作推断更稳，支持不对称假设。</td></tr>
+      <tr><td>MiniGrid 主动学习</td><td>用 WAV 选 transition 是否更快降低世界模型误差？</td><td>WAV 接近 Oracle，优于 Random / Uncertainty / Progress / vanilla IDM，更易采到稀有但关键的交互动作。</td></tr>
+      <tr><td>RoboMimic / ManiSkill</td><td>能否迁移到连续控制操作？</td><td>六个任务报告 32-frame 预测 MSE；WAV 是最强的 non-Oracle 方法，低数据区优势更明显。</td></tr>
+      <tr><td>OOD 适配</td><td>已有世界模型遇到新视觉/新物体能否用少量数据快速适配？</td><td>RoboMimic Can 的 shift 上，约 200 条目标域轨迹即得到更低误差、更高 reward；策略约提升 22%。</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>跨 MiniGrid、RoboMimic、ManiSkill 九个任务的总结果：WAV 把世界模型的样本效率提高 2 倍，并让下游策略性能提升超过 22%。边界要记住：证据来自仿真与 benchmark。WAV 是一个数据采集与世界模型质检机制，还没有证明自己能支撑真实工厂里的长时程机器人部署。</p>
+
+  <h2>局限</h2>
+  <p>WAV 依赖一个足够好的 subgoal generator：如果视频先验提出的未来本身不可靠，后面的 inverse 与 forward 检验都会被带偏。sparse inverse 也有假设：动作效果要能被一小组 action-relevant 特征识别——复杂接触、多物体连锁、多个动作造成同一视觉变化时，这个假设会失效。它是自改进框架，但仍然需要环境交互——价值在于让每一次真实交互更值得；它省不掉交互本身。</p>
+
+  <h2>参考</h2>
+  <ol class="refs">
+    <li>WAV：<a href="https://arxiv.org/abs/2604.01985">World Action Verifier: Self-Improving World Models via Forward-Inverse Asymmetry</a>（arXiv:2604.01985）。<a href="https://world-action-verifier.github.io/">项目页</a>。</li>
+    <li>Benchmark：<a href="https://robomimic.github.io/">RoboMimic</a>、<a href="https://maniskill.ai/">ManiSkill</a>。</li>
+  </ol>
+</article>
+
+<script>
+(function () {
+  const links = document.querySelectorAll('.switch a[data-set]');
+  const panels = document.querySelectorAll('.lang');
+  function set(lang) {
+    panels.forEach(p => p.style.display = (p.dataset.lang === lang) ? 'block' : 'none');
+    links.forEach(a => a.classList.toggle('on', a.dataset.set === lang));
+    try { localStorage.setItem('writing-language', lang); } catch (e) {}
+    document.documentElement.lang = (lang === 'zh') ? 'zh-CN' : 'en';
+  }
+  links.forEach(a => a.addEventListener('click', e => { e.preventDefault(); set(a.dataset.set); }));
+  let saved = 'en';
+  try { saved = localStorage.getItem('writing-language') || 'en'; } catch (e) {}
+  set(saved);
+})();
+</script>
+</main>
+</body>
+</html>
