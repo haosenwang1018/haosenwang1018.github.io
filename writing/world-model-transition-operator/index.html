@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>World Model 的 Transition Operator：VLWM 和 PRISM-WM 改了同一个接口 — Sense Wang</title>
+  <meta name="description" content="一篇关于 Variable-Length Latent World Models、PRISM-WM 和 world model transition operator 的技术博客。">
+  <link rel="icon" href="data:,">
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [["\\(", "\\)"]],
+        displayMath: [["\\[", "\\]"]],
+        processEscapes: true
+      },
+      svg: { fontCache: "global" }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #111111;
+      --muted: #626262;
+      --soft: #8d8d8d;
+      --line: #e7e7e7;
+      --line-strong: #b8b8b8;
+      --paper: #ffffff;
+      --wash: #f8f8f8;
+      --figure: #fbfbfb;
+      --accent: #343434;
+      --sans: -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif;
+      --mono: "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--paper);
+      color: var(--ink);
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      font-size: 17px;
+      line-height: 1.78;
+      letter-spacing: 0;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: #111;
+      text-decoration-thickness: 0.08em;
+      text-underline-offset: 0.2em;
+    }
+
+    .shell {
+      width: min(760px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    header {
+      padding: 72px 0 44px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .topnav {
+      margin-bottom: 52px;
+      color: #777;
+      font-size: 13px;
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--soft);
+      font-size: 13px;
+      font-weight: 720;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(36px, 7vw, 56px);
+      line-height: 1.12;
+      font-weight: 760;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .deck {
+      margin: 22px 0 0;
+      color: #444;
+      font-size: 19px;
+      line-height: 1.62;
+      max-width: 720px;
+    }
+
+    .meta {
+      margin-top: 24px;
+      color: #999;
+      font-size: 13px;
+    }
+
+    main {
+      padding: 56px 0 96px;
+    }
+
+    h2 {
+      margin: 58px 0 18px;
+      font-size: 25px;
+      line-height: 1.28;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 36px 0 10px;
+      font-size: 19px;
+      line-height: 1.36;
+    }
+
+    p {
+      margin: 0 0 17px;
+    }
+
+    .math-panel {
+      margin: 26px 0;
+      padding: 18px 20px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+      overflow-x: auto;
+    }
+
+    .note {
+      margin: 28px 0;
+      padding: 2px 0 2px 18px;
+      border-left: 2px solid #111;
+      color: #333;
+      font-size: 15px;
+      line-height: 1.72;
+    }
+
+    figure {
+      margin: 38px 0;
+    }
+
+    .figure-box {
+      border: 1px solid var(--line);
+      background: var(--figure);
+      padding: 20px;
+      overflow-x: auto;
+    }
+
+    figcaption {
+      margin-top: 10px;
+      color: #777;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .svg-desktop {
+      min-width: 640px;
+    }
+
+    .svg-mobile {
+      display: none;
+      min-width: 0;
+    }
+
+    .refs {
+      margin-top: 56px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+      color: #444;
+      font-size: 15px;
+    }
+
+    .refs ol {
+      margin: 12px 0 0;
+      padding-left: 22px;
+    }
+
+    .refs li {
+      margin: 0 0 8px;
+    }
+
+    .mono {
+      font-family: var(--mono);
+      font-size: 0.95em;
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        width: min(100% - 28px, 760px);
+      }
+
+      header {
+        padding: 52px 0 34px;
+      }
+
+      main {
+        padding: 40px 0 72px;
+      }
+
+      .figure-box {
+        padding: 14px;
+      }
+
+      .svg-desktop {
+        display: none;
+      }
+
+      .svg-mobile {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell">
+      <nav class="topnav"><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+      <p class="eyebrow">World Models / Latent Dynamics</p>
+      <h1>World Model 的 Transition Operator：VLWM 和 PRISM-WM 改了同一个接口</h1>
+      <p class="deck">world model 的难点经常被写成“预测未来”。更具体地看，planner 依赖的是一个 transition operator：它接收当前 latent state 和候选动作，返回一个可继续规划的未来状态。VLWM 和 PRISM-WM 都在修改这个接口。</p>
+      <p class="meta">June 2026</p>
+    </div>
+  </header>
+
+  <main>
+    <article class="shell">
+      <p>在 model-based RL 里，world model 很少单独存在。它通常被 planner 反复调用，用来比较多条候选动作序列。planner 从当前状态出发，把一串动作交给模型，得到预测状态、预测 reward 或 terminal value，再决定真实环境里下一步执行什么。</p>
+
+      <p>这个被反复调用的部分，可以叫 transition operator。它是 learned dynamics 的接口。经典写法是：</p>
+
+      <div class="math-panel">
+        \[
+        d_\theta(z_t, a_t) \rightarrow \hat z_{t+1}
+        \]
+      </div>
+
+      <p>\(z_t\) 是 observation 编码后的 latent state，\(a_t\) 是动作，\(d_\theta\) 是模型学出来的 dynamics function。它不等于真实物理定律本身。它更像 planner 手里的模拟器接口：planner 相信这个接口返回的未来，并在这个未来上优化动作。</p>
+
+      <p>许多 world-model 方法都沿用一个朴素假设：一个平滑的、单一的 transition function 可以处理 planner 需要的未来预测。VLWM 和 PRISM-WM 的关系，正好可以从这里看清楚。它们改的模块不同，修正的假设相同。</p>
+
+      <figure>
+        <div class="figure-box">
+          <svg class="svg-desktop" viewBox="0 0 900 360" role="img" aria-label="Transition operator used by a planner">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#111"></path>
+              </marker>
+            </defs>
+            <rect x="30" y="42" width="190" height="86" fill="#fff" stroke="#d8d8d8"></rect>
+            <text x="125" y="78" text-anchor="middle" font-size="18" font-weight="700" fill="#111">current latent</text>
+            <text x="125" y="104" text-anchor="middle" font-size="17" fill="#555">zₜ</text>
+
+            <rect x="30" y="222" width="190" height="86" fill="#fff" stroke="#d8d8d8"></rect>
+            <text x="125" y="258" text-anchor="middle" font-size="18" font-weight="700" fill="#111">candidate action</text>
+            <text x="125" y="284" text-anchor="middle" font-size="17" fill="#555">aₜ or action segment</text>
+
+            <line x1="220" y1="85" x2="336" y2="149" stroke="#111" stroke-width="1.8" marker-end="url(#arrow)"></line>
+            <line x1="220" y1="265" x2="336" y2="211" stroke="#111" stroke-width="1.8" marker-end="url(#arrow)"></line>
+
+            <rect x="350" y="126" width="210" height="104" fill="#f7f7f7" stroke="#111"></rect>
+            <text x="455" y="162" text-anchor="middle" font-size="20" font-weight="760" fill="#111">transition operator</text>
+            <text x="455" y="190" text-anchor="middle" font-size="17" fill="#555">learned dynamics interface</text>
+
+            <line x1="560" y1="178" x2="680" y2="178" stroke="#111" stroke-width="1.8" marker-end="url(#arrow)"></line>
+
+            <rect x="696" y="126" width="170" height="104" fill="#fff" stroke="#d8d8d8"></rect>
+            <text x="781" y="163" text-anchor="middle" font-size="18" font-weight="700" fill="#111">predicted future</text>
+            <text x="781" y="191" text-anchor="middle" font-size="17" fill="#555">ẑₜ₊₁ or ẑₜ₊ₖ</text>
+          </svg>
+          <svg class="svg-mobile" viewBox="0 0 360 520" role="img" aria-label="Transition operator used by a planner">
+            <defs>
+              <marker id="arrow-mobile-1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#111"></path>
+              </marker>
+            </defs>
+            <rect x="54" y="32" width="252" height="72" fill="#fff" stroke="#d8d8d8"></rect>
+            <text x="180" y="62" text-anchor="middle" font-size="17" font-weight="700" fill="#111">current latent</text>
+            <text x="180" y="86" text-anchor="middle" font-size="15" fill="#555">zₜ</text>
+
+            <rect x="54" y="132" width="252" height="72" fill="#fff" stroke="#d8d8d8"></rect>
+            <text x="180" y="162" text-anchor="middle" font-size="17" font-weight="700" fill="#111">candidate action</text>
+            <text x="180" y="186" text-anchor="middle" font-size="15" fill="#555">aₜ or action segment</text>
+
+            <line x1="180" y1="104" x2="180" y2="126" stroke="#111" stroke-width="1.8" marker-end="url(#arrow-mobile-1)"></line>
+            <line x1="180" y1="204" x2="180" y2="238" stroke="#111" stroke-width="1.8" marker-end="url(#arrow-mobile-1)"></line>
+
+            <rect x="42" y="246" width="276" height="94" fill="#f7f7f7" stroke="#111"></rect>
+            <text x="180" y="284" text-anchor="middle" font-size="18" font-weight="760" fill="#111">transition operator</text>
+            <text x="180" y="310" text-anchor="middle" font-size="14" fill="#555">learned dynamics interface</text>
+
+            <line x1="180" y1="340" x2="180" y2="380" stroke="#111" stroke-width="1.8" marker-end="url(#arrow-mobile-1)"></line>
+
+            <rect x="54" y="392" width="252" height="82" fill="#fff" stroke="#d8d8d8"></rect>
+            <text x="180" y="425" text-anchor="middle" font-size="17" font-weight="700" fill="#111">predicted future</text>
+            <text x="180" y="450" text-anchor="middle" font-size="15" fill="#555">ẑₜ₊₁ or ẑₜ₊ₖ</text>
+          </svg>
+        </div>
+        <figcaption>planner 看到的 world model 首先是一个 transition operator。它把当前 latent state 和候选动作转换成可继续规划的未来 latent state。</figcaption>
+      </figure>
+
+      <h2>VLWM 改的是时间跨度</h2>
+
+      <p><a href="https://arxiv.org/abs/2606.21775">Variable-Length Latent World Models</a> 提出的改动很直接。旧接口只训练一步预测：</p>
+
+      <div class="math-panel">
+        \[
+        d_\theta(z_t, a_t) \rightarrow \hat z_{t+1}
+        \]
+      </div>
+
+      <p>长程规划时，planner 必须把这个一步模型反复应用：</p>
+
+      <div class="math-panel">
+        \[
+        z_t \rightarrow \hat z_{t+1} \rightarrow \hat z_{t+2} \rightarrow \cdots \rightarrow \hat z_{t+H}
+        \]
+      </div>
+
+      <p>每一步预测误差都会进入下一次预测的输入。模型先前的输出逐渐取代真实状态，rollout drift 由此产生。</p>
+
+      <p>VLWM 把训练目标改成可变长度预测：</p>
+
+      <div class="math-panel">
+        \[
+        g_\phi(z_t, a_t, a_{t+1}, \ldots, a_{t+k-1}) \rightarrow \hat z_{t+k}
+        \]
+      </div>
+
+      <p>动作不再只作为某一层里的辅助 conditioning。VLWM 把 action embedding 当作 token，放进 transformer sequence 里。action segment 的长度变了，输入序列长度也跟着变。模型输出最后一个 token 对应的未来 latent。</p>
+
+      <p>训练时，\(k\) 从短到长逐渐加入。论文使用 cumulative-uniform curriculum：先训练 \(k=1\)，再训练 \(k \in \{1,2\}\)，最后覆盖 \(1,\ldots,K_{\max}\)。实验配置里 \(K_{\max}=5\)，frame-skip 为 5，所以单个 latent jump 最多覆盖 25 个环境步。</p>
+
+      <p>推理时，真实环境仍然一步步执行动作。变化发生在 planner 评估候选动作序列的方式上。模型可以用几个 chunked latent jumps 估计未来，例如：</p>
+
+      <div class="math-panel">
+        \[
+        z_t \rightarrow \hat z_{t+5} \rightarrow \hat z_{t+10} \rightarrow \cdots
+        \]
+      </div>
+
+      <p>这减少了递归调用次数，也让模型在训练阶段见过不同时间尺度的目标。</p>
+
+      <div class="note">
+        这里的 one-step 指 dynamics 的训练目标和调用接口。TD-MPC 系列方法在测试时通常会做短 horizon latent rollout，并用 terminal value 估计短 horizon 之后的 return。
+      </div>
+
+      <h2>长目标为什么可能更有用</h2>
+
+      <p>相邻视频帧通常包含大量冗余。一个模型只需要让 latent 轻微移动，就可能在 \(t \rightarrow t+1\) 上取得很低的 loss。它可以学到局部连续性，却没有被迫表示一段动作的累计后果。</p>
+
+      <p>\(t \rightarrow t+k\) 的目标更难。难点本身带来约束：模型需要解释一段动作之后的状态变化。TwoRoom 里，重要事件是穿过门；PushT 里，重要变化是物体姿态被推向目标；这些变化在单步预测里经常被局部平滑掩盖。</p>
+
+      <p>这不意味着长跨度天然更准。长目标的噪声更大，优化更不稳定。VLWM 的判断是：短跨度提供局部细节，长跨度提供结构约束，curriculum 让模型先学稳定的短程动态，再逐步接受更远的监督。</p>
+
+      <p>实验里的证据也应按这个边界读。VLWM 在 PushT、OGBench-Cube 和 TwoRoom 的 goal-conditioned planning 上比较 <a href="https://arxiv.org/abs/2603.19312">LeWorldModel</a>。长 offset 下提升更明显，例如 TwoRoom-100 从 LeWM 的 36% 到 VLWM 的 68%。但主图使用 per-cell oracle planner，在每个任务和 offset 上选择 P1/P2/P3 里最好的策略。论文证明 variable-length transition 有价值，在线选择 chunk length 的问题仍然开放。</p>
+
+      <h2>PRISM-WM 改的是物理模式</h2>
+
+      <p><a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a> 改同一个 transition operator 的另一维。</p>
+
+      <p>机器人动力学在接触丰富的任务里经常带有 hybrid structure：连续运动会被离散事件打断。脚接触地面、腾空、滑动、撞击、恢复，这些状态之间的切换会改变动力学规律。用一个单体 MLP 表示所有状态时，模型倾向于把不同 regime 的转移平均到同一个平滑函数里。</p>
+
+      <p>PRISM-WM 把一步 transition 写成 mixture-of-experts：</p>
+
+      <div class="math-panel">
+        \[
+        \hat z_{t+1}
+        =
+        z_t + \sum_{i=1}^{K} w_i(z_t, a_t)\, v_i(z_t, a_t)
+        \]
+      </div>
+
+      <p>gate 读取当前 latent 和 action，输出一组权重。每个 expert 提出一种 residual dynamics。orthogonalization 约束 expert 学到非冗余的基，减少所有 expert 退化成相似函数的风险。</p>
+
+      <p>从 transition operator 的角度看，PRISM-WM 的改动发生在 dynamics 调用内部。planner 仍然在 latent rollout 上比较候选动作；每次调用 dynamics 时，模型会先判断当前上下文对应哪些物理 regime，再组合对应的专家预测。</p>
+
+      <figure>
+        <div class="figure-box">
+          <svg class="svg-desktop" viewBox="0 0 900 420" role="img" aria-label="VLWM and PRISM-WM modify different axes of the transition operator">
+            <defs>
+              <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#111"></path>
+              </marker>
+            </defs>
+            <rect x="54" y="64" width="250" height="94" fill="#fff" stroke="#d8d8d8"></rect>
+            <text x="179" y="100" text-anchor="middle" font-size="20" font-weight="760" fill="#111">monolithic one-step</text>
+            <text x="179" y="130" text-anchor="middle" font-size="17" fill="#555">zₜ, aₜ → ẑₜ₊₁</text>
+
+            <line x1="304" y1="111" x2="418" y2="111" stroke="#111" stroke-width="1.8" marker-end="url(#arrow2)"></line>
+            <rect x="438" y="52" width="390" height="118" fill="#f7f7f7" stroke="#111"></rect>
+            <text x="633" y="91" text-anchor="middle" font-size="20" font-weight="760" fill="#111">VLWM: temporal scale</text>
+            <text x="633" y="121" text-anchor="middle" font-size="17" fill="#555">zₜ, action segment → ẑₜ₊ₖ</text>
+            <text x="633" y="146" text-anchor="middle" font-size="15" fill="#777">减少 recursive rollout 次数，训练多种预测跨度</text>
+
+            <line x1="179" y1="158" x2="179" y2="246" stroke="#111" stroke-width="1.8" marker-end="url(#arrow2)"></line>
+            <rect x="54" y="266" width="774" height="104" fill="#f7f7f7" stroke="#111"></rect>
+            <text x="441" y="304" text-anchor="middle" font-size="20" font-weight="760" fill="#111">PRISM-WM: physical regime</text>
+            <text x="441" y="334" text-anchor="middle" font-size="17" fill="#555">zₜ, aₜ → gate → weighted expert residuals → ẑₜ₊₁</text>
+            <text x="441" y="359" text-anchor="middle" font-size="15" fill="#777">避免接触、滑动、腾空等 regime 被单一平滑函数平均</text>
+          </svg>
+          <svg class="svg-mobile" viewBox="0 0 360 620" role="img" aria-label="VLWM and PRISM-WM modify different axes of the transition operator">
+            <defs>
+              <marker id="arrow-mobile-2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#111"></path>
+              </marker>
+            </defs>
+            <rect x="36" y="34" width="288" height="92" fill="#fff" stroke="#d8d8d8"></rect>
+            <text x="180" y="72" text-anchor="middle" font-size="18" font-weight="760" fill="#111">monolithic one-step</text>
+            <text x="180" y="100" text-anchor="middle" font-size="15" fill="#555">zₜ, aₜ → ẑₜ₊₁</text>
+
+            <line x1="180" y1="126" x2="180" y2="172" stroke="#111" stroke-width="1.8" marker-end="url(#arrow-mobile-2)"></line>
+
+            <rect x="30" y="188" width="300" height="136" fill="#f7f7f7" stroke="#111"></rect>
+            <text x="180" y="228" text-anchor="middle" font-size="18" font-weight="760" fill="#111">VLWM: temporal scale</text>
+            <text x="180" y="258" text-anchor="middle" font-size="15" fill="#555">zₜ, action segment → ẑₜ₊ₖ</text>
+            <text x="180" y="286" text-anchor="middle" font-size="14" fill="#777">训练多种预测跨度</text>
+            <text x="180" y="308" text-anchor="middle" font-size="14" fill="#777">减少 recursive rollout 次数</text>
+
+            <line x1="180" y1="324" x2="180" y2="374" stroke="#111" stroke-width="1.8" marker-end="url(#arrow-mobile-2)"></line>
+
+            <rect x="30" y="390" width="300" height="158" fill="#f7f7f7" stroke="#111"></rect>
+            <text x="180" y="430" text-anchor="middle" font-size="18" font-weight="760" fill="#111">PRISM-WM: physical regime</text>
+            <text x="180" y="460" text-anchor="middle" font-size="15" fill="#555">zₜ, aₜ → gate</text>
+            <text x="180" y="486" text-anchor="middle" font-size="15" fill="#555">→ expert residuals → ẑₜ₊₁</text>
+            <text x="180" y="516" text-anchor="middle" font-size="14" fill="#777">避免接触、滑动、腾空</text>
+            <text x="180" y="538" text-anchor="middle" font-size="14" fill="#777">被单一平滑函数平均</text>
+          </svg>
+        </div>
+        <figcaption>两篇工作都修改 transition operator。VLWM 改时间跨度，PRISM-WM 改物理 regime 的表达方式。</figcaption>
+      </figure>
+
+      <h2>同一个 operator 的两条轴</h2>
+
+      <p>把两篇文章放在一起，关系会很清楚。</p>
+
+      <p>VLWM 认为固定一步预测没有给模型足够的长程监督。它把 transition operator 从 one-step function 扩展成 horizon-conditioned function。</p>
+
+      <p>PRISM-WM 认为单体平滑函数会混合不同物理 regime。它把 transition operator 从 monolithic function 改成 context-routed expert composition。</p>
+
+      <p>一个改时间，一个改物理结构。二者共同修正同一个朴素假设：planner 所需的未来预测，可以由一个平滑、单一、固定步长的 transition function 承担。</p>
+
+      <p>更进一步，二者理论上可以组合。一个 PRISM-style VLWM 会让 action segment 先定义预测跨度，再让 gate 根据当前状态和动作上下文选择专家：</p>
+
+      <div class="math-panel">
+        \[
+        (z_t, a_{t:t+k-1})
+        \rightarrow
+        \text{routed variable-length dynamics}
+        \rightarrow
+        \hat z_{t+k}
+        \]
+      </div>
+
+      <p>这样的系统会同时处理两类误差来源：递归 rollout 带来的时间累积误差，以及 contact regime 被平均带来的物理结构误差。它也会引入新的问题：gate 应该按当前 regime 路由，还是按未来 action segment 内的 regime sequence 路由；一个长 chunk 内发生多次接触切换时，单次 expert composition 是否足够。</p>
+
+      <h2>证据哪里还脆弱</h2>
+
+      <p>VLWM 的长程结果很有启发性，但 oracle planner 让主结果带有选择优势。真正部署时，系统需要在线决定 chunk length。论文已经指出没有一种 P1/P2/P3 策略在所有任务上稳定最优。</p>
+
+      <p>PRISM-WM 对 contact-rich dynamics 的诊断很强，但 MoE 的 expert 数量、路由稳定性、orthogonalization 对不同任务的迁移边界，仍然需要更多复现和任务扩展。它改善了物理 regime 的表达方式，却没有直接解决预测跨度选择。</p>
+
+      <p>这也是两篇文章放在一起的价值。VLWM 暴露时间尺度问题，PRISM-WM 暴露物理 regime 问题。二者都把注意力从“planner 怎么搜索动作”转向“planner 每次调用的 learned simulator 是否具备正确接口”。</p>
+
+      <p>world model 的 transition operator 因此值得单独命名。它决定 planner 能看到什么未来，也决定错误会以什么方式进入下一次规划。</p>
+
+      <section class="refs">
+        <h2>References</h2>
+        <ol>
+          <li>Tianqi Du, Qi Zhang, Yifei Wang, Yisen Wang. <a href="https://arxiv.org/abs/2606.21775">Beyond the Next Step: Variable-Length Latent World Models for Long-Horizon Planning</a>, arXiv:2606.21775, 2026.</li>
+          <li>Mingwei Li, Xiaoyuan Zhang, Chengwei Yang, Zilong Zheng, Yaodong Yang. <a href="https://arxiv.org/abs/2512.08411">Prismatic World Model: Learning Compositional Dynamics for Planning in Hybrid Systems</a>, arXiv:2512.08411, 2025.</li>
+          <li>Nicklas Hansen, Hao Su, Xiaolong Wang. <a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control</a>, arXiv:2203.04955, 2022.</li>
+          <li>Lucas Maes et al. <a href="https://arxiv.org/abs/2603.19312">LeWorldModel: Stable End-to-End Joint-Embedding Predictive Architecture from Pixels</a>, arXiv:2603.19312, 2026.</li>
+        </ol>
+      </section>
+    </article>
+  </main>
+</body>
+</html>
