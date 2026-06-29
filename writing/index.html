@@ -109,14 +109,13 @@
 
       <article class="entry">
         <div class="entry-title">
-          <a href="grasp-gradient-planning/">GRASP: gradient planning through a world model, made robust at long horizons</a>
+          <a href="grasp-gradient-planning/">GRASP: planning by optimizing the states in between</a>
         </div>
         <div class="entry-meta">June 2026 · bilingual</div>
         <p class="entry-desc">
-          A bilingual paper note on GRASP. Gradients through a high-dimensional
-          visual world model are brittle — the optimizer exploits adversarial
-          state directions and long serial rollouts blow up like backprop-through-time.
-          GRASP fixes it with parallel virtual states, state noise, and action-only gradients.
+          A bilingual paper note on GRASP. In a standard rollout, intermediate
+          states are computed by the world model. In GRASP, they become virtual
+          states optimized with actions and checked by dynamics consistency.
         </p>
       </article>
 

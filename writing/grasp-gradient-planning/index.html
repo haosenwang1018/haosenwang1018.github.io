@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Gradient planning through a high-dimensional visual world model is brittle: the optimizer exploits adversarial state directions and long-horizon rollouts blow up like backprop-through-time. GRASP keeps it robust with virtual states, state noise, and action-only gradients.">
-<title>GRASP: gradient planning through a world model, made robust at long horizons — Sense Wang</title>
+<meta name="description" content="GRASP changes the planner's variables: intermediate states are no longer only rollout results from a world model, but virtual states optimized together with actions and checked by dynamics consistency.">
+<title>GRASP: planning by optimizing the states in between — Sense Wang</title>
 <script>
   MathJax = { tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] }, svg: { fontCache: 'global' } };
 </script>
@@ -28,8 +28,8 @@ p { margin-bottom: 17px; }
 figure { margin: 40px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 26px 0 18px; }
 figure svg { display: block; width: 100%; height: auto; }
 figcaption { color: #777; font-size: 13px; line-height: 1.55; margin-top: 14px; }
-.eqwrap { margin: 24px 0 28px; }
-.mjx-container { overflow-x: auto; overflow-y: hidden; }
+.eqwrap { margin: 24px 0 28px; max-width: 100%; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
+mjx-container[jax="CHTML"][display="true"] { display: block; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-bottom: 2px; }
 .table-wrap { margin: 26px 0 10px; overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
@@ -55,60 +55,92 @@ strong { font-weight: 680; }
 
 <!-- ===================== ENGLISH ===================== -->
 <article class="lang" data-lang="en">
-  <h1>GRASP: gradient planning through a world model, made robust at long horizons</h1>
+  <h1>GRASP: planning by optimizing the states in between</h1>
   <div class="meta">June 2026 · world models · planning · GRASP (arXiv:2602.00475)</div>
 
-  <p class="dek">A learned, differentiable world model should let you plan by gradient descent. But gradients through a high-dimensional visual world model are brittle: the optimizer exploits adversarial state directions, and a long rollout makes the gradient blow up like backprop-through-time. GRASP keeps gradient planning robust at long horizons with three changes to how the gradient is taken.</p>
+  <p class="dek">GRASP changes the object a planner is allowed to optimize. In a standard world-model rollout, the intermediate states are computed consequences of the action sequence. In GRASP, those intermediate states become virtual states: variables optimized together with the actions, then checked by the learned dynamics.</p>
 
-  <h2>Why gradient planning through a world model is brittle</h2>
-  <p>Planning here is fixed-goal: find an action sequence so that, under the learned dynamics \(F_\theta(s,a)\), an initial state \(s_0\) reaches a goal \(g\). Two things make it hard. A standard rollout applies \(F_\theta\) serially \(T\) times, so optimizing the action sequence is backprop-through-time — ill-conditioned, and worse as the horizon grows. And the loss landscape is jagged, so zero-order shooting methods (CEM, MPPI) degrade with horizon and action dimension.</p>
-  <p>The sharper problem is specific to taking gradients through a high-dimensional learned model. The state-input Jacobian \(\nabla_s F_\theta\) has no clean low-dimensional structure, so the optimizer finds adversarial state directions: a tiny perturbation \(s+\delta\) with \(g \approx F_\theta(s+\delta,\,a)\) regardless of the true start state — the planning analogue of an adversarial example in an image classifier. The paper's Theorem 1 makes this formal: a loss cannot at the same time (a) have dynamically feasible minimizers and (b) be insensitive to the state gradient \(\nabla_s F_\theta\). You cannot simply ignore the state gradient for free.</p>
-
-  <h2>GRASP: three changes to the gradient</h2>
-  <p>GRASP (Gradient RelAxed Stochastic Planner) keeps the differentiability but removes the brittleness with three moves, plus a synchronization step.</p>
-  <p><strong>1. Virtual states (parallel, lifted).</strong> Instead of a serial rollout, treat the intermediate states as independent optimization variables — "virtual states" — with a soft dynamics-consistency penalty</p>
+  <h2>The identity of a state changes</h2>
+  <p>A learned world model gives a transition function \(F_\theta(s_t, a_t)\). Given the current state \(s_0\) and an action \(a_0\), it predicts the next state. A standard rollout planner optimizes only the action sequence:</p>
   <div class="eqwrap">
-  \[ \mathcal{L}_{\text{dyn}} = \sum_{t} \big\lVert F_\theta(s_t, a_t) - s_{t+1} \big\rVert^2, \qquad s_0 \text{ fixed},\ s_T = g. \]
+  \[
+  \text{variables} = a_0,\ldots,a_{T-1}
+  \]
+  \[
+  \begin{aligned}
+  s_1 &= F_\theta(s_0,a_0),\\
+  s_2 &= F_\theta(s_1,a_1),\\
+  &\ldots\\
+  s_T &= F_\theta(s_{T-1},a_{T-1}).
+  \end{aligned}
+  \]
   </div>
-  <p>Every world-model evaluation is now parallel and better-conditioned, and it shares global minimizers with the original problem. The paper proves the payoff: a shooting method's gradient smoothness grows like \(|\lambda|^{2(T-1)}\) — it blows up with the horizon \(T\) — while the lifted method's bound is horizon-independent.</p>
-  <p><strong>2. Stochastic states (exploration).</strong> Inject Gaussian noise into the state iterates (a Langevin-style update) to escape bad local minima. Noising the states rather than the actions keeps trajectories more dynamically feasible while still exploring.</p>
-  <p><strong>3. Action-only gradients (grad-cut).</strong> Stop-gradient on the state inputs, so gradients flow only through the actions \(a_t\) in \(F_\theta(\bar s_t, a_t)\), avoiding the adversarial state directions. On its own this makes plans cling to the current rollout, so a dense one-step goal loss \(\sum_t \lVert F_\theta(\bar s_t, a_t) - g\rVert^2\) gives every action a task-aligned signal. Every so often a full serial-rollout gradient step refines the actions and enforces strict descent.</p>
+  <p>Here \(s_1,s_2,\ldots\) are rollout results. The planner cannot move \(s_2\) directly. It can only change earlier actions and ask the world model to recompute the chain.</p>
+
+  <p>GRASP keeps \(s_0\) fixed as the current state and \(s_T\) fixed as the goal, then adds the intermediate states to the optimization variables:</p>
+  <div class="eqwrap">
+  \[
+  \begin{aligned}
+  \text{variables} =
+  &\ a_0,\ldots,a_{T-1},\\
+  &\ s_1,\ldots,s_{T-1}
+  \end{aligned}
+  \]
+  \[
+  \begin{aligned}
+  \mathcal{L}_{\text{dyn}}
+  &= \sum_{t=0}^{T-1}
+  \left\lVert F_\theta(s_t,a_t)-s_{t+1}\right\rVert^2 .
+  \end{aligned}
+  \]
+  </div>
+  <p>The same symbols now mean something different. \(s_1\) and \(s_2\) are no longer only what the model produced. They are virtual states proposed by the planner. The world model checks them: if the planner proposes \(s_{t+1}\) but \(F_\theta(s_t,a_t)\) cannot reach it, the loss increases.</p>
 
   <figure>
-    <svg viewBox="0 0 720 270" role="img" aria-label="serial rollout vs GRASP virtual states">
-      <text class="s-lab" x="10" y="22" font-weight="650">serial rollout (shooting)</text>
-      <g>
-        <rect class="s-box" x="10" y="44" width="44" height="34" rx="5"/><text class="s-lab-s" x="32" y="65" text-anchor="middle">s₀</text>
-        <rect class="s-box" x="98" y="44" width="44" height="34" rx="5"/><text class="s-lab-s" x="120" y="65" text-anchor="middle">s₁</text>
-        <rect class="s-box" x="186" y="44" width="44" height="34" rx="5"/><text class="s-lab-s" x="208" y="65" text-anchor="middle">s₂</text>
-        <text class="s-lab-s" x="252" y="65">· · ·</text>
-        <rect class="s-box" x="290" y="44" width="44" height="34" rx="5"/><text class="s-lab-s" x="312" y="65" text-anchor="middle">s_T=g</text>
-        <line x1="54" y1="61" x2="96" y2="61" class="s-faint" stroke-width="1.6" marker-end="url(#g1)"/>
-        <line x1="142" y1="61" x2="184" y2="61" class="s-faint" stroke-width="1.6" marker-end="url(#g1)"/>
-        <line x1="230" y1="61" x2="248" y2="61" class="s-faint" stroke-width="1.6"/>
-        <line x1="276" y1="61" x2="288" y2="61" class="s-faint" stroke-width="1.6" marker-end="url(#g1)"/>
-        <text class="s-warn" x="60" y="100" font-size="11.5">gradient back through T serial Fθ → ~|λ|^{2(T-1)}, blows up with horizon</text>
-      </g>
-      <text class="s-lab" x="10" y="158" font-weight="650">GRASP: virtual states, optimized in parallel</text>
-      <g>
-        <rect class="s-box" x="10" y="180" width="44" height="34" rx="5"/><text class="s-lab-s" x="32" y="201" text-anchor="middle">s₀</text>
-        <rect class="s-boxa" x="98" y="180" width="44" height="34" rx="5"/><text class="s-lab-s" x="120" y="201" text-anchor="middle">z₁</text>
-        <rect class="s-boxa" x="186" y="180" width="44" height="34" rx="5"/><text class="s-lab-s" x="208" y="201" text-anchor="middle">z₂</text>
-        <text class="s-lab-s" x="252" y="201">· · ·</text>
-        <rect class="s-box" x="290" y="180" width="44" height="34" rx="5"/><text class="s-lab-s" x="312" y="201" text-anchor="middle">g</text>
-        <line x1="54" y1="197" x2="96" y2="197" class="s-accs" stroke-width="1.4" stroke-dasharray="4 3"/>
-        <line x1="142" y1="197" x2="184" y2="197" class="s-accs" stroke-width="1.4" stroke-dasharray="4 3"/>
-        <line x1="276" y1="197" x2="288" y2="197" class="s-accs" stroke-width="1.4" stroke-dasharray="4 3"/>
-        <text class="s-acc" x="360" y="197" font-size="11.5">soft dynamics penalty (parallel, horizon-independent)</text>
-        <text class="s-lab-s" x="60" y="238">+ state noise (explore) · gradient flows through actions only (grad-cut)</text>
-      </g>
-      <defs><marker id="g1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#999"/></marker></defs>
+    <svg viewBox="0 0 720 292" role="img" aria-label="standard rollout states versus GRASP virtual states">
+      <text class="s-lab" x="10" y="22" font-weight="650">standard rollout</text>
+      <rect class="s-box" x="10" y="44" width="54" height="36" rx="4"/><text class="s-lab-s" x="37" y="66" text-anchor="middle">s₀</text>
+      <rect class="s-box" x="116" y="44" width="54" height="36" rx="4"/><text class="s-lab-s" x="143" y="66" text-anchor="middle">s₁</text>
+      <rect class="s-box" x="222" y="44" width="54" height="36" rx="4"/><text class="s-lab-s" x="249" y="66" text-anchor="middle">s₂</text>
+      <text class="s-lab-s" x="306" y="66">...</text>
+      <rect class="s-box" x="358" y="44" width="70" height="36" rx="4"/><text class="s-lab-s" x="393" y="66" text-anchor="middle">s_T</text>
+      <line x1="64" y1="62" x2="114" y2="62" class="s-faint" stroke-width="1.4" marker-end="url(#arrowA)"/>
+      <line x1="170" y1="62" x2="220" y2="62" class="s-faint" stroke-width="1.4" marker-end="url(#arrowA)"/>
+      <line x1="276" y1="62" x2="304" y2="62" class="s-faint" stroke-width="1.4"/>
+      <line x1="328" y1="62" x2="356" y2="62" class="s-faint" stroke-width="1.4" marker-end="url(#arrowA)"/>
+      <text class="s-lab-s" x="10" y="104">s₁, s₂ are computed by the world model. Optimized object: actions only.</text>
+
+      <text class="s-lab" x="10" y="164" font-weight="650">GRASP</text>
+      <rect class="s-box" x="10" y="186" width="54" height="36" rx="4"/><text class="s-lab-s" x="37" y="208" text-anchor="middle">s₀</text>
+      <rect class="s-boxa" x="116" y="186" width="54" height="36" rx="4"/><text class="s-lab-s" x="143" y="208" text-anchor="middle">s₁</text>
+      <rect class="s-boxa" x="222" y="186" width="54" height="36" rx="4"/><text class="s-lab-s" x="249" y="208" text-anchor="middle">s₂</text>
+      <text class="s-lab-s" x="306" y="208">...</text>
+      <rect class="s-box" x="358" y="186" width="70" height="36" rx="4"/><text class="s-lab-s" x="393" y="208" text-anchor="middle">s_T=g</text>
+      <line x1="64" y1="204" x2="114" y2="204" class="s-accs" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowB)"/>
+      <line x1="170" y1="204" x2="220" y2="204" class="s-accs" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowB)"/>
+      <line x1="328" y1="204" x2="356" y2="204" class="s-accs" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrowB)"/>
+      <text class="s-lab-s" x="10" y="246">s₁, s₂ are optimized variables. Fθ checks each local transition.</text>
+      <text class="s-acc" x="452" y="205" font-size="12">loss: ||Fθ(s_t,a_t)-s_{t+1}||²</text>
+      <defs>
+        <marker id="arrowA" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#999"/></marker>
+        <marker id="arrowB" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f5f55"/></marker>
+      </defs>
     </svg>
-    <figcaption>Schematic (original); the paper's Figure 2 shows the serial-vs-virtual-states comparison, and Figure 3 the adversarial state-gradient that motivates grad-cut. See the <a href="https://arxiv.org/abs/2602.00475">paper</a>.</figcaption>
+    <figcaption>Original schematic. GRASP keeps the world model, but changes the planner's variables. The paper's Figure 2 shows the same serial-vs-lifted planning distinction.</figcaption>
   </figure>
 
+  <h2>Why this helps long-horizon planning</h2>
+  <p>In a standard action-only rollout, the final goal error must travel backward through a long composition of \(F_\theta\). The planning problem becomes a long backpropagation path through a learned dynamics model. The paper's linear analysis shows the shooting formulation can acquire curvature that grows exponentially with horizon, while the lifted-state formulation has a horizon-independent smoothness bound.</p>
+  <p>The practical consequence is simple: the planner can adjust the middle of the trajectory directly, then use local dynamics consistency to align each adjacent pair of states and actions. This is useful when the correct plan is non-greedy. Push-T, for example, may require moving away from the goal before reaching it later. A planner that only sees terminal error through a long serial rollout has a harder optimization problem.</p>
+
+  <h2>The extra mechanisms</h2>
+  <p>Turning states into optimization variables creates new failure modes, so GRASP adds three stabilizers.</p>
+  <p><strong>Soft dynamics constraint.</strong> The transition equality becomes a penalty. The planner can search over intermediate states, but those states are scored by whether the world model can connect them with actions.</p>
+  <p><strong>Stop-gradient through state inputs.</strong> In a high-dimensional visual latent space, \(\nabla_s F_\theta(s,a)\) can be brittle. The optimizer can find a tiny state perturbation that makes the model output the goal, even when the trajectory has no physical meaning. GRASP uses stop-gradient copies \(\bar{s}_t\), so gradients through \(F_\theta(\bar{s}_t,a_t)\) flow through actions, not through the state input.</p>
+  <p><strong>State noise plus rollout sync.</strong> Noise on virtual states helps the optimizer escape poor local minima. A periodic full-rollout gradient step then pulls the action sequence back toward a strict serial rollout. Noise explores; sync keeps the plan tied to what the model can actually roll out.</p>
+
   <h2>Evidence</h2>
-  <p>GRASP is built on a DINO-WM world model and tested on Push-T, PointMaze, and WallSingle against CEM, GD (vanilla gradient through the serial rollout), and LatCo, at 500 trials per setting. The advantage is specifically at long horizons.</p>
+  <p>The experiments use learned visual dynamics from DINO-WM on PointMaze, WallSingle, and Push-T. The baselines are CEM, vanilla gradient descent through serial rollout, and LatCo. The headline experiment stretches Push-T to longer horizons.</p>
   <div class="table-wrap">
   <table>
     <thead><tr><th>Horizon (Push-T)</th><th>CEM</th><th>GD</th><th>GRASP</th></tr></thead>
@@ -119,44 +151,67 @@ strong { font-weight: 680; }
       <tr><td>H = 80</td><td>2.8% / 132.2s</td><td>6.4% / 161.3s</td><td>10.4% / 58.9s</td></tr>
     </tbody>
   </table>
-  <div class="tcap">Success rate / median time-to-converge on long-range Push-T, from Table 1 of the paper (<a href="https://arxiv.org/abs/2602.00475">arXiv:2602.00475</a>). LatCo collapses to ≤15% here and is omitted for space.</div>
+  <div class="tcap">Success rate / median successful-trial time on long-range Push-T, from Table 1 of <a href="https://arxiv.org/abs/2602.00475">arXiv:2602.00475</a>. LatCo is omitted here for space; it is lower than all three at these horizons.</div>
   </div>
-  <p>By H = 60–80, GRASP has both the highest success rate and the fastest convergence; the headline is up to +10% success at less than half the compute time. At short horizons (H = 10–30) all methods do well, so the gain is long-horizon-specific. Ablations confirm each move carries weight: action-only gradients reach 59.0% versus 46.6% when state gradients are allowed to flow, state noise at \(\sigma=0.5\) beats 0 and 1.0, and the periodic full-rollout sync step is what lifts success from near-zero.</p>
+  <p>The pattern is the claim. At short horizons, strong baselines remain competitive. As the horizon grows, CEM and serial-gradient planning degrade faster, while GRASP keeps a higher success rate and lower median success time. The ablation table also supports the mechanism: removing sync nearly collapses success, allowing state gradients to flow drops accuracy from 59.0% to 46.6%, and the state-noise level changes both success and time.</p>
 
-  <h2>Limitations</h2>
-  <p>All reported metrics measure task success <em>under the learned world model</em>; the paper does not quantify whether the plans transfer to the true environment dynamics, and every experiment is in simulation, with no real robot. GRASP is built on one specific world model (DINO-WM), and at short horizons it shows little advantage. As a planner it inherits whatever errors the world model has — it makes gradient planning usable through a model, not the model correct.</p>
+  <h2>Where it sits in the world-model map</h2>
+  <p>TD-MPC makes latent world models useful for short-horizon control with a terminal value. PRISM-WM changes the dynamics model, so contact and hybrid regimes are not averaged by a single transition function. GRASP changes the planner that uses the model. It shows that long-horizon failure can come from the optimization interface between planner and world model, even before the model architecture changes.</p>
+  <p>This also marks the boundary. GRASP makes search through a learned model easier. It does not certify that the searched future is true in the environment. A stronger planner can still find plans that exploit a bad world model. That is why it connects naturally to train-test-gap work, event verifiers, and trust-horizon estimates.</p>
 
   <h2>References</h2>
   <ol class="refs">
-    <li>GRASP: <a href="https://arxiv.org/abs/2602.00475">Parallel Stochastic Gradient-Based Planning for World Models</a> (arXiv:2602.00475). <a href="https://michaelpsenka.io/grasp">Project page</a>.</li>
-    <li>World-model backbone: the DINO-WM framework (world models on pretrained DINO features).</li>
+    <li>Michael Psenka et al., <a href="https://arxiv.org/abs/2602.00475">Parallel Stochastic Gradient-Based Planning for World Models</a>, 2026. Project page: <a href="https://michaelpsenka.io/grasp">michaelpsenka.io/grasp</a>.</li>
+    <li>Gaoyue Zhou et al., DINO-WM, the visual world-model framework used in the experiments.</li>
   </ol>
 </article>
 
 <!-- ===================== 中文 ===================== -->
 <article class="lang" data-lang="zh">
-  <h1>GRASP：让梯度规划稳稳穿过世界模型</h1>
+  <h1>GRASP：把中间状态也变成规划变量</h1>
   <div class="meta">2026 年 6 月 · 世界模型 · 规划 · GRASP (arXiv:2602.00475)</div>
 
-  <p class="dek">一个学出来的、可微的世界模型，本应让你用梯度下降来做规划。但梯度穿过高维视觉世界模型时很脆：优化器会钻"对抗状态方向"，而长 rollout 又让梯度像 backprop-through-time 一样爆掉。GRASP 用三处对梯度的改动，让梯度规划在长 horizon 上保持稳健。</p>
+  <p class="dek">GRASP 改的是 planner 的优化变量。普通 world-model rollout 里，中间状态只是动作序列经过模型后算出来的结果。GRASP 把这些中间状态变成 virtual states，和动作一起优化，再用 learned dynamics 检查它们是否一致。</p>
 
-  <h2>梯度规划为什么穿不稳世界模型</h2>
-  <p>这里的规划是定目标的：找一段动作序列，使得在学到的动力学 \(F_\theta(s,a)\) 下，初始状态 \(s_0\) 到达目标 \(g\)。两件事让它难。标准 rollout 要把 \(F_\theta\) 串行调用 \(T\) 次，于是优化动作序列就是 backprop-through-time——病态，且 horizon 越长越糟。而 loss landscape 锯齿状，所以 zero-order 的 shooting 方法（CEM、MPPI）随 horizon 和动作维度退化。</p>
-  <p>更尖锐的问题，专属于"对一个高维学到的模型求梯度"。状态输入的 Jacobian \(\nabla_s F_\theta\) 没有干净的低维结构，于是优化器会找到对抗状态方向：一个微小扰动 \(s+\delta\)，使得 \(g \approx F_\theta(s+\delta,\,a)\) 不管真实起点是什么——这正是图像分类器里"对抗样本"在规划里的对应物。论文的 Theorem 1 把它形式化：一个 loss 不能同时（a）最小值动力学可行，且（b）对状态梯度 \(\nabla_s F_\theta\) 不敏感。你没法白白忽略状态梯度。</p>
-
-  <h2>GRASP：对梯度的三处改动</h2>
-  <p>GRASP（Gradient RelAxed Stochastic Planner）保留可微性，但用三招（外加一个同步步骤）去掉脆性。</p>
-  <p><strong>1. Virtual states（并行、lifted）。</strong>不再串行 rollout——把中间状态当成独立的优化变量，称作"virtual states"——配一个 soft 的动力学一致性惩罚</p>
+  <h2>状态的身份变了</h2>
+  <p>一个 learned world model 给出 transition function \(F_\theta(s_t,a_t)\)。给定当前状态 \(s_0\) 和动作 \(a_0\)，它预测下一步状态。普通 rollout planner 直接优化的只有动作序列：</p>
   <div class="eqwrap">
-  \[ \mathcal{L}_{\text{dyn}} = \sum_{t} \big\lVert F_\theta(s_t, a_t) - s_{t+1} \big\rVert^2, \qquad s_0 \text{ 固定},\ s_T = g. \]
+  \[
+  \text{优化变量} = a_0,\ldots,a_{T-1}
+  \]
+  \[
+  \begin{aligned}
+  s_1 &= F_\theta(s_0,a_0),\\
+  s_2 &= F_\theta(s_1,a_1),\\
+  &\ldots\\
+  s_T &= F_\theta(s_{T-1},a_{T-1}).
+  \end{aligned}
+  \]
   </div>
-  <p>这样每次世界模型的评估都并行、条件更好，且与原问题共享全局最优。论文证明了收益：shooting 方法的梯度光滑度随 \(|\lambda|^{2(T-1)}\) 增长——随 horizon \(T\) 爆掉——而 lifted 方法的界与 horizon 无关。</p>
-  <p><strong>2. Stochastic states（探索）。</strong>给状态迭代注入高斯噪声（Langevin 式更新）以逃离坏的局部最优。把噪声加在状态上（不加在动作上），能在探索的同时让轨迹更动力学可行。</p>
-  <p><strong>3. Action-only gradients（grad-cut）。</strong>对状态输入做 stop-gradient，梯度只通过 \(F_\theta(\bar s_t, a_t)\) 里的动作 \(a_t\) 流动，避开对抗状态方向。单靠这个会让计划黏住当前 rollout，于是加一个 dense 的一步目标损失 \(\sum_t \lVert F_\theta(\bar s_t, a_t) - g\rVert^2\)，给每个动作一个任务对齐的信号。再每隔若干步，跑一次完整串行 rollout 的梯度步来精修动作、强制严格下降。</p>
+  <p>这里的 \(s_1,s_2,\ldots\) 是 rollout 结果。planner 不能直接移动 \(s_2\)，只能改前面的 action，然后让 world model 重新算整条链。</p>
+
+  <p>GRASP 固定当前状态 \(s_0\)，把终点 \(s_T\) 设为 goal，然后把中间状态也放进优化变量：</p>
+  <div class="eqwrap">
+  \[
+  \begin{aligned}
+  \text{优化变量} =
+  &\ a_0,\ldots,a_{T-1},\\
+  &\ s_1,\ldots,s_{T-1}
+  \end{aligned}
+  \]
+  \[
+  \begin{aligned}
+  \mathcal{L}_{\text{dyn}}
+  &= \sum_{t=0}^{T-1}
+  \left\lVert F_\theta(s_t,a_t)-s_{t+1}\right\rVert^2 .
+  \end{aligned}
+  \]
+  </div>
+  <p>同样写作 \(s_1,s_2\)，身份已经变了。它们已从模型 rollout 产物，变成 planner 主动提出的 virtual states。world model 的作用是检查：如果 planner 设了一个 \(s_{t+1}\)，但 \(F_\theta(s_t,a_t)\) 到不了这个状态，loss 就会变大。</p>
 
   <figure>
-    <svg viewBox="0 0 720 270" role="img" aria-label="串行 rollout 对比 GRASP virtual states">
-      <text class="s-lab" x="10" y="22" font-weight="650">串行 rollout（shooting）</text>
+    <svg viewBox="0 0 720 292" role="img" aria-label="普通 rollout 状态与 GRASP virtual states">
+      <text class="s-lab" x="10" y="22" font-weight="650">普通 rollout</text>
       <rect class="s-box" x="10" y="44" width="44" height="34" rx="5"/><text class="s-lab-s" x="32" y="65" text-anchor="middle">s₀</text>
       <rect class="s-box" x="98" y="44" width="44" height="34" rx="5"/><text class="s-lab-s" x="120" y="65" text-anchor="middle">s₁</text>
       <rect class="s-box" x="186" y="44" width="44" height="34" rx="5"/><text class="s-lab-s" x="208" y="65" text-anchor="middle">s₂</text>
@@ -166,25 +221,35 @@ strong { font-weight: 680; }
       <line x1="142" y1="61" x2="184" y2="61" class="s-faint" stroke-width="1.6" marker-end="url(#g2)"/>
       <line x1="230" y1="61" x2="248" y2="61" class="s-faint" stroke-width="1.6"/>
       <line x1="276" y1="61" x2="288" y2="61" class="s-faint" stroke-width="1.6" marker-end="url(#g2)"/>
-      <text class="s-warn" x="60" y="100" font-size="11.5">梯度回传穿过 T 次串行 Fθ → 随 |λ|^{2(T-1)} 爆掉</text>
-      <text class="s-lab" x="10" y="158" font-weight="650">GRASP：virtual states，并行优化</text>
+      <text class="s-lab-s" x="10" y="104">s₁, s₂ 由 world model 算出来。直接优化对象：actions。</text>
+      <text class="s-lab" x="10" y="164" font-weight="650">GRASP：virtual states</text>
       <rect class="s-box" x="10" y="180" width="44" height="34" rx="5"/><text class="s-lab-s" x="32" y="201" text-anchor="middle">s₀</text>
-      <rect class="s-boxa" x="98" y="180" width="44" height="34" rx="5"/><text class="s-lab-s" x="120" y="201" text-anchor="middle">z₁</text>
-      <rect class="s-boxa" x="186" y="180" width="44" height="34" rx="5"/><text class="s-lab-s" x="208" y="201" text-anchor="middle">z₂</text>
+      <rect class="s-boxa" x="98" y="180" width="44" height="34" rx="5"/><text class="s-lab-s" x="120" y="201" text-anchor="middle">s₁</text>
+      <rect class="s-boxa" x="186" y="180" width="44" height="34" rx="5"/><text class="s-lab-s" x="208" y="201" text-anchor="middle">s₂</text>
       <text class="s-lab-s" x="252" y="201">· · ·</text>
       <rect class="s-box" x="290" y="180" width="44" height="34" rx="5"/><text class="s-lab-s" x="312" y="201" text-anchor="middle">g</text>
       <line x1="54" y1="197" x2="96" y2="197" class="s-accs" stroke-width="1.4" stroke-dasharray="4 3"/>
       <line x1="142" y1="197" x2="184" y2="197" class="s-accs" stroke-width="1.4" stroke-dasharray="4 3"/>
       <line x1="276" y1="197" x2="288" y2="197" class="s-accs" stroke-width="1.4" stroke-dasharray="4 3"/>
-      <text class="s-acc" x="360" y="197" font-size="11.5">soft 动力学惩罚（并行、与 horizon 无关）</text>
-      <text class="s-lab-s" x="60" y="238">+ 状态噪声（探索）· 梯度只走动作（grad-cut）</text>
+      <text class="s-acc" x="360" y="197" font-size="11.5">loss: ||Fθ(s_t,a_t)-s_{t+1}||²</text>
+      <text class="s-lab-s" x="10" y="238">s₁, s₂ 也是优化变量。Fθ 检查相邻状态和动作是否一致。</text>
       <defs><marker id="g2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#999"/></marker></defs>
     </svg>
-    <figcaption>原创示意图；论文 Figure 2 给出串行 vs virtual-states 对比，Figure 3 给出促成 grad-cut 的对抗状态梯度。见<a href="https://arxiv.org/abs/2602.00475">原文</a>。</figcaption>
+    <figcaption>原创示意图。GRASP 保留 world model，但改变 planner 的变量。论文 Figure 2 给出同样的 serial planning 与 lifted planning 对比。</figcaption>
   </figure>
 
-  <h2>证据</h2>
-  <p>GRASP 建在一个 DINO-WM 世界模型上，在 Push-T、PointMaze、WallSingle 上对比 CEM、GD（穿过串行 rollout 的普通梯度）、LatCo，每个设置 500 trials。它的优势专门体现在长 horizon。</p>
+  <h2>为什么这对长规划有用</h2>
+  <p>普通 action-only rollout 里，最终目标误差要穿过很长一串 \(F_\theta\) 才能影响早期动作。规划问题变成一条很长的 learned dynamics 反向传播路径。论文的线性分析显示，shooting formulation 的曲率会随 horizon 指数增长，而 lifted-state formulation 的 smoothness bound 与 horizon 无关。</p>
+  <p>工程上，这意味着 planner 可以直接调整轨迹中段，再用局部 dynamics consistency 对齐每一段状态和动作。这个性质对非贪心任务很重要。比如 Push-T 里，正确动作可能先让物体远离目标，再从另一侧回到目标。只通过终点误差反传来找这种计划，优化难度更高。</p>
+
+  <h2>另外三个稳定机制</h2>
+  <p>把状态变成优化变量后，会出现新问题，所以 GRASP 继续加了三个稳定机制。</p>
+  <p><strong>Soft dynamics constraint。</strong>动力学等式变成惩罚项。planner 可以搜索中间状态，但这些状态要接受 world model 的局部一致性检查。</p>
+  <p><strong>Stop-gradient through state inputs。</strong>在高维视觉 latent space 里，\(\nabla_s F_\theta(s,a)\) 很脆。优化器可能找到一个微小 state perturbation，让模型输出 goal，但这条轨迹没有物理意义。GRASP 用 stop-gradient copy \(\bar{s}_t\)，让 \(F_\theta(\bar{s}_t,a_t)\) 的梯度主要通过 action 流动，避免沿 state input 的脆弱方向更新。</p>
+  <p><strong>State noise plus rollout sync。</strong>virtual states 上的噪声帮助优化器逃出坏局部最优。周期性的完整 rollout gradient step 再把 action sequence 拉回严格的 serial rollout。noise 负责探索，sync 负责让计划继续受模型 rollout 约束。</p>
+
+  <h2>实验证据</h2>
+  <p>实验使用 DINO-WM 学到的视觉动力学，在 PointMaze、WallSingle、Push-T 上比较 CEM、穿过串行 rollout 的普通 GD、LatCo 和 GRASP。关键实验把 Push-T 的 horizon 拉长。</p>
   <div class="table-wrap">
   <table>
     <thead><tr><th>Horizon（Push-T）</th><th>CEM</th><th>GD</th><th>GRASP</th></tr></thead>
@@ -195,17 +260,18 @@ strong { font-weight: 680; }
       <tr><td>H = 80</td><td>2.8% / 132.2s</td><td>6.4% / 161.3s</td><td>10.4% / 58.9s</td></tr>
     </tbody>
   </table>
-  <div class="tcap">长程 Push-T 的成功率 / 收敛中位时间，数据引自原文 Table 1（<a href="https://arxiv.org/abs/2602.00475">arXiv:2602.00475</a>）。LatCo 在此 ≤15%，因篇幅略去。</div>
+  <div class="tcap">长程 Push-T 的成功率 / 成功 trial 收敛中位时间，数据引自原文 Table 1（<a href="https://arxiv.org/abs/2602.00475">arXiv:2602.00475</a>）。LatCo 在这些 horizon 上低于表中三者，因篇幅略去。</div>
   </div>
-  <p>到 H = 60–80，GRASP 同时拥有最高成功率和最快收敛；headline 是长 horizon 上至多 +10% 成功率、计算时间不到一半。短 horizon（H = 10–30）各方法都不错，所以它的收益是长 horizon 专属。消融证明三招都有分量：梯度只走动作时是 59.0%，让状态梯度也流则掉到 46.6%；状态噪声 \(\sigma=0.5\) 胜过 0 与 1.0；而那个周期性的完整 rollout 同步步骤，正是把成功率从接近零拉起来的关键。</p>
+  <p>结果模式就是论文的主张。短 horizon 下，强 baseline 仍然有竞争力。horizon 变长后，CEM 和串行梯度规划下降更快；GRASP 保持更高成功率和更低成功时间。消融也支持机制：去掉 sync 几乎让成功率崩掉；让 state gradient 继续流动，准确率从 59.0% 降到 46.6%；state noise 的强度会同时影响成功率和时间。</p>
 
-  <h2>局限</h2>
-  <p>所有报告的指标，都是在<em>学到的世界模型之下</em>衡量任务成功；论文没有量化这些计划能否迁移到真实环境动力学，而且每个实验都在仿真里，没有真机。GRASP 建在一个特定世界模型（DINO-WM）上，且在短 horizon 上优势很小。作为一个规划器，它继承世界模型本身的全部误差——它让"穿过模型的梯度规划"变得可用，但并不让模型本身变正确。</p>
+  <h2>放回 world-model 底图</h2>
+  <p>TD-MPC 让 latent world model 用于短 horizon 控制，并用 terminal value 估计后面的 return。PRISM-WM 改 dynamics model，让 contact 和 hybrid regime 不被一个 transition function 平均掉。GRASP 改使用模型的 planner。它说明 long-horizon failure 可以来自 planner 和 world model 之间的优化接口，即使模型架构还没有变化。</p>
+  <p>边界也很清楚。GRASP 让 learned model 里的搜索更容易，但它不证明搜索出来的未来在真实环境里成立。更强的 planner 仍然可能更快找到 world model 的漏洞。所以它自然连到 train-test gap、event verifier、trust horizon 这些问题。</p>
 
   <h2>参考</h2>
   <ol class="refs">
-    <li>GRASP：<a href="https://arxiv.org/abs/2602.00475">Parallel Stochastic Gradient-Based Planning for World Models</a>（arXiv:2602.00475）。<a href="https://michaelpsenka.io/grasp">项目页</a>。</li>
-    <li>世界模型骨架：DINO-WM 框架（在预训练 DINO 特征上做世界模型）。</li>
+    <li>Michael Psenka et al., <a href="https://arxiv.org/abs/2602.00475">Parallel Stochastic Gradient-Based Planning for World Models</a>, 2026。项目页：<a href="https://michaelpsenka.io/grasp">michaelpsenka.io/grasp</a>。</li>
+    <li>Gaoyue Zhou et al., DINO-WM，实验中使用的视觉 world-model 框架。</li>
   </ol>
 </article>
 
