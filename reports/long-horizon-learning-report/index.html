@@ -166,39 +166,64 @@
       margin-top: 0;
     }
 
-    .materials p {
-      color: var(--muted);
-      font-size: 15px;
-      line-height: 1.65;
-      margin-bottom: 18px;
-    }
-
-    .link-row {
-      display: grid;
-      grid-template-columns: 160px 1fr;
-      gap: 18px;
-      padding: 14px 0;
+    .source-group {
+      padding: 14px 0 20px;
       border-top: 1px solid var(--soft);
     }
 
-    .link-row:first-of-type {
+    .source-group:first-of-type {
       border-top: 0;
     }
 
-    .link-title {
+    .source-title {
+      margin: 0 0 10px;
       color: var(--quiet);
       font-size: 14px;
       line-height: 1.5;
+      font-weight: 500;
     }
 
-    .link-body {
+    .source-note {
+      margin: -2px 0 12px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .source-list {
+      margin: 0 0 8px;
+      padding-left: 22px;
       font-size: 15px;
       line-height: 1.65;
     }
 
-    .link-body a {
-      margin-right: 14px;
-      white-space: nowrap;
+    .source-list li {
+      margin-bottom: 6px;
+    }
+
+    .source-list a {
+      white-space: normal;
+    }
+
+    .source-easter-egg {
+      margin-top: 24px;
+      padding-top: 22px;
+      border-top: 1px solid var(--soft);
+    }
+
+    .source-easter-egg img {
+      display: block;
+      width: min(100%, 620px);
+      height: auto;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+    }
+
+    .source-easter-egg p {
+      margin: 10px 0 0;
+      color: var(--quiet);
+      font-size: 14px;
+      line-height: 1.6;
     }
 
     footer {
@@ -233,15 +258,7 @@
         margin-bottom: 42px;
       }
 
-      .link-row {
-        grid-template-columns: 1fr;
-        gap: 6px;
-      }
-
-      .link-body a {
-        display: inline-block;
-        margin-bottom: 4px;
-      }
+      .source-list { padding-left: 20px; }
     }
   </style>
 </head>
@@ -256,7 +273,6 @@
       <div class="meta">
         <span>Sense Wang</span>
         <span>2026.06</span>
-        <span>机器人世界模型 / 长任务问题</span>
       </div>
 
       <p>
@@ -272,7 +288,7 @@
       </p>
 
       <p>
-        于是后来我把重心倾斜到了“先找问题”。那段时间我花了一些时间去搜材料、选方向，再把相关论文补回来读。下面是在这个过程中对我影响比较大的一些信号：<a href="https://arxiv.org/abs/2606.00133">World Models: A Comprehensive Survey</a>、NVIDIA 的 <a href="https://developer.nvidia.com/blog/pretrained-to-imagine-fine-tuned-to-act-the-rise-of-world-action-models/">World Action Model</a>、<a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy</a> 和 <a href="https://arxiv.org/abs/2606.02800">Cosmos 3</a>。他们共同指向的不是“世界模型能生成未来”本身，而是更长时程的行动闭环：模型想象出的未来要在多步任务里保持一致，要能支持动作选择、策略评估和纠错。此外，还做了一下多源研究 <a href="https://sensewang.com/reports/four-school-ai-timeline/">Stanford / CMU / MIT 近期顶会研究时间轴</a>，把三校近半年 615 篇可枚举顶会论文按主题摊开看：其中世界模型 / 机器人 / VLA 有 42 篇，其中的工作经常落在闭环规划、记忆、事件验证和可信预测长度这些问题上。（btw，World Models 综述里把 long-horizon consistency and error compounding 放在挑战列表的第一位，也许这也是选择他的一个原因：）
+        于是后来我把重心倾斜到了“先找问题”。那段时间我花了一些时间去搜材料、选方向，再把相关论文补回来读。下面是在这个过程中对我影响比较大的一些信号：<a href="https://arxiv.org/abs/2606.00133">World Models: A Comprehensive Survey</a>、NVIDIA 的 <a href="https://developer.nvidia.com/blog/pretrained-to-imagine-fine-tuned-to-act-the-rise-of-world-action-models/">World Action Model</a>、<a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy</a> 和 <a href="https://arxiv.org/abs/2606.02800">Cosmos 3</a>。他们共同指向的不是“世界模型能生成未来”本身，而是更长时程的行动闭环：模型想象出的未来要在多步任务里保持一致，要能支持动作选择、策略评估和纠错。此外，还做了一下多源研究 <a href="https://sensewang.com/reports/four-school-ai-timeline/">Stanford / CMU / MIT AI 顶会研究时间轴</a>，把三校近半年 615 篇可枚举顶会论文按主题摊开看：其中世界模型 / 机器人 / VLA 有 42 篇，其中的工作经常落在闭环规划、记忆、事件验证和可信预测长度这些问题上。（btw，World Models 综述里把 long-horizon consistency and error compounding 放在挑战列表的第一位，也许这也是选择他的一个原因：）
       </p>
 
       <p>
@@ -284,11 +300,11 @@
       </p>
 
       <p>
-        既然开始关注长任务，我觉得知道近期到底在做什么、关注什么方向是必要的。于是我做了两份整理：一篇是 <a href="https://sensewang.com/writing/long-horizon-research-matrix/">Long Horizon：机器人世界模型的研究矩阵</a>，用来看大家把这个问题拆成哪些方向；另一篇是 <a href="https://sensewang.com/writing/long-horizon-paper-tiers/">Long Horizon：152 篇世界模型论文阅读梯队</a>，把这些论文的重要性和阅读优先级汇总起来。
+        既然已经定了要关注的方向，下一步知道近期到底在做什么、关注什么方向是必要的。于是我做了两篇整理：一篇是 <a href="https://sensewang.com/writing/long-horizon-research-matrix/">Long Horizon：机器人世界模型的研究矩阵</a>，用来看大家把这个问题拆成哪些方向；另一篇是 <a href="https://sensewang.com/writing/long-horizon-paper-tiers/">Long Horizon：152 篇世界模型论文阅读梯队</a>，汇总这些论文的重要性和阅读优先级。
       </p>
 
       <p>
-        但只知道“大家在做什么”不够。下一步需要做的是：这些主张是怎么被实验验证的？一篇论文如果说自己解决了长任务问题，它到底设计了什么任务、用了什么平台、跟谁比、看哪些指标、消融实验拆掉了什么？所以写了 <a href="https://sensewang.com/writing/long-horizon-experiment-logic/">Long Horizon World Models：从主张到实验</a>。
+        但只知道“大家在做什么”不够。下一步需要做的是：这些主张是怎么被实验验证的？一篇论文如果说自己解决了长任务问题，它到底设计了什么任务、用了什么平台、跟谁比、看哪些指标、消融实验拆掉了什么？所以写了 <a href="https://sensewang.com/writing/long-horizon-experiment-logic/">Long Horizon World Models：从主张到实验</a>。简单学了大家都是怎么验证的。
       </p>
 
       <p>
@@ -306,61 +322,104 @@
       </p>
 
       <p>
-        最近我又试着把这些论文放回一个更大的机器人叙事里，写了 <a href="https://sensewang.com/writing/long-horizon-world-model-basemap/">机器人世界模型的闭环底图：long-horizon 论文都在改哪个零件</a>。这篇其实是在问：如果一个机器人要完成长任务，它是不是都要经历“观察当前状态、想象未来、给未来打分、选动作、执行、再观察”这样一个闭环？如果是，那么近期论文看起来很分散，但其实都可以放回这条闭环上：有的在改表示，有的在改预测，有的在改记忆，有的在改验证，有的在改动作层级。
+        觉得需要系统性理解这整个领域，于是尝试把这些论文放回一个更大的机器人叙事里，写了 <a href="https://sensewang.com/writing/long-horizon-world-model-basemap/">机器人世界模型的闭环底图：long-horizon 论文都在改哪个零件</a>。
       </p>
 
       <p>
-        所以这两周的变化，对我来说不是从一个确定结论走向另一个确定结论，而是从“我在读哪些论文”，慢慢变成“我带着什么问题读这些论文”。现在我更愿意用几个问题去检查一篇论文：它认为旧系统在哪里失败？它改了哪个接口？它怎么证明这个失败真的存在？它的实验能不能被我借来继续推进？我觉得这比单纯积累论文列表更踏实一些。
+        后面又沿着 Long Horizon / closed loop，做了一个 <a href="https://sensewang.com/writing/long-horizon-paper-tiers/">Long Horizon：152 篇世界模型论文阅读梯队</a>，把 150 多篇相关论文按阅读优先级和关注方向先整理出来。这样不是横向乱读，而是先知道哪些论文更值得优先看、哪些可以作为补充材料。然后根据这份梯度，又读了几篇更具体的文章，并写了几篇博客：
       </p>
 
+      <ul class="insight-list">
+        <li><a href="https://sensewang.com/writing/grasp-gradient-planning/">GRASP：把中间状态也变成规划变量</a>，看 planner 自己的优化变量。</li>
+        <li><a href="https://sensewang.com/writing/ev-wm-event-verifier/">EV-WM：验证事件，不验特征</a>，看 verifier 怎么检查 imagined future 里的任务事件。</li>
+        <li><a href="https://sensewang.com/writing/wav-forward-inverse-asymmetry/">WAV：用 forward-inverse asymmetry 验证动作</a>，看 verifier 怎么检查动作可达性。</li>
+        <li><a href="https://sensewang.com/writing/neubay-long-rollouts/">Long-horizon rollouts as overestimation control</a>，看 rollout 走多远会影响 value overestimation。</li>
+        <li><a href="https://sensewang.com/writing/weaver-world-model/">WEAVER：一个同时做到保真、一致、快的世界模型</a>，看一个 world model 怎么同时服务 policy evaluation、policy improvement 和 test-time planning。</li>
+        <li><a href="https://sensewang.com/writing/world-model-transition-operator/">World Model 的 Transition Operator：VLWM 和 PRISM-WM 改了同一个接口</a>，把 VLWM 和 PRISM-WM 放到同一个接口里理解。</li>
+      </ul>
+
       <p>
-        接下来我想继续做的，是把少数几篇核心论文读深，而不是继续横向铺开。尤其是 TD-MPC、PRISM-WM、Puppeteer、Newt、Cosmos Policy，以及近期那些围绕事件验证、记忆、可信预测长度、闭环规划的工作。我希望最后能形成一个更具体的研究问题：它足够小，可以做实验；也足够重要，能放回机器人世界模型和 Physical AI 的大叙事里。
+        又结合这几天的思考和所学，整理了一份研究方向，尝试把可能能做的方向、idea 和研究问题先放在一起（当然还不够成熟，应该还需要迭代几次思考）。
+      </p>
+
+      <h2>方法上的一些思考：</h2>
+
+      <ul class="insight-list">
+        <li>build in public：写文章是一个很好的output as learning的手段，博客更好的立足点是“我想要教对方什么东西”。</li>
+        <li>task oriented：推进事情需要有一个目标是更好的。verifier和ddl要明确。</li>
+        <li>claude Code + codex ：同时用，共享context，互相批判，辅助学习，产出文档。</li>
+        <li>系统性学习：了解当前范式，放在一个大的工业底图里面。多读论文去填充钉子，读论文也需要scaling law :)</li>
+        <li>e2e负责，一条线打通的能力是极为重要的。</li>
+        <li>审稿人偏好真机环境的，有消融实验的，鲁棒性高的：）</li>
+      </ul>
+
+      <h2>下一步的规划（按重要性排序）</h2>
+
+      <ul class="insight-list">
+        <li>coding和做实验。需要真实做事情。</li>
+        <li>问题导向地读剩下的100多篇近期的论文（这里可以引用一下我的<a href="https://sensewang.com/writing/long-horizon-paper-tiers/">论文梯度</a>。）有两个关注点：1. 形成有趣有价值的创新点和insight的阅读。目前的论文阅读积累还不够，虽然已有比较浅的认知，但是还不能足以形成我愿意并且有能力带队做的idea和insight。2. task-oriented地去读实验部分。这个是在要推进的问题之后的。</li>
+        <li>语言模型的scaling和RL会持续关注。当然，这个是在核心的world model的主线之后，产出形式可能就是简单的博客文章和一些代码库。</li>
+      </ul>
+
+      <p>
+        之前和带我创业的导师分别的时候，承诺说想两月做一篇一作的工作，至少是挂在arXiv上面，当然可以中会中刊再好不过：）所以这里也立一个DDL吧，我也期待这两个月内能够出一篇一作的工作。（当然之前没有接触过科研工作，如果这个时间是过于浮躁了，也是依据具体的工作去调整的，时间不是一个值得去reward hack的一个东西。）
       </p>
 
       <section class="materials" aria-labelledby="materials-title">
-        <h2 id="materials-title">相关材料</h2>
-        <p>
-          下面这些链接不是为了把页面变成博客目录，而是方便汇报时回到具体材料。前半部分是我这段时间写出的中间产物，后半部分是对我形成问题意识比较关键的外部来源。
-        </p>
+        <h2 id="materials-title">Source</h2>
 
-        <div class="link-row">
-          <div class="link-title">最初读的论文</div>
-          <div class="link-body">
-            <a href="https://arxiv.org/pdf/2203.04955">TD-MPC</a>
-            <a href="https://arxiv.org/pdf/2512.08411">PRISM-WM</a>
-            <a href="https://arxiv.org/pdf/2405.18418">Puppeteer</a>
-            <a href="https://arxiv.org/pdf/2601.16163">Cosmos Policy</a>
-            <a href="https://arxiv.org/pdf/2511.19584">Newt</a>
-          </div>
+        <div class="source-group">
+          <h3 class="source-title">个人博客 / 文章</h3>
+          <p class="source-note">这些博客文章均可以在我的 <a href="https://sensewang.com/writing/">Writing</a> 页面找到。</p>
+          <ol class="source-list">
+            <li><a href="https://sensewang.com/writing/td-mpc-world-model/">TD-MPC: A World Model for Action / TD-MPC：世界模型不必还原世界</a></li>
+            <li><a href="https://sensewang.com/writing/prism-wm/">PRISM-WM: A World Model Should Not Average Contact Away / PRISM-WM：世界模型不能把接触平均掉</a></li>
+            <li><a href="https://sensewang.com/writing/puppeteer/">Puppeteer：把 humanoid 控制拆成两层 world model</a></li>
+            <li><a href="https://sensewang.com/writing/cosmos-policy/">Cosmos Policy: How a Video Model Outputs Actions / Cosmos Policy：视频模型怎样输出机器人动作</a></li>
+            <li><a href="https://sensewang.com/writing/long-horizon/">Two Long Horizons / 两个 Long Horizon</a></li>
+            <li><a href="https://sensewang.com/writing/long-horizon-map/">From Rollout to Context / 从 Rollout 到 Context</a></li>
+            <li><a href="https://sensewang.com/reports/four-school-ai-timeline/">Stanford / CMU / MIT AI 顶会研究时间轴</a></li>
+            <li><a href="https://sensewang.com/writing/long-horizon-research-matrix/">Long Horizon：机器人世界模型的研究矩阵</a></li>
+            <li><a href="https://sensewang.com/writing/long-horizon-paper-tiers/">Long Horizon：152 篇世界模型论文阅读梯队</a></li>
+            <li><a href="https://sensewang.com/writing/long-horizon-experiment-logic/">Long Horizon World Models：从主张到实验</a></li>
+            <li><a href="https://sensewang.com/writing/long-horizon-world-model-interfaces/">Long-horizon world model 的五个接口</a></li>
+            <li><a href="https://sensewang.com/writing/long-horizon-failure-modes/">Long Horizon Is Not One Problem / 长程：六种失败，五种应对</a></li>
+            <li><a href="https://sensewang.com/writing/long-horizon-world-model-basemap/">机器人世界模型的闭环底图：long-horizon 论文都在改哪个零件</a></li>
+            <li><a href="https://sensewang.com/writing/grasp-gradient-planning/">GRASP: planning by optimizing the states in between / GRASP：把中间状态也变成规划变量</a></li>
+            <li><a href="https://sensewang.com/writing/ev-wm-event-verifier/">EV-WM: verifying events, not features / EV-WM：验证事件，不验特征</a></li>
+            <li><a href="https://sensewang.com/writing/wav-forward-inverse-asymmetry/">WAV: verifying actions through forward-inverse asymmetry / WAV：用 forward-inverse asymmetry 验证动作</a></li>
+            <li><a href="https://sensewang.com/writing/neubay-long-rollouts/">Long-horizon rollouts as overestimation control / 想象得越长，价值高估反而越小</a></li>
+            <li><a href="https://sensewang.com/writing/weaver-world-model/">WEAVER: a world model that is faithful, consistent, and fast at once / WEAVER：一个同时做到保真、一致、快的世界模型</a></li>
+            <li><a href="https://sensewang.com/writing/world-model-transition-operator/">World Model 的 Transition Operator：VLWM 和 PRISM-WM 改了同一个接口</a></li>
+          </ol>
         </div>
 
-        <div class="link-row">
-          <div class="link-title">问题浮现</div>
-          <div class="link-body">
-            <a href="https://sensewang.com/writing/long-horizon/">Two Long Horizons</a>
-            <a href="https://sensewang.com/writing/long-horizon-map/">From Rollout to Context</a>
-          </div>
+        <div class="source-group">
+          <h3 class="source-title">外部链接</h3>
+          <ol class="source-list">
+            <li><a href="https://arxiv.org/pdf/2203.04955">Temporal Difference Learning for Model Predictive Control</a></li>
+            <li><a href="https://arxiv.org/pdf/2512.08411">Prismatic World Model</a></li>
+            <li><a href="https://arxiv.org/pdf/2405.18418">Puppeteer</a></li>
+            <li><a href="https://arxiv.org/pdf/2601.16163">Cosmos Policy</a></li>
+            <li><a href="https://arxiv.org/pdf/2511.19584">Newt</a></li>
+            <li><a href="https://arxiv.org/abs/2606.00133">World Models: A Comprehensive Survey</a></li>
+            <li><a href="https://arxiv.org/abs/2605.00080">World Models for Robot Learning: A Comprehensive Survey</a></li>
+            <li><a href="https://developer.nvidia.com/blog/pretrained-to-imagine-fine-tuned-to-act-the-rise-of-world-action-models/">NVIDIA World Action Model</a></li>
+            <li><a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy project</a></li>
+            <li><a href="https://arxiv.org/abs/2606.02800">Cosmos 3</a></li>
+            <li><a href="https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-5/">Gemini 3.5: frontier intelligence with action</a></li>
+            <li><a href="https://arxiv.org/abs/2602.00475">GRASP</a></li>
+            <li><a href="https://arxiv.org/abs/2606.13053">Event-Verified World Model</a></li>
+            <li><a href="https://arxiv.org/abs/2604.01985">World Action Verifier</a></li>
+            <li><a href="https://arxiv.org/abs/2512.04341">NEUBAY</a></li>
+            <li><a href="https://arxiv.org/abs/2606.13672">WEAVER</a></li>
+            <li><a href="https://arxiv.org/abs/2606.21775">Variable-Length Latent World Models</a></li>
+          </ol>
         </div>
 
-        <div class="link-row">
-          <div class="link-title">研究整理</div>
-          <div class="link-body">
-            <a href="https://sensewang.com/writing/long-horizon-research-matrix/">研究矩阵</a>
-            <a href="https://sensewang.com/writing/long-horizon-experiment-logic/">从主张到实验</a>
-            <a href="https://sensewang.com/writing/long-horizon-world-model-interfaces/">五个接口</a>
-            <a href="https://sensewang.com/writing/long-horizon-failure-modes/">不是一个问题</a>
-            <a href="https://sensewang.com/writing/long-horizon-world-model-basemap/">闭环底图</a>
-          </div>
-        </div>
-
-        <div class="link-row">
-          <div class="link-title">外部来源</div>
-          <div class="link-body">
-            <a href="https://arxiv.org/abs/2606.00133">World Models Survey</a>
-            <a href="https://arxiv.org/abs/2605.00080">Robot Learning Survey</a>
-            <a href="https://developer.nvidia.com/blog/pretrained-to-imagine-fine-tuned-to-act-the-rise-of-world-action-models/">NVIDIA World Action Model</a>
-            <a href="https://arxiv.org/abs/2606.02800">Cosmos 3</a>
-          </div>
+        <div class="source-easter-egg">
+          <img src="assets/late-night-study-2026-06-27.jpg" alt="6月27日凌晨4点恶补中的照片" loading="lazy">
+          <p>彩蛋，被拍摄于6月27日的凌晨4点，淡淡的死了。🤕</p>
         </div>
       </section>
     </article>
@@ -425,5 +484,75 @@
 - 摘要: 按用户原文微调实验观察列表引导句。
 - 触发 Prompt（逐字）: "然后上面那句话改成：
 其中有几个觉得有价值的观察到的点。"
+- 略去: 寒暄与中间执行细节
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 更新阶段性汇报的闭环底图段落与下一步规划，把系统性理解、coding/实验、问题导向读论文和两个月一作 DDL 放入汇报主线。
+- 触发 Prompt（逐字）: "同时觉得需要系统性理解，尝试把这些论文放回一个更大的机器人叙事里，写了 [机器人世界模型的闭环底图：long-horizon 论文都在改哪个零件](https://sensewang.com/writing/long-horizon-world-model-basemap/)。“这里要把那个总结的世界模型的底图的几个公式，就有一个链条，把那个链条放在里面，然后就说把这些东西像塞零件一样一样放在里面。”（这里的双引号代表我给你的提示词，就是这个并不是要原文的放进去，是你需要再去看一下我这个底图以及我的一些底色的东西，然后把这篇文章的一些核心观点，然后是压缩在这里面，然后是易读的，同时符合我整个东西，不要太长，就一句话到两句话就好，不然会影响我的结构。）
+
+下一步的规划（重要性排序）：
+- coding和做实验。需要真实做事情。
+- 问题导向的读剩下的100多篇近期的论文（这里可以引用一下我的那个梯度。）有两个关注点：
+1.形成有趣有价值的创新点和insight的阅读。目前的论文阅读积累还不够，虽然已有比较浅的认知，但是还不能足以形成我愿意并且有能力带队做的idea和insight。
+2.task-oriented地去读实验部分。这个是在要推进的问题之后的。
+- 语言模型的scaling和RL会持续关注。当然，这个是在核心的world model的主线之后，产出形式可能就是简单的博客文章和一些代码库。
+
+之前和带我创业的老师分别的时候，承诺说想两月做一篇一作的工作，至少是挂在arXiv上面，当然可以中会中刊再好不过：）所以这里也立一个DDL吧，我也期待这两个月内能够出一篇一作的工作。（当然之前没有接触过科研工作，如果这个时间是过于浮躁了，也是依据具体的工作去调整的，时间不是一个值得去reward hack的一个东西。）"
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 将“下一步的规划”和两个月一作 DDL 段落改回用户原话表达，只保留论文梯度链接。
+- 关键追问（逐字）: "然后下面的那些就是下一步的规划和之前带我创业的导师分别的时候，这些可以直接放进我的原文，这个就是我要写的原话。"
+- 略去: 寒暄与中间执行细节
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 删除原阶段总结段，补入后续 Long Horizon / closed-loop 文章串联，并以五个可讨论研究方向作为阶段性产出。
+- 触发 Prompt（逐字）: "所以这两周的变化，对我来说不是从一个确定结论走向另一个确定结论，而是从“我在读哪些论文”，慢慢变成“我带着什么问题读这些论文”。现在我更愿意用几个问题去检查一篇论文：它认为旧系统在哪里失败？它改了哪个接口？它怎么证明这个失败真的存在？它的实验能不能被我借来继续推进？我觉得这比单纯积累论文列表更踏实一些。
+这一段直接删了
+。然后你看一下我的个人主页，我记得还上了好几篇文章，是那好几篇是在这里面没有提的，看这里面有没有。把这边串下来，其实我觉得串的很简单，就是说既然说看到这里，于是又看了几篇，沿着Longhorizon或者Close Loop，这边又读了几篇新的文章。怎么样怎么样怎么样。然后就可以把我新写的这篇放进去。好，最终是我写过的这文章基本我觉得都要串在这里面，除的阿里的那个Agent，Language Agent那个东西。 Language model的东西，那个东西我觉得可以不用放进来。然后以及我之前刚才不是让你总结了一个创新点idea和insight，然后你需要把那个再给我一下，我想把那个放在压轴，作为我最终的一个产出。最终的一个结果，然后最终一些有价值的东西。在此之前你需要先就是还是尊重我的个人博客吧，就是看一下我的个人博客。把一些能用的子弹放在我这个文章的刚刚让你删掉这个部分，然后上面的不许再变了。就想把它删掉这个部分。需要是一个，呃，再往下讲这个故事。"
+- 略去: 寒暄与中间执行细节
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 删除“阶段性产出”五点清单，将后续研究方向改为 Planner / Verifier / Model 三层，并补入 Koray/DeepMind action 线索与 Long Horizon 近期工作地图。
+- 触发 Prompt（逐字）: "我觉得这个继续讨论的阶段性产出的这个东西，你真的觉得这5个是有价值的吗？我不觉得这5个是非常有价值的。然后你需要再去看一下其他的。我其实对于Planner还有这个Verifier，包括这个model，就分这三个去讲吧。我认为要不就是在Planner上做文章，要不就是在Verifier上做文章，要不就是在backbone上去做文章。当然也有一些改一些架构的，整个基本就是这样的一个东西。然后在此期间你需要，哦，对，我记得还有一个是用用集群是吧？用集群，然后是让看他们的偏离度多少，然后是以他们的很多偏离度做那个Verifier。总之是而且这个我觉得这个可以作为写一个文档，就你觉得比较值得讨论的方向，可以写一个文档，不需要把这5个列上来。然后比如上线到我的个人网站。这个阶段性产出这一段可以不要。然后最后写了Longhorizon的5个研究方向，这个研究方向你需要再去看一下那些论文，然后把这个去真的觉得不错就行。然后是后面又沿着Longhorizon和Kori Kavukoglu继续补了几篇更具体的文章。我记得我都写那个博客了，在这里面需要提。"
+- 略去: 寒暄与中间执行细节
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 在阶段性汇报中新增“方法上的一些思考”栏目，沉淀 build in public、task oriented、双 agent 协作、系统性学习、e2e 负责与审稿偏好。
+- 触发 Prompt（逐字）: "- build in public：写文章是一个很好的output as learning的手段，博客更好的立足点是“我想要教对方什么东西”。
+- task oriented：推进事情需要有一个目标是更好的。verifier和ddl要明确。
+- claude Code + codex ：同时用，共享context，互相批判，辅助学习，产出文档。
+- 系统性学习：了解当前范式，放在一个大的工业底图里面。多读论文去填充钉子，读论文也需要scaling law :)
+- e2e负责，一条线打通的能力是极为重要的。
+- 审稿人偏好真机环境的，有消融实验的，鲁棒性高的：）
+
+那下面再给我开一个新的栏目，就是这一段关于方法上的一些思考，冒号，我把这些列上去。"
+- 略去: 寒暄与中间执行细节
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 将“相关材料”改为 Source 区块，只保留“个人博客 / 文章”和“外部链接”两类竖排来源列表。
+- 触发 Prompt（逐字）: "这里有一个source就行，然后source只分两类，一类是个人博客，个人的写的文章，然后把我所有所有文章都列在上面，然后包括他们的标题什么的，然后可以是竖着那样列，像一个引用一样，包括他们的标题，他们标题是什么，然后他们这个可以点击的链接就叫什么。然后下面再有一个链接是外部链接，就分为这两个部分就好。"
+- 略去: 寒暄与中间执行细节
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 将近期工作地图和后续文章段落合并为一组学习日志式叙述，圆点列出后续读文与博客，并以不成熟研究方向收束。
+- 触发 Prompt（逐字）: "后面又沿着 Long Horizon / closed loop，以及 Koray Kavukcuoglu 和 DeepMind 近期强调的 action / agentic workflow 线索继续补了几篇更具体的文章。我也做了一个 [Long Horizon 近期工作地图](https://sensewang.com/reports/long-horizon-recent-signals/)，把 language agent、robot world model、RL、AI for Science 和 RSI 这些线索先放在同一张长期执行图里。回到机器人这一侧，[GRASP](https://sensewang.com/writing/grasp-gradient-planning/) 看 planner 自己的优化变量，[EV-WM](https://sensewang.com/writing/ev-wm-event-verifier/) 和 [WAV](https://sensewang.com/writing/wav-forward-inverse-asymmetry/) 看 verifier 怎么检查 imagined future 和动作可达性，[NEUBAY](https://sensewang.com/writing/neubay-long-rollouts/) 看 rollout 走多远会影响 value overestimation，[WEAVER](https://sensewang.com/writing/weaver-world-model/) 看一个 world model 怎么同时服务 policy evaluation、policy improvement 和 test-time planning。还有一篇 [World Model 的 Transition Operator](https://sensewang.com/writing/world-model-transition-operator/)，是把 VLWM 和 PRISM-WM 放到同一个接口里理解：它们都在改 world model 每一步状态转移的方式。
+
+最后又写了一篇 [Long Horizon：三个值得讨论的研究方向](https://sensewang.com/writing/long-horizon-research-direction/)。这篇现在更倾向于把问题分成三个可以动手的位置：Planner、Verifier、Model / backbone。先看 planner 怎么使用不完美的 world model，再看 verifier 怎么检查 imagined future，最后看 model 本体和 backbone 是否保留了行动需要的状态。
+
+这俩写成一段，然后里面主要内容就是就说后面又沿着这个方向，然后补了一个Longhorizon近期工作地图，然后根据这个工作地图读了几篇文章，然后冒号下面，就按上面那个圈一样，然后把我读的几篇文章的博客留在下面，就说上面说读了几篇文章，写几篇博客，把这几个列在下面。之后又说，又结合这几天的思考，产出了一份可能能做的方向或者idea或者研究。然后后面括号是，当然是不够成熟的。"
+- 略去: 寒暄与中间执行细节
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 将段落中的 404 “Long Horizon 近期工作地图”替换为已上线的“152 篇世界模型论文阅读梯队”，并删除 Source 中未上线的近期工作地图链接。
+- 触发 Prompt（逐字）: "后面又沿着 Long Horizon / closed loop，做了一个 [Long Horizon 近期工作地图](https://sensewang.com/reports/long-horizon-recent-signals/)，把 language agent、robot world model、RL、AI for Science 和 RSI 这些线索放在同一张长期执行图里。然后根据这张图，又读了几篇更具体的文章，并写了几篇博客：
+
+[GRASP：把中间状态也变成规划变量](https://sensewang.com/writing/grasp-gradient-planning/)，看 planner 自己的优化变量。
+[EV-WM：验证事件，不验特征](https://sensewang.com/writing/ev-wm-event-verifier/)，看 verifier 怎么检查 imagined future 里的任务事件。
+[WAV：用 forward-inverse asymmetry 验证动作](https://sensewang.com/writing/wav-forward-inverse-asymmetry/)，看 verifier 怎么检查动作可达性。
+[Long-horizon rollouts as overestimation control](https://sensewang.com/writing/neubay-long-rollouts/)，看 rollout 走多远会影响 value overestimation。
+[WEAVER：一个同时做到保真、一致、快的世界模型](https://sensewang.com/writing/weaver-world-model/)，看一个 world model 怎么同时服务 policy evaluation、policy improvement 和 test-time planning。
+[World Model 的 Transition Operator：VLWM 和 PRISM-WM 改了同一个接口](https://sensewang.com/writing/world-model-transition-operator/)，把 VLWM 和 PRISM-WM 放到同一个接口里理解。
+
+这个没有找到啊，这个Longhorizon近期工作地图，这个是我那个梯度排行吗？我记得我对150多篇有一个梯度排行啊。这个是那个梯度排行吗？我希望这个是那个梯度牌，并且是已经上线的版本。然后这个点开其实是404的，这有问题。然后上面我删了一句话，然后按照这个来说。下面是把什么什么放在一张长期执行图里面，有点像报菜名。然后根据它读了几个更具体的文章，并写了几篇。然后把Language model、Robot world model、RLHF这一段太像报菜名了，我写得更易读一点。"
+- 略去: 寒暄与中间执行细节
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 全量审查汇报页链接，移除未上线的“研究方向”公网链接，并把已上线但缺失于 Source 的 Stanford / CMU / MIT AI 顶会研究时间轴补入 Source。
+- 触发 Prompt（逐字）: "这个研究方向好像也没上线。所以说你需要把这所有的链接的部分都需要再审查一遍。首先看我有没有在source里面提出，其次它们是不是可点开的，其次是不是我的这些文章是不是保持它们原有的标题，并且引用到合适的链接上面。"
+- 略去: 寒暄与中间执行细节
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 在 Source 最底部新增一张 2026-06-27 凌晨学习照片作为彩蛋，并将图片处理为页面本地资产。
+- 触发 Prompt（逐字）: "这个可以说，“彩蛋，被拍摄于6月27日的凌晨4点，恶补中：）”这可以放在source的最下面，就是最下面做一个彩蛋一样的东西。"
 - 略去: 寒暄与中间执行细节
 -->
