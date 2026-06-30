@@ -26,10 +26,12 @@ p { margin-bottom: 17px; }
 .note { border-left: 3px solid #111; color: #333; font-size: 15px; line-height: 1.72; margin: 26px 0 30px; padding: 2px 0 2px 18px; }
 .note .note-title { color: #777; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 6px; }
 figure { margin: 40px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 26px 0 18px; }
-figure svg { display: block; width: 100%; height: auto; }
+figure svg, figure img { display: block; width: 100%; height: auto; }
 figcaption { color: #777; font-size: 13px; line-height: 1.55; margin-top: 14px; }
+.figure-stack img + img { max-width: 540px; margin: 16px auto 0; }
+.figure-compact img { max-width: 430px; margin: 0 auto; }
 .table-wrap { margin: 26px 0 10px; overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: 14px; }
 th, td { text-align: left; padding: 11px 12px; border-bottom: 1px solid #eee; vertical-align: top; }
 th { color: #555; font-size: 12px; letter-spacing: .03em; text-transform: uppercase; font-weight: 600; background: #fafafa; }
 td:first-child { font-weight: 600; width: 26%; }
@@ -40,7 +42,19 @@ strong { font-weight: 680; }
 .s-faint{stroke:#d8d8d8;fill:none;} .s-acc{fill:#2f5f55;} .s-accs{stroke:#2f5f55;fill:none;}
 .s-box{fill:#fff;stroke:#111;stroke-width:1.4;} .s-boxa{fill:#e8f0ed;stroke:#2f5f55;stroke-width:1.6;}
 .s-lab{font-size:12px;fill:#222;} .s-lab-s{font-size:10px;fill:#777;}
-@media (max-width: 560px){ main{padding:46px 18px 88px;} h1{font-size:30px;} h2{font-size:22px;margin-top:46px;} body{font-size:16px;} .dek{font-size:18px;} td:first-child{width:34%;} }
+@media (max-width: 560px){
+  main{padding:46px 18px 88px;}
+  h1{font-size:30px;}
+  h2{font-size:22px;margin-top:46px;}
+  body{font-size:16px;}
+  .dek{font-size:18px;}
+  table{min-width:0;font-size:15px;}
+  thead{display:none;}
+  tr{display:block;padding:14px 0;border-bottom:1px solid #eee;}
+  td{display:block;width:100% !important;padding:3px 0;border-bottom:0;}
+  td:first-child{font-size:16px;margin-bottom:6px;}
+  td + td{color:#333;}
+}
 </style>
 </head>
 <body>
@@ -55,19 +69,17 @@ strong { font-weight: 680; }
   <h1>WEAVER: a world model that is faithful, consistent, and fast at once</h1>
   <div class="meta">June 2026 · world models · robotic manipulation · WEAVER (arXiv:2606.13672)</div>
 
-  <p class="dek">A learned simulator is useful for robotics — to evaluate a policy, improve it, or plan at test time — only if it is faithful, coherent over long horizons, and fast, all at the same time. Prior robot world models give up at least one. WEAVER is a multi-view latent world model that, on its own real-robot setup, reaches all three together.</p>
+  <p class="dek">WEAVER is a paper about the world model itself. The policy is still π0.5; the question is whether the learned simulator under it can be accurate enough, stable enough, and fast enough to evaluate policies, generate training data, and plan during execution.</p>
 
-  <h2>Three desiderata, and why prior models miss at least one</h2>
-  <p>A world model can drive three downstream uses with little real interaction: <strong>policy evaluation</strong>, <strong>policy improvement</strong>, and <strong>test-time planning</strong>. To deliver them, the paper argues a world model must jointly satisfy three properties — <strong>fidelity</strong> (simulated trajectories correlate with reality), <strong>consistency</strong> (they stay coherent over long horizons), and <strong>efficiency</strong> (they are produced quickly).</p>
-  <p>The claim is that no prior robot world model has all three. Video-generation world models are high-fidelity but slow. JEPA-style latent models may not decode into the images needed to score an arbitrary visuomotor policy. The state-of-the-art manipulation world model Ctrl-World runs far slower than real time, which rules out test-time planning and makes policy improvement expensive. Manipulation makes the tension worse: multiple camera views, occlusions, and a need for physically faithful state rather than good-looking frames.</p>
+  <h2>The three constraints</h2>
+  <p>The paper reduces robot world modeling to three checks. <strong>Fidelity</strong> asks whether imagined trajectories correlate with reality. <strong>Consistency</strong> asks whether the rollout stays coherent when the model keeps feeding on its own future predictions. <strong>Efficiency</strong> asks whether the model can generate futures quickly enough to be used inside a real robot loop.</p>
+  <p>Those three checks are adversarial to each other. A video model can look faithful and still be too slow. A compact latent model can be fast and still lose information needed by a visuomotor policy. A model can produce good first seconds and still drift over a 10-second rollout. WEAVER's claim is specific: on its manipulation setup, one world model can satisfy all three well enough to become a policy evaluator, a synthetic-data filter, and a test-time planner.</p>
 
   <h2>How WEAVER reaches all three</h2>
-  <p>WEAVER (World Estimation Across Views for Embodied Reasoning, 928M parameters) is a multi-view latent world model, and each desideratum maps to a specific design choice.</p>
-  <p><strong>Fidelity</strong> — every camera view (external and wrist) is encoded into patch tokens by a pretrained Stable Diffusion 3 VAE encoder; proprioceptive state is projected to a token and concatenated. WEAVER predicts both views and, unlike Ctrl-World, explicitly predicts future proprioceptive state, which the paper argues matters for contact-rich and deformable manipulation.</p>
-  <p><strong>Dynamics and objective</strong> — given a sparse long-term memory (every k-th past latent) plus a short recent history and an h-step action plan, a 2D transformer autoregressively generates the next h latents, trained with a flow-matching loss (predict the velocity of the latent flow toward the ground-truth next latents).</p>
-  <p><strong>Consistency</strong> — Diffusion Forcing (independent noise levels per future step) keeps long rollouts coherent rather than collapsing.</p>
-  <p><strong>Efficiency</strong> — SPRINT blocks drop patch tokens aggressively, KV-caching reuses memory/history tokens across denoising steps, and a rectified-flow distillation step (WEAVER-REFLOW) cuts generation to a few forward passes; imagination runs at about 5 Hz.</p>
-  <p><strong>Scoring without decoding</strong> — a reward head distilled from an off-the-shelf reward model scores rewards directly on latents plus the language instruction, and a critic estimates returns beyond the imagined horizon. So scoring a candidate future does not require decoding frames and calling a separate VLM judge.</p>
+  <p>WEAVER stands for <strong>World Estimation Across Views for Embodied Reasoning</strong>. The model has 928M parameters and predicts future multi-view robot observations in a learned latent space. The important part is how the architecture assigns one job to each constraint.</p>
+  <p><strong>Fidelity.</strong> Each camera view is encoded with a pretrained Stable Diffusion 3 VAE encoder. The robot's proprioceptive state is projected into the same token stream. WEAVER predicts future external views, wrist views, and future proprioception, so the imagined state is not only a video; it also contains the robot-state information needed for control.</p>
+  <p><strong>Consistency.</strong> The transformer receives sparse long-term memory, a short recent history, and an h-step action plan. It then generates the next h latents with a flow-matching objective. Diffusion Forcing gives different future steps independent noise levels during training, which pressures the model to handle partially denoised long rollouts instead of only clean one-step prediction.</p>
+  <p><strong>Efficiency.</strong> SPRINT blocks drop many patch tokens, KV caching reuses memory and history tokens across denoising steps, and a ReFlow post-training stage distills WEAVER-FT into a lower-NFE model for planning. The reward head and critic also run directly on latents plus the language instruction, so planning does not need to decode every candidate future and send it to a separate VLM judge.</p>
 
   <figure>
     <svg viewBox="0 0 720 320" role="img" aria-label="WEAVER pipeline">
@@ -111,43 +123,64 @@ strong { font-weight: 680; }
       <text class="s-lab-s" x="360" y="288" text-anchor="middle">one model, read three ways</text>
       <defs><marker id="v" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f5f55"/></marker></defs>
     </svg>
-    <figcaption>Schematic (original) of the WEAVER pipeline; the paper's figures give the full architecture, see the <a href="https://arxiv.org/abs/2606.13672">paper</a>.</figcaption>
+    <figcaption>Original schematic of the WEAVER pipeline. The paper's architecture figure below shows the same interface at full detail: observation latents, memory/history tokens, action chunks, future latent prediction, reward, and value.</figcaption>
   </figure>
 
   <figure>
     <img src="assets/weaver-fig2-architecture.png" alt="WEAVER architecture">
-    <figcaption>Figure 2 from WEAVER (Jain et al., <a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>), CC BY 4.0 — the world model encodes memory, history, and an action sequence to imagine future rollouts in latent space.</figcaption>
+    <figcaption>Figure 2 from WEAVER (Jain et al., <a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>), CC BY 4.0. The key interface is memory + history + action sequence in, future latents + reward/value out.</figcaption>
   </figure>
 
-  <h2>One model, three downstream uses</h2>
-  <p>The same world model is read three ways. <strong>Policy evaluation</strong>: replay a recorded real action trajectory open-loop inside WEAVER and record the predicted reward. <strong>Policy improvement</strong>: sample action chunks, forward-simulate them, compute a Monte-Carlo advantage from the reward and critic heads, keep the best rollout above a threshold, and distill it into the base policy. <strong>Test-time planning</strong>: a single-chunk best-of-N — sample candidate action chunks, imagine their outcomes, and execute the highest-advantage one, all scored in latent space without an external judge.</p>
+  <h2>Pretraining and adaptation</h2>
+  <p>The pretraining stage builds the general robot simulator. WEAVER is pretrained on DROID for 1M gradient steps with batch size 32, learning rate 1e-4, EMA 0.9999, and 4 H100 GPUs for about 10 days. The model uses 32 transformer layers, hidden dimension 1536, 16 heads, SPRINT probability 0.5, and 5 Hz world-model imagination after downsampling.</p>
+  <p>The reward and critic are trained on top of WEAVER latents. The authors annotate DROID trajectories with RoboMeter progress rewards, interpolate the 1 fps labels back to the full video length, shift the progress signal into a negative reward range, and train latent reward/value heads with language instruction features.</p>
+  <p>The task-specific adaptation is deliberately small: 250 real trajectories total, 50 for each of five tasks, plus another 100 evaluation trajectories. WEAVER is finetuned for 16K steps at learning rate 2e-5, taking about 6 hours on 4 H100 GPUs. For the planning variant, WEAVER-ReFlow adds 2K rectified-flow post-training steps so the same finetuned world model can run with fewer denoising evaluations.</p>
 
-  <h2>Evidence</h2>
-  <div class="table-wrap">
-  <table>
-    <thead><tr><th>Downstream use</th><th>Result (real hardware)</th></tr></thead>
-    <tbody>
-      <tr><td>Policy evaluation</td><td>ρ = 0.870 correlation between WEAVER's score and real-world success rate</td></tr>
-      <tr><td>Policy improvement</td><td>+38% real-world success on top of the π0.5 robot foundation model</td></tr>
-      <tr><td>Test-time planning</td><td>+14% real-world success, with a 5–10× speedup over prior world models</td></tr>
-      <tr><td>Out-of-distribution</td><td>better than prior world models on OOD scenarios</td></tr>
-    </tbody>
-  </table>
-  </div>
-  <p>The main world-model baseline is Ctrl-World (a 1.5B diffusion model trained on DROID), which WEAVER reports Pareto-dominating on fidelity versus speed; the policy-improvement base is the π0.5 foundation model. WEAVER itself is pretrained on DROID (~1M steps on 4×H100 for about 10 days) and runs imagination at roughly 5 Hz.</p>
+  <h2>How the experiments are built</h2>
+  <p>The experiments test the world model before using it to change the policy. First, WEAVER is compared with Ctrl-World, a 1.5B-parameter DROID-trained diffusion world model. The evaluation uses 256 DROID validation trajectories and 100 out-of-distribution real-robot trajectories collected from π0.5. Each model autoregressively generates 10-second sequences, predicting 15-step action chunks at a time. FID, FVD, and LPIPS compare decoded generations against ground-truth videos.</p>
 
   <figure>
     <img src="assets/weaver-fig5-fvd-vs-time.png" alt="FVD versus inference time, WEAVER vs Ctrl-World">
-    <figcaption>Figure 5 from WEAVER (<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>), CC BY 4.0 — FVD (lower is more faithful) versus inference time; WEAVER sits below and to the left of Ctrl-World: more faithful and faster at once.</figcaption>
+    <figcaption>Figure 5 from WEAVER (<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>), CC BY 4.0. This is the fidelity-versus-efficiency plot: lower FVD is better, lower inference time is better. WEAVER sits below and left of Ctrl-World across DROID and OOD views.</figcaption>
+  </figure>
+
+  <p>The downstream experiments then ask whether the simulator is useful rather than only visually plausible.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Use</th><th>Experimental question</th><th>Headline result</th></tr></thead>
+    <tbody>
+      <tr><td>Policy evaluation</td><td>Replay real action trajectories inside the world model and compare imagined success with real success.</td><td>WEAVER-FT reaches Spearman 0.870 and Pearson 0.863 in the appendix table; the main text reports ρ = 0.870 correlation with real-world success rate.</td></tr>
+      <tr><td>Policy improvement</td><td>Use WEAVER to sample and filter high-advantage action segments, then distill them into π0.5.</td><td>Average success rises from 0.44 for π0.5 to 0.67 with synthetic data, 0.71 with real data, and 0.82 with mixed data.</td></tr>
+      <tr><td>Test-time planning</td><td>Sample four action chunks, imagine each future, score reward plus critic value, and execute the best chunk.</td><td>Average success improves from 0.44 to 0.58 across five tasks, with dynamics prediction around 20x faster than Ctrl-World at horizon 15, batch size 4.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <figure>
+    <img src="assets/weaver-fig6-policy-evaluation.png" alt="Policy evaluation comparison across Ctrl-World, WEAVER, and WEAVER-FT">
+    <figcaption>Figure 6 from WEAVER (<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>), CC BY 4.0. The left side is a qualitative stress test for long-horizon state prediction; the right side tests whether imagined success rates track real success rates.</figcaption>
+  </figure>
+
+  <figure class="figure-stack">
+    <img src="assets/weaver-fig7-policy-improvement-left.png" alt="Policy improvement success rates with real, synthetic, and mixed data">
+    <img src="assets/weaver-fig7-policy-improvement-right.png" alt="Synthetic data scaling on Pour Beans">
+    <figcaption>Figure 7 from WEAVER (<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>), CC BY 4.0. Synthetic rollouts are filtered by predicted advantage, then used as finetuning data. Mixed real and synthetic segments produce the best average policy improvement.</figcaption>
+  </figure>
+
+  <figure class="figure-compact">
+    <img src="assets/weaver-fig9-test-time-planning.png" alt="Test-time planning success rate with WEAVER best-of-N steering">
+    <figcaption>Figure 9 from WEAVER (<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>), CC BY 4.0. The planning setup uses π0.5 as the proposal policy, samples B = 4 candidate chunks, imagines h = 12 steps, and executes the highest-advantage chunk.</figcaption>
   </figure>
 
   <h2>Limitations</h2>
-  <p>WEAVER leans on pretrained components — an SD3 VAE encoder/decoder and a distilled reward model — so their coverage bounds it. The "all three at once" claim is relative to prior world models on the paper's own manipulation suite and real-robot tasks, not a universal result. The version read here does not list author affiliations. As with any single real-robot system, the numbers come from its own task suite, and the boundary worth keeping is that a more faithful, faster simulator is a better substrate for evaluation and planning, not a replacement for the verification and trust-horizon questions that sit on top of it.</p>
+  <p>WEAVER leans on pretrained components: the SD3 VAE, DROID-scale robot data, and RoboMeter reward labels. The strongest results come after finetuning on the target robot tasks, especially for pouring beans, where granular dynamics are underrepresented in pretraining. The paper also names partial observability, missing tactile sensing, deformable-object physics, reward-label noise, and online latency as remaining bottlenecks.</p>
+  <p>The clean adversarial read is this: WEAVER improves the world model body, but every downstream use still depends on trusting imagined futures. A faster, more faithful simulator raises the ceiling for evaluation and planning; it also makes uncertainty estimation, validation, and safeguards more important because the robot is now acting on model-generated futures before the real world confirms them.</p>
 
   <h2>References</h2>
   <ol class="refs">
-    <li>WEAVER: <a href="https://arxiv.org/abs/2606.13672">WEAVER, Better, Faster, Longer: An Effective World Model for Robotic Manipulation</a> (arXiv:2606.13672). Code, models, and videos on the project page linked from the paper.</li>
-    <li>Main world-model baseline: Ctrl-World. Policy-improvement base model: π0.5.</li>
+    <li>Arnav Kumar Jain, Yilin Wu, Jesse Farebrother, Gokul Swamy, Andrea Bajcsy: <a href="https://arxiv.org/abs/2606.13672">WEAVER, Better, Faster, Longer: An Effective World Model for Robotic Manipulation</a> (arXiv:2606.13672).</li>
+    <li>Project page with code, models, and videos: <a href="https://arnavkj1995.github.io/WEAVER/">arnavkj1995.github.io/WEAVER</a>.</li>
+    <li>Main baseline: Ctrl-World. Base robot policy: π0.5.</li>
   </ol>
 </article>
 
@@ -156,19 +189,17 @@ strong { font-weight: 680; }
   <h1>WEAVER：一个同时做到保真、一致、快的世界模型</h1>
   <div class="meta">2026 年 6 月 · 世界模型 · 机器人操作 · WEAVER (arXiv:2606.13672)</div>
 
-  <p class="dek">一个学出来的模拟器要对机器人有用——评估策略、改进策略、测试时规划——前提是它同时做到保真、长时域一致、且快。以前的机器人世界模型总要放弃其中至少一项。WEAVER 是一个多视角 latent 世界模型，在它自己的真机 setup 上把三者一起拿到。</p>
+  <p class="dek">WEAVER 主要改的是 world model 本体。policy 仍然是 π0.5，问题变成：底下这个学出来的模拟器，能不能足够准、足够稳、足够快，从而用来评估策略、生成训练数据，并在机器人执行时做规划。</p>
 
-  <h2>三个 desiderata，以及为什么以前的模型至少缺一个</h2>
-  <p>世界模型能用很少的真实交互驱动三件下游事：<strong>策略评估</strong>、<strong>策略改进</strong>、<strong>测试时规划</strong>。论文主张，要交付这三件，世界模型必须同时满足三个属性——<strong>fidelity（保真，模拟轨迹和现实相关）</strong>、<strong>consistency（一致，长时域连贯）</strong>、<strong>efficiency（高效，生成得快）</strong>。</p>
-  <p>它的论点是：以前没有任何机器人世界模型三者兼备。视频生成式世界模型保真高但慢；JEPA 式 latent 模型的潜表示不一定能 decode 成评估任意视觉运动策略所需的图像；当前最强的操作世界模型 Ctrl-World 远慢于实时，因此做不了测试时规划、也让策略改进很贵。操作场景让矛盾更尖锐：多个相机视角、遮挡，而且需要物理上忠实的状态，光有好看的画面不够。</p>
+  <h2>三个约束</h2>
+  <p>论文把机器人 world model 的要求收束成三个检查项。<strong>Fidelity</strong> 是准：想象出来的轨迹要和真实世界相关。<strong>Consistency</strong> 是稳：模型一边生成未来、一边继续用自己的未来往后推，rollout 不能很快漂掉。<strong>Efficiency</strong> 是快：生成未来的速度要足够接近真实机器人控制链路，才能放进测试时规划。</p>
+  <p>这三个检查项彼此对抗。视频模型可以看起来很准，但速度太慢；小 latent 模型可以很快，但可能丢掉视觉运动策略需要的信息；一个模型可以预测前几秒，却在 10 秒 rollout 里累积误差。WEAVER 的具体主张是：在它的 manipulation setup 上，一个世界模型可以同时满足这三项，并由此承担 policy evaluator、synthetic-data filter 和 test-time planner 的角色。</p>
 
   <h2>WEAVER 怎么把三者一起拿到</h2>
-  <p>WEAVER（World Estimation Across Views for Embodied Reasoning，928M 参数）是一个多视角 latent 世界模型，每个 desideratum 都对应一个具体设计。</p>
-  <p><strong>保真</strong>——每个相机视角（外部 + 腕部）由一个预训练的 Stable Diffusion 3 VAE encoder 编成 patch tokens，本体感受状态投影成一个 token 拼接进去。WEAVER 同时预测两个视角，并且不同于 Ctrl-World，它<strong>显式预测未来的本体感受状态</strong>——论文认为这对接触密集与可变形操作很关键。</p>
-  <p><strong>动力学与目标</strong>——给一个稀疏的长期记忆（每隔 k 步取一个过去 latent）加一小段近期 history 和一个 h 步动作计划，一个 2D transformer 自回归地生成接下来 h 个 latent，用 flow-matching 损失训练（预测 latent 流向真值的速度）。</p>
-  <p><strong>一致</strong>——Diffusion Forcing（每个未来步独立的噪声水平）让长 rollout 保持连贯，不塌掉。</p>
-  <p><strong>高效</strong>——SPRINT 块激进地丢弃 patch token，KV-cache 在去噪步之间复用记忆/history token，再加一个 rectified-flow 蒸馏步骤（WEAVER-REFLOW）把生成压到几次前向；想象以约 5 Hz 运行。</p>
-  <p><strong>不解码就打分</strong>——一个 reward head 从现成 reward model 蒸馏，直接在 latent 加语言指令上打 reward，一个 critic 估计想象 horizon 之外的回报。于是给一个候选未来打分，不需要 decode 出画面再叫一个 VLM 来判。</p>
+  <p>WEAVER 全称是 <strong>World Estimation Across Views for Embodied Reasoning</strong>。它有 928M 参数，在 latent 空间预测多视角机器人未来。关键在于它怎样把三个约束分配到具体模块上；“生成视频”只是外层表现。</p>
+  <p><strong>Fidelity / 准。</strong>每个相机视角由预训练 Stable Diffusion 3 VAE encoder 编成 latent patch token；机器人本体感受状态也投影成 token。WEAVER 同时预测外部相机、腕部相机和未来 proprioception，所以它想象的是控制所需状态，画面质量之外还包含 robot-state 信息。</p>
+  <p><strong>Consistency / 稳。</strong>Transformer 看到稀疏长期记忆、一小段近期 history 和一个 h 步 action plan，然后用 flow-matching 目标生成未来 h 个 latent。Diffusion Forcing 在训练时给不同未来步独立噪声水平，把训练压力从一阶干净预测扩展到长 rollout 的部分去噪状态。</p>
+  <p><strong>Efficiency / 快。</strong>SPRINT blocks 丢掉大量 patch token，KV cache 在去噪步之间复用 memory/history token，ReFlow 后训练把 WEAVER-FT 蒸馏成更少 NFE 的规划模型。reward head 和 critic 直接在 latent 加语言指令上打分，所以规划时不用把每个候选未来 decode 成图片，再交给外部 VLM 判。</p>
 
   <figure>
     <svg viewBox="0 0 720 320" role="img" aria-label="WEAVER 流程">
@@ -209,43 +240,64 @@ strong { font-weight: 680; }
       <text class="s-lab-s" x="360" y="288" text-anchor="middle">一个模型，三种读法</text>
       <defs><marker id="vz" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f5f55"/></marker></defs>
     </svg>
-    <figcaption>原创示意图。论文给出完整架构图，见<a href="https://arxiv.org/abs/2606.13672">原文</a>。</figcaption>
+    <figcaption>原创示意图。下方原文架构图给出完整接口：observation latents、memory/history tokens、action chunks、future latent prediction、reward 和 value。</figcaption>
   </figure>
 
   <figure>
     <img src="assets/weaver-fig2-architecture.png" alt="WEAVER 架构">
-    <figcaption>图 2，引自 WEAVER（Jain 等，<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>），CC BY 4.0——世界模型编码记忆、history 与动作序列，在 latent 空间想象未来 rollout。</figcaption>
+    <figcaption>图 2，引自 WEAVER（Jain 等，<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>），CC BY 4.0。核心接口是 memory + history + action sequence 输入，future latents + reward/value 输出。</figcaption>
   </figure>
 
-  <h2>一个模型，三种下游用法</h2>
-  <p>同一个世界模型被读三遍。<strong>策略评估</strong>：把记录下来的真实动作轨迹在 WEAVER 里开环重放，记录预测的 reward。<strong>策略改进</strong>：采一批动作块，前向模拟，用 reward + critic 算 Monte-Carlo advantage，留下超过阈值的最好 rollout，蒸馏进 base policy。<strong>测试时规划</strong>：single-chunk best-of-N——采若干候选动作块，想象各自结果，执行 advantage 最高的那个，全程在 latent 空间打分，不用外部裁判。</p>
+  <h2>预训练和任务适配</h2>
+  <p>预训练阶段先得到一个通用机器人模拟器。WEAVER 在 DROID 上预训练 1M 个 gradient steps，batch size 32，learning rate 1e-4，EMA 0.9999，用 4 张 H100 训练约 10 天。模型本体是 32 层 transformer，hidden dimension 1536，16 heads，SPRINT probability 0.5；数据下采样后以 5 Hz 做 world-model imagination。</p>
+  <p>reward 和 critic 训练在 WEAVER latent 之上。作者用 RoboMeter 给 DROID 轨迹标 progress reward，把 1 fps 的标签插值回完整视频长度，再把 progress signal 移到负 reward 区间，用这些标签训练 latent reward/value heads，并把语言指令特征接进去。</p>
+  <p>任务适配阶段很小：5 个任务，总共 250 条真实轨迹，每个任务 50 条；另有 100 条评估轨迹。WEAVER 用 2e-5 learning rate finetune 16K steps，在 4 张 H100 上约 6 小时。规划版本再做 2K steps 的 ReFlow 后训练，让 finetuned world model 能用更少 denoising evaluations 跑起来。</p>
 
-  <h2>证据</h2>
-  <div class="table-wrap">
-  <table>
-    <thead><tr><th>下游用法</th><th>结果（真机）</th></tr></thead>
-    <tbody>
-      <tr><td>策略评估</td><td>WEAVER 的打分与真实成功率相关系数 ρ = 0.870</td></tr>
-      <tr><td>策略改进</td><td>在 π0.5 机器人基础模型之上，真机成功率 +38%</td></tr>
-      <tr><td>测试时规划</td><td>真机成功率 +14%，且比之前的世界模型快 5–10×</td></tr>
-      <tr><td>分布外</td><td>OOD 场景上优于之前的世界模型</td></tr>
-    </tbody>
-  </table>
-  </div>
-  <p>主要的世界模型 baseline 是 Ctrl-World（一个 1.5B 的扩散模型，在 DROID 上训练），WEAVER 报告在"保真 vs 速度"上 Pareto 压过它；策略改进的基座是 π0.5。WEAVER 自己在 DROID 上预训练（约 1M 步，4×H100 约 10 天），想象以约 5 Hz 运行。</p>
+  <h2>实验怎么做</h2>
+  <p>实验先测 world model 本体，再测它是否能改变策略链路。第一组对比 WEAVER 和 Ctrl-World，后者是 1.5B 参数、在 DROID 上训练的 diffusion world model。评估数据包括 256 条 DROID validation trajectories，以及 100 条由 π0.5 收集的分布外真机轨迹。两个模型都自回归生成 10 秒序列，每次共同预测 15-step action chunk；FID、FVD、LPIPS 用来比较 decoded generations 和真实视频。</p>
 
   <figure>
     <img src="assets/weaver-fig5-fvd-vs-time.png" alt="FVD 对推理时间，WEAVER vs Ctrl-World">
-    <figcaption>图 5，引自 WEAVER（<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>），CC BY 4.0——FVD（越低越保真）对推理时间；WEAVER 在 Ctrl-World 的左下方：更保真，也更快。</figcaption>
+    <figcaption>图 5，引自 WEAVER（<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>），CC BY 4.0。这张图直接测 fidelity vs. efficiency：FVD 越低越好，inference time 越低越好。WEAVER 在 DROID 和 OOD 视角上都落在 Ctrl-World 的左下方。</figcaption>
+  </figure>
+
+  <p>后面的实验把目标从画面相似扩展到策略可用性：这个模拟器能不能真的服务策略。</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>用法</th><th>实验问题</th><th>主要结果</th></tr></thead>
+    <tbody>
+      <tr><td>Policy evaluation</td><td>把真实 action trajectories 放进 world model 开环重放，比较 imagined success 和 real success。</td><td>WEAVER-FT 在 appendix table 里达到 Spearman 0.870、Pearson 0.863；正文报告和真实成功率的相关 ρ = 0.870。</td></tr>
+      <tr><td>Policy improvement</td><td>用 WEAVER 采样并筛选高 advantage action segments，再蒸馏回 π0.5。</td><td>平均成功率从 π0.5 的 0.44 提到 synthetic data 的 0.67、real data 的 0.71、mixed data 的 0.82。</td></tr>
+      <tr><td>Test-time planning</td><td>采 4 个 action chunks，想象每个未来，用 reward + critic value 打分，然后执行最好的 chunk。</td><td>五个任务平均成功率从 0.44 提到 0.58；在 horizon 15、batch size 4 时 dynamics prediction 约比 Ctrl-World 快 20x。</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <figure>
+    <img src="assets/weaver-fig6-policy-evaluation.png" alt="Ctrl-World、WEAVER、WEAVER-FT 的策略评估对比">
+    <figcaption>图 6，引自 WEAVER（<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>），CC BY 4.0。左侧是长时域状态预测的定性压力测试；右侧检验 imagined success rate 能否跟真实成功率同向变化。</figcaption>
+  </figure>
+
+  <figure class="figure-stack">
+    <img src="assets/weaver-fig7-policy-improvement-left.png" alt="real、synthetic、mixed data 微调后的策略成功率">
+    <img src="assets/weaver-fig7-policy-improvement-right.png" alt="Pour Beans 任务上的 synthetic data scaling">
+    <figcaption>图 7，引自 WEAVER（<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>），CC BY 4.0。Synthetic rollouts 先由 predicted advantage 筛选，再作为 finetuning data；real + synthetic mixed segments 给出最高平均成功率。</figcaption>
+  </figure>
+
+  <figure class="figure-compact">
+    <img src="assets/weaver-fig9-test-time-planning.png" alt="WEAVER best-of-N steering 的测试时规划成功率">
+    <figcaption>图 9，引自 WEAVER（<a href="https://arxiv.org/abs/2606.13672">arXiv:2606.13672</a>），CC BY 4.0。测试时规划用 π0.5 提议动作，采 B = 4 个候选 chunk，想象 h = 12 步，然后执行 advantage 最高的 chunk。</figcaption>
   </figure>
 
   <h2>局限</h2>
-  <p>WEAVER 依赖预训练组件——SD3 VAE 的 encoder/decoder 和一个蒸馏来的 reward model——它们的覆盖范围限定了它的上限。"三者同时拿到"这个说法，是相对以前的世界模型、在它自己的操作任务套件与真机任务上成立的，不是一个普适结论。我读到的版本没有列作者机构。和任何单一真机系统一样，数字来自它自己的任务集。要记住的边界是：一个更保真、更快的模拟器，是评估与规划更好的底座，但它取代不了在它之上的验证与信任时域问题。</p>
+  <p>WEAVER 依赖几个预训练基础：SD3 VAE、DROID 规模机器人数据、RoboMeter reward labels。最强结果来自目标任务 finetuning，尤其是 Pour Beans 这种 granular dynamics 在预训练数据里覆盖不足的任务。论文也明确列出 partial observability、tactile sensing 缺失、deformable-object physics、reward-label noise 和在线 latency 这些瓶颈。</p>
+  <p>用对抗性方式读，WEAVER 提升了 world model 本体，但所有下游用法仍然要信任 imagined futures。更快、更准的模拟器会提高 evaluation 和 planning 的上限；同时也让 uncertainty estimation、validation 和 safeguards 更重要，因为机器人开始在真实世界验证之前，先根据模型生成的未来行动。</p>
 
   <h2>参考</h2>
   <ol class="refs">
-    <li>WEAVER：<a href="https://arxiv.org/abs/2606.13672">WEAVER, Better, Faster, Longer: An Effective World Model for Robotic Manipulation</a>（arXiv:2606.13672）。代码、模型、视频见原文链接的项目页。</li>
-    <li>主要世界模型 baseline：Ctrl-World。策略改进基座：π0.5。</li>
+    <li>Arnav Kumar Jain、Yilin Wu、Jesse Farebrother、Gokul Swamy、Andrea Bajcsy：<a href="https://arxiv.org/abs/2606.13672">WEAVER, Better, Faster, Longer: An Effective World Model for Robotic Manipulation</a>（arXiv:2606.13672）。</li>
+    <li>项目页（代码、模型、视频）：<a href="https://arnavkj1995.github.io/WEAVER/">arnavkj1995.github.io/WEAVER</a>。</li>
+    <li>主要世界模型 baseline：Ctrl-World。策略基座：π0.5。</li>
   </ol>
 </article>
 

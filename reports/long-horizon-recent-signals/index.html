@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Long Horizon 近期工作地图</title>
+  <meta name="description" content="一张给 6.16-6.28 学习汇报使用的 long horizon 研究地图：从 RL、机器人、world model、coding agent、AI for Science 到 RSI，把近期工作放进同一条长期执行循环里。">
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      --ink: #111;
+      --muted: #666;
+      --faint: #999;
+      --line: #e5e5e5;
+      --line-strong: #111;
+      --paper: #fff;
+      --soft: #f7f7f7;
+      --measure: 780px;
+      --wide: 1080px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.78;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    main {
+      width: min(var(--measure), calc(100vw - 40px));
+      margin: 0 auto;
+      padding: 64px 0 104px;
+    }
+
+    a {
+      color: inherit;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+
+    a:hover { opacity: .58; }
+
+    nav {
+      margin: 0 0 46px;
+      color: var(--faint);
+      font-size: 13px;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: 42px;
+      line-height: 1.12;
+      font-weight: 730;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 58px 0 14px;
+      font-size: 25px;
+      line-height: 1.28;
+      font-weight: 720;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 32px 0 9px;
+      font-size: 18px;
+      line-height: 1.42;
+      font-weight: 720;
+    }
+
+    p { margin: 0 0 17px; }
+
+    .meta {
+      margin: 0 0 28px;
+      color: var(--faint);
+      font-size: 13px;
+    }
+
+    .deck {
+      margin: 0 0 32px;
+      color: #3d3d3d;
+      font-size: 19px;
+      line-height: 1.62;
+    }
+
+    .note {
+      margin: 28px 0 34px;
+      padding: 3px 0 3px 18px;
+      border-left: 3px solid var(--line-strong);
+      color: #333;
+      font-size: 16px;
+      line-height: 1.72;
+    }
+
+    .wide {
+      width: min(var(--wide), calc(100vw - 40px));
+      margin-left: calc((var(--measure) - min(var(--wide), calc(100vw - 40px))) / 2);
+    }
+
+    figure {
+      margin: 38px 0;
+    }
+
+    .figure-frame {
+      border-top: 2px solid var(--line-strong);
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+      overflow-x: auto;
+      padding: 20px 0;
+    }
+
+    svg {
+      display: block;
+      min-width: 920px;
+      width: 100%;
+      height: auto;
+    }
+
+    figcaption {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.52;
+    }
+
+    .table-wrap {
+      width: min(var(--wide), calc(100vw - 40px));
+      margin: 26px 0 34px calc((var(--measure) - min(var(--wide), calc(100vw - 40px))) / 2);
+      overflow-x: auto;
+      border-top: 2px solid var(--line-strong);
+      border-bottom: 1px solid var(--line);
+    }
+
+    table {
+      width: 100%;
+      min-width: 900px;
+      border-collapse: collapse;
+      font-size: 14px;
+      line-height: 1.56;
+    }
+
+    th,
+    td {
+      padding: 12px 11px;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+
+    th {
+      color: #444;
+      font-size: 12px;
+      font-weight: 720;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    tbody tr:last-child td,
+    tbody tr:last-child th { border-bottom: 0; }
+
+    tbody th {
+      width: 17%;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 720;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    td strong { font-weight: 720; }
+
+    .list {
+      margin: 21px 0 28px;
+      padding: 0;
+      list-style: none;
+      border-top: 2px solid var(--line-strong);
+    }
+
+    .list li {
+      padding: 13px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: 15px;
+      line-height: 1.62;
+    }
+
+    .list b {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 15px;
+      font-weight: 720;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.62;
+    }
+
+    .refs {
+      margin: 20px 0 0 20px;
+      padding: 0;
+      color: #444;
+      font-size: 14px;
+      line-height: 1.62;
+    }
+
+    .refs li { margin-bottom: 8px; }
+
+    footer {
+      margin-top: 58px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      color: var(--faint);
+      font-size: 12.5px;
+      line-height: 1.65;
+    }
+
+    @media (max-width: 640px) {
+      main {
+        width: min(100vw - 32px, var(--measure));
+        padding-top: 46px;
+      }
+
+      h1 { font-size: 31px; }
+      body { font-size: 16px; }
+      .deck { font-size: 17px; }
+      .wide,
+      .table-wrap {
+        width: calc(100vw - 32px);
+        margin-left: calc((100% - (100vw - 32px)) / 2);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="../long-horizon-learning-report/">学习成果汇报</a> / 附录地图</nav>
+
+    <h1>Long Horizon 近期工作地图</h1>
+    <div class="meta">2026-06-29 · draft for report discussion · noindex</div>
+    <p class="deck">
+      这页用工作图组织近期材料。它把 RL、机器人 world model、robot policy、coding agent、research agent 和 AI for Science 放进同一个问题里：一个系统要连续行动很久，怎样保存状态、预测未来、检查结果、修正计划，并让下一轮行动更可靠。
+    </p>
+
+    <div class="note">
+      读这张图时，先问某篇论文改的是长期执行循环里的哪个接口：它是在减少预测漂移，保存任务状态，验证事件结果，缩短有效时域，还是让评估信号更可靠？
+    </div>
+
+    <figure class="wide">
+      <div class="figure-frame" role="img" aria-label="Long horizon across domains">
+        <svg viewBox="0 0 1080 520" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#111"/>
+            </marker>
+            <style>
+              .label{font:600 15px -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",Arial,sans-serif;fill:#111}
+              .sub{font:400 12px -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",Arial,sans-serif;fill:#666}
+              .axis{font:600 13px -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",Arial,sans-serif;fill:#111}
+              .tiny{font:400 11px -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",Arial,sans-serif;fill:#777}
+            </style>
+          </defs>
+
+          <text class="axis" x="30" y="26">一条长期执行循环</text>
+
+          <g transform="translate(28 52)">
+            <rect x="0" y="0" width="118" height="62" fill="#fff" stroke="#111" stroke-width="1.5"/>
+            <text class="label" x="14" y="24">State</text>
+            <text class="sub" x="14" y="45">当前状态</text>
+          </g>
+          <g transform="translate(174 52)">
+            <rect x="0" y="0" width="118" height="62" fill="#fff" stroke="#111" stroke-width="1.5"/>
+            <text class="label" x="14" y="24">Memory</text>
+            <text class="sub" x="14" y="45">历史和进度</text>
+          </g>
+          <g transform="translate(320 52)">
+            <rect x="0" y="0" width="118" height="62" fill="#fff" stroke="#111" stroke-width="1.5"/>
+            <text class="label" x="14" y="24">Predict</text>
+            <text class="sub" x="14" y="45">未来 rollout</text>
+          </g>
+          <g transform="translate(466 52)">
+            <rect x="0" y="0" width="118" height="62" fill="#fff" stroke="#111" stroke-width="1.5"/>
+            <text class="label" x="14" y="24">Verify</text>
+            <text class="sub" x="14" y="45">事件是否成立</text>
+          </g>
+          <g transform="translate(612 52)">
+            <rect x="0" y="0" width="118" height="62" fill="#fff" stroke="#111" stroke-width="1.5"/>
+            <text class="label" x="14" y="24">Plan</text>
+            <text class="sub" x="14" y="45">选择动作</text>
+          </g>
+          <g transform="translate(758 52)">
+            <rect x="0" y="0" width="118" height="62" fill="#fff" stroke="#111" stroke-width="1.5"/>
+            <text class="label" x="14" y="24">Act</text>
+            <text class="sub" x="14" y="45">执行</text>
+          </g>
+          <g transform="translate(904 52)">
+            <rect x="0" y="0" width="118" height="62" fill="#fff" stroke="#111" stroke-width="1.5"/>
+            <text class="label" x="14" y="24">Measure</text>
+            <text class="sub" x="14" y="45">反馈和评估</text>
+          </g>
+
+          <g stroke="#111" stroke-width="1.4" marker-end="url(#arrow)">
+            <line x1="146" y1="83" x2="166" y2="83"/>
+            <line x1="292" y1="83" x2="312" y2="83"/>
+            <line x1="438" y1="83" x2="458" y2="83"/>
+            <line x1="584" y1="83" x2="604" y2="83"/>
+            <line x1="730" y1="83" x2="750" y2="83"/>
+            <line x1="876" y1="83" x2="896" y2="83"/>
+          </g>
+          <path d="M 963 118 C 925 166 116 166 84 119" fill="none" stroke="#111" stroke-width="1.2" marker-end="url(#arrow)"/>
+          <text class="tiny" x="407" y="160">feedback changes the next state, memory, model, and policy</text>
+
+          <line x1="28" y1="198" x2="1024" y2="198" stroke="#111" stroke-width="1.5"/>
+          <text class="axis" x="30" y="226">同一个循环，落到不同领域会变成不同对象</text>
+
+          <g transform="translate(30 252)">
+            <text class="label" x="0" y="0">Model-based RL</text>
+            <text class="sub" x="0" y="24">state = latent dynamics / value</text>
+            <text class="tiny" x="0" y="45">失败：rollout drift、model exploitation、trust horizon 不清楚</text>
+          </g>
+          <g transform="translate(30 328)">
+            <text class="label" x="0" y="0">Robotics / Physical AI</text>
+            <text class="sub" x="0" y="24">state = 物体、接触、事件、身体姿态</text>
+            <text class="tiny" x="0" y="45">失败：画面合理但任务事件没发生；接触和遮挡让状态丢失</text>
+          </g>
+          <g transform="translate(30 404)">
+            <text class="label" x="0" y="0">LLM / Coding Agents</text>
+            <text class="sub" x="0" y="24">state = repo、spec、测试、工具执行记录</text>
+            <text class="tiny" x="0" y="45">失败：context drift、spec drift、visible-test overfitting、handoff 丢状态</text>
+          </g>
+
+          <g transform="translate(562 252)">
+            <text class="label" x="0" y="0">AI for Science / Research Agents</text>
+            <text class="sub" x="0" y="24">state = 假设、实验日志、数据、模拟器</text>
+            <text class="tiny" x="0" y="45">失败：实验循环很长，错误 evaluator 或脏日志会污染后续结论</text>
+          </g>
+          <g transform="translate(562 328)">
+            <text class="label" x="0" y="0">Robot Policy / VLA</text>
+            <text class="sub" x="0" y="24">state = 视觉上下文、action chunk、progress</text>
+            <text class="tiny" x="0" y="45">失败：长任务被拆成几千个控制步，延迟、自然度和恢复都成问题</text>
+          </g>
+          <g transform="translate(562 404)">
+            <text class="label" x="0" y="0">RSI</text>
+            <text class="sub" x="0" y="24">state = 系统自己的模型、策略、评估器和改进记录</text>
+            <text class="tiny" x="0" y="45">失败：长链条反馈不可信时，自我改进会放大错误</text>
+          </g>
+        </svg>
+      </div>
+      <figcaption>
+        图里故意没有把论文一篇篇塞进去。先建立对象：每个领域都在跑一条长期循环，只是状态、动作、反馈和验证器不同。
+      </figcaption>
+    </figure>
+
+    <h2>这张图想说明什么</h2>
+    <p>
+      不同领域使用 Long Horizon 时，benchmark 和研究对象经常不同。它更像一种系统压力：任务一变长，模型必须连续调用自己的状态、记忆、预测、验证和反馈。任何一个接口不可靠，错误都会进入后续循环。
+    </p>
+    <p>
+      在 model-based RL 里，问题最容易被写成 rollout drift：模型预测几步还可以，自己滚几十步以后状态开始偏。在机器人里，问题会变得更具体：杯子是否真的被放进柜子、抽屉是否真的被打开、接触是否进入了另一个动力学 regime。在 coding agent 里，问题变成了 spec、repo state、测试和工具执行记录能否跨长任务保存。AI for Science 更像一个上层类比：系统要在假设、实验、数据和证据之间循环很久，评估器一旦不可靠，后面的研究行动也会被带偏。
+    </p>
+
+    <h2>按接口看近期工作</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>接口</th>
+            <th>系统在问什么</th>
+            <th>近期工作怎么改</th>
+            <th>代表信号</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>Predict</th>
+            <td>模型想象未来时，误差从第几步开始影响决策？</td>
+            <td>把像素预测换成 latent、3D point flow、task-oriented dynamics，或者让模型在自己的 rollout 上训练。</td>
+            <td><a href="https://arxiv.org/abs/2203.04955">TD-MPC</a>、<a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a>、PointWorld、Persistent Robot World Models。</td>
+          </tr>
+          <tr>
+            <th>Trust</th>
+            <td>系统怎样知道这次预测还能信多远？</td>
+            <td>把 horizon 当成显式变量，或者根据 state/action 不确定性截断 rollout。</td>
+            <td>NEUBAY、Universal Horizon Models、Variable-Length Latent World Models、HWM。</td>
+          </tr>
+          <tr>
+            <th>Verify</th>
+            <td>未来画面看起来合理，任务事件是否真的成立？</td>
+            <td>加入 predicate、event state、逆向验证、progress checker，让规划不只追逐视觉相似度。</td>
+            <td>EV-WM、H-WM、World Action Verifier、RoboReward、CoVer。</td>
+          </tr>
+          <tr>
+            <th>Plan</th>
+            <td>planner 会不会专门利用 learned model 的盲区？</td>
+            <td>把训练分布改到 planner 会访问的状态，或者把 future、action 和 value 放进同一个生成模型。</td>
+            <td><a href="https://bair.berkeley.edu/blog/2026/04/20/grasp/">GRASP</a>、Closing the Train-Test Gap、<a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy</a>、DreamZero。</td>
+          </tr>
+          <tr>
+            <th>Act</th>
+            <td>长任务是否需要更粗的动作单位？</td>
+            <td>用 action chunk、hierarchical control、high-level waypoint、human demo retargeting 缩短有效时域。</td>
+            <td><a href="https://arxiv.org/abs/2405.18418">Puppeteer</a>、<a href="https://psi-lab.ai/Psi0">Psi-Zero</a>、A2A、VIRAL、EgoHumanoid。</td>
+          </tr>
+          <tr>
+            <th>Memory</th>
+            <td>系统如何保存物体、遮挡、子任务进度和历史失败？</td>
+            <td>从短期视觉记忆、长期语言记忆、keyframe memory、object-centric state 到 persistent world/ego factorization。</td>
+            <td>MEM、Keyframe-Chaining VLA、World-Ego Modeling、Slot-MPC、Qwen-AgentWorld 的 agent-world state 类比。</td>
+          </tr>
+          <tr>
+            <th>Measure</th>
+            <td>一个 world model 好不好，究竟看视频质量还是看行动后果？</td>
+            <td>把评价从 reconstruction/FVD 推向 policy ranking、closed-loop score、success rate、real-robot outcome。</td>
+            <td><a href="https://arxiv.org/abs/2606.00133">World Models Survey</a>、<a href="https://arxiv.org/abs/2605.00080">World Model for Robot Learning Survey</a>、WorldArena、WorldEval。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>按领域看同一个问题</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>领域</th>
+            <th>长期状态是什么</th>
+            <th>最常见的失败</th>
+            <th>最近的做法</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>Model-based RL</th>
+            <td>latent state、reward、value、transition function。</td>
+            <td>rollout 变长后模型误差进入 value 和 action selection；planner 会放大模型盲区。</td>
+            <td>短 horizon MPC + terminal value；不确定性和可变 horizon；为 planner-induced states 做训练。</td>
+          </tr>
+          <tr>
+            <th>Robot world models</th>
+            <td>物体位置、接触状态、遮挡、任务事件、机器人姿态。</td>
+            <td>预测画面合理，但事件不成立；接触模式被平均；对象身份和任务进度丢失。</td>
+            <td>event verification、object/state persistence、3D dynamics、hierarchical task-motion world model。</td>
+          </tr>
+          <tr>
+            <th>Robot policy / VLA</th>
+            <td>语言目标、视觉上下文、action chunk、身体状态和 progress。</td>
+            <td>长任务被拆成太多底层控制步；动作延迟、自然度、恢复能力和跨本体迁移共同限制上线。</td>
+            <td>action chunking、hierarchical control、human video pretraining、retargeting、sim-to-real、flow policy。</td>
+          </tr>
+          <tr>
+            <th>LLM / coding agents</th>
+            <td>repo state、spec、tests、工具结果、handoff notes、记忆。</td>
+            <td>长时间工作后忘掉原始目标，依赖可见测试，或者在上下文压缩后丢关键约束。</td>
+            <td>external memory、progress files、harness、tests/verifier、multi-session continuation、long-horizon coding benchmark。</td>
+          </tr>
+          <tr>
+            <th>AI for Science</th>
+            <td>假设、实验计划、数据、模拟器、分析脚本和证据链。</td>
+            <td>实验循环长，错误 evaluator、脏数据或错误日志会污染后续结论；agent 可能完成了流程但没有产生可信知识。</td>
+            <td>workflow logging、agent teams、simulation/checker、实验复现记录、human review。这个方向我还没有深读，只先放成类比坐标。</td>
+          </tr>
+          <tr>
+            <th>RSI</th>
+            <td>系统自己的能力模型、任务记录、评估器、改进策略和回归测试。</td>
+            <td>如果长链条里的反馈不可信，系统会把错误当成进步，持续自我强化。</td>
+            <td>更可靠的 verifier、regression suite、stateful memory、可审计改进记录。这里是上层目标，我还没有把它证明成一个具体选题。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>对选题有用的五个观察</h2>
+    <ul class="list">
+      <li>
+        <b>1. Long Horizon 的核心在于让循环里的状态、预测和反馈在多次调用后仍然可信。</b>
+        所以最值得追的问题通常是：哪个接口在长任务里最先失效。
+      </li>
+      <li>
+        <b>2. World model 方向里，最清楚的实验对象仍然是 rollout、planner 和 value。</b>
+        TD-MPC、PRISM-WM、GRASP、NEUBAY 这类工作之所以适合学习，是因为它们能把“预测失败”落到任务回报、规划轨迹、horizon、ablation 上。
+      </li>
+      <li>
+        <b>3. 机器人方向把 long horizon 变成了更真实的状态问题。</b>
+        对象是否还在、抽屉是否开过、接触是否换了模式、子任务是否完成，这些比“视频看起来像不像”更接近 long-horizon reliability。
+      </li>
+      <li>
+        <b>4. Coding agent 和 AI for Science 提供的是类比，不应该直接替代机器人问题。</b>
+        它们提醒我：长期系统都需要外部状态、verifier、日志和回归测试。但机器人还额外受物理、接触、延迟和真实执行限制。
+      </li>
+      <li>
+        <b>5. 如果最终目标是 RSI，long horizon 就变成了可信自我改进的前置问题。</b>
+        系统要反复行动、测量、更新自己；只要反馈链条不可靠，自我改进就可能变成错误累积。
+      </li>
+    </ul>
+
+    <h2>后续读论文时的问法</h2>
+    <p>
+      下一步读每篇论文，可以固定问六个问题：它要证明什么？它认为旧系统在哪个接口失败？它改了 state、memory、predict、verify、plan、act、measure 中的哪一个？它在哪个平台暴露失败？它和谁比较？它用什么指标证明自己的主张？
+    </p>
+    <p>
+      这样读的好处是，论文不会散成名词列表。每篇工作都要回到同一条长期执行循环里，看它到底改了哪个零件，以及这个改动是否真的让长任务更可靠。
+    </p>
+
+    <h2>主要来源</h2>
+    <p class="small">
+      这页只做汇报用的地图，不把所有论文都展开。强结论仍然需要回到论文原文和实验表。
+    </p>
+    <ul class="refs">
+      <li><a href="https://arxiv.org/abs/2606.00133">World Models: A Comprehensive Survey</a>, 2026.</li>
+      <li><a href="https://arxiv.org/abs/2605.00080">World Model for Robot Learning: A Comprehensive Survey</a>, 2026.</li>
+      <li><a href="https://developer.nvidia.com/blog/pretrained-to-imagine-fine-tuned-to-act-the-rise-of-world-action-models/">NVIDIA: Pretrained to Imagine, Fine-Tuned to Act: The Rise of World Action Models</a>, 2026.</li>
+      <li><a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy</a>, NVIDIA / Stanford, 2026.</li>
+      <li><a href="https://arxiv.org/abs/2606.02800">Cosmos 3</a>, NVIDIA, 2026.</li>
+      <li><a href="https://arxiv.org/abs/2203.04955">TD-MPC</a>, 2022; <a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a>, 2026; <a href="https://bair.berkeley.edu/blog/2026/04/20/grasp/">GRASP</a>, BAIR, 2026.</li>
+      <li><a href="https://developers.openai.com/blog/run-long-horizon-tasks-with-codex">OpenAI: Run long horizon tasks with Codex</a>; <a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents">Anthropic: Effective harnesses for long-running agents</a>.</li>
+    </ul>
+
+    <footer>
+      说明：这是给 6.16-6.28 学习成果汇报使用的阶段性地图。AI for Science 与 RSI 部分目前只作为跨领域类比和上层动机，不等同于已经完成的深读结论。
+    </footer>
+  </main>
+</body>
+</html>

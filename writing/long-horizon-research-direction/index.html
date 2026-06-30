@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>研究方向 — Sense Wang</title>
+  <meta name="description" content="Long-horizon robot world model 的几个可讨论研究方向：planner、verifier、backbone。">
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #111;
+      --muted: #5f5f5f;
+      --soft: #8c8c8c;
+      --line: #e7e7e7;
+      --paper: #fff;
+      --wash: #f8f8f8;
+      --sans: -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", Arial, sans-serif;
+      --mono: "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      background: var(--paper);
+      color: var(--ink);
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+    }
+
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      font-size: 17px;
+      line-height: 1.78;
+      letter-spacing: 0;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: #111;
+      text-decoration-thickness: 0.08em;
+      text-underline-offset: 0.2em;
+    }
+
+    .shell {
+      width: min(760px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    header {
+      padding: 72px 0 44px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .topnav {
+      margin-bottom: 52px;
+      color: #777;
+      font-size: 13px;
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--soft);
+      font-size: 13px;
+      font-weight: 720;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 42px);
+      line-height: 1.12;
+      font-weight: 760;
+      letter-spacing: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .deck {
+      margin: 22px 0 0;
+      color: #444;
+      font-size: 19px;
+      line-height: 1.62;
+      max-width: 720px;
+    }
+
+    .meta {
+      margin-top: 24px;
+      color: #999;
+      font-size: 13px;
+    }
+
+    main { padding: 56px 0 96px; }
+
+    h2 {
+      margin: 58px 0 18px;
+      font-size: 25px;
+      line-height: 1.28;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 34px 0 10px;
+      font-size: 19px;
+      line-height: 1.36;
+    }
+
+    p { margin: 0 0 17px; }
+
+    ul, ol {
+      margin: 0 0 22px;
+      padding-left: 22px;
+    }
+
+    li { margin: 0 0 10px; }
+
+    .direction-list {
+      margin-bottom: 34px;
+      list-style-type: cjk-ideographic;
+    }
+
+    .direction-list li {
+      margin-bottom: 14px;
+      padding-left: 2px;
+    }
+
+    strong { font-weight: 740; }
+
+    .table-wrap {
+      margin: 30px 0 34px;
+      overflow-x: auto;
+      border-top: 2px solid #111;
+      border-bottom: 1px solid var(--line);
+    }
+
+    table {
+      width: 100%;
+      min-width: 720px;
+      border-collapse: collapse;
+      font-size: 14px;
+      line-height: 1.58;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #444;
+      font-size: 12px;
+      font-weight: 740;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: #fafafa;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .note {
+      margin: 28px 0 32px;
+      padding: 3px 0 3px 18px;
+      border-left: 3px solid #111;
+      color: #333;
+      font-size: 15px;
+      line-height: 1.72;
+    }
+
+    .mono {
+      font-family: var(--mono);
+      font-size: 0.94em;
+    }
+
+    .refs {
+      margin-top: 64px;
+      padding-top: 28px;
+      border-top: 1px solid var(--line);
+      color: #444;
+      font-size: 14px;
+      line-height: 1.62;
+    }
+
+    .refs h2 {
+      margin-top: 0;
+    }
+
+    .refs li {
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 34px, 760px); }
+      header { padding: 46px 0 34px; }
+      .topnav { margin-bottom: 34px; }
+      main { padding: 42px 0 76px; }
+      body { font-size: 16px; }
+      .deck { font-size: 17px; }
+      h2 { font-size: 22px; margin-top: 46px; }
+      table { min-width: 640px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell">
+      <nav class="topnav"><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+      <p class="eyebrow">World Models / Research Direction</p>
+      <h1>研究方向</h1>
+      <p class="deck">Long-horizon robot world model 可以先按三个对象看：planner、verifier、backbone。</p>
+      <p class="meta">June 2026</p>
+    </div>
+  </header>
+
+  <main>
+    <article class="shell">
+      <h2>Planner</h2>
+
+      <ol class="direction-list">
+        <li><strong>Planner-selected rollout audit。</strong>从同一批状态出发，记录 planner 生成的候选动作、world model 评分和真实执行结果，检查高分候选是否真的更容易成功。参考 <a href="https://arxiv.org/abs/2203.04955">TD-MPC</a>、<a href="https://arxiv.org/abs/2602.00475">GRASP</a>、<a href="https://arxiv.org/abs/2512.09929">Closing the Train-Test Gap</a>、<a href="https://arxiv.org/abs/2606.13672">WEAVER</a>。</li>
+        <li><strong>Planner-aware world model。</strong>把 planner 会选到的候选轨迹加入训练或微调，减少 data actions 和 planner actions 之间的 train-test gap。关键对照是 data actions、random actions、planner actions 三组上的评分校准和闭环成功率。</li>
+        <li><strong>Risk-aware planning。</strong>让 planner 同时看 value、uncertainty 和 event signal，在模型分歧变大、接触阶段切换、任务事件不确定时缩短 horizon 或触发 replan。</li>
+      </ol>
+
+      <h2>Verifier</h2>
+
+      <ol class="direction-list">
+        <li><strong>Ensemble verifier。</strong>用 model cluster / heads 的 rollout 分歧做信号，判断候选未来是否离开模型可信区域。参考 <a href="https://arxiv.org/abs/1805.12114">PETS</a>、<a href="https://arxiv.org/abs/2512.04341">NEUBAY</a>。</li>
+        <li><strong>Event verifier。</strong>把 imagined future 解码成任务事件，检查接触、移动、抓取、放置、阶段切换是否真的发生。参考 <a href="https://arxiv.org/abs/2606.13053">EV-WM</a>。</li>
+        <li><strong>Reachability verifier。</strong>检查未来状态能不能由动作真实到达，避免 planner 选择“看起来好但动作不可达”的未来。参考 <a href="https://arxiv.org/abs/2604.01985">WAV</a>。</li>
+      </ol>
+
+      <h2>Backbone</h2>
+
+      <ol class="direction-list">
+        <li><strong>Regime-aware transition。</strong>让 transition function 区分自由运动、接触前、接触中、离开接触后的动力学，减少接触和混合动力学被平均掉的问题。参考 <a href="https://arxiv.org/abs/2512.08411">PRISM-WM</a>。</li>
+        <li><strong>Variable-horizon transition。</strong>让模型根据状态预测不同长度的 latent jump，直接测每个状态还能被信任 rollout 多远。参考 <a href="https://arxiv.org/abs/2606.21775">Variable-Length Latent World Models</a>。</li>
+        <li><strong>World-action backbone。</strong>把 observation、history、action sequence 和 future state 放进同一个 backbone，让 model 同时服务 policy evaluation、policy improvement 和 test-time planning。参考 <a href="https://arxiv.org/abs/2606.13672">WEAVER</a>、<a href="https://research.nvidia.com/labs/dir/cosmos-policy/">Cosmos Policy</a>、<a href="https://arxiv.org/abs/2602.15922">DreamZero</a>。</li>
+      </ol>
+
+      <section class="refs">
+        <h2>References</h2>
+        <ol>
+          <li><a href="https://arxiv.org/abs/2606.00133">World Models: A Comprehensive Survey</a>, arXiv:2606.00133, 2026.</li>
+          <li><a href="https://arxiv.org/abs/2605.00080">World Models for Robot Learning: A Comprehensive Survey</a>, arXiv:2605.00080, 2026.</li>
+          <li><a href="https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-5/">Koray Kavukcuoglu and Jeff Dean, Gemini 3.5: frontier intelligence with action</a>, Google DeepMind / Google, 2026.</li>
+          <li><a href="https://developer.nvidia.com/blog/pretrained-to-imagine-fine-tuned-to-act-the-rise-of-world-action-models/">NVIDIA: Pretrained to Imagine, Fine-Tuned to Act: The Rise of World Action Models</a>, 2026.</li>
+          <li>Nicklas Hansen, Hao Su, Xiaolong Wang. <a href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for Model Predictive Control</a>, arXiv:2203.04955, 2022.</li>
+          <li>Mingwei Li et al. <a href="https://arxiv.org/abs/2512.08411">Prismatic World Model: Learning Compositional Dynamics for Planning in Hybrid Systems</a>, arXiv:2512.08411, 2025.</li>
+          <li><a href="https://arxiv.org/abs/2512.09929">Closing the Train-Test Gap in World Models for Gradient-Based Planning</a>, arXiv:2512.09929, 2025.</li>
+          <li><a href="https://arxiv.org/abs/2602.00475">GRASP: Actions Speak Louder Than Frames</a>, arXiv:2602.00475, 2026.</li>
+          <li><a href="https://arxiv.org/abs/2606.13053">Event-Verified World Model for Long-Horizon Robotic Manipulation</a>, arXiv:2606.13053, 2026.</li>
+          <li><a href="https://arxiv.org/abs/2604.01985">World Action Verifier</a>, arXiv:2604.01985, 2026.</li>
+          <li><a href="https://arxiv.org/abs/2512.04341">NEUBAY: Long-Horizon Model-Based Offline Reinforcement Learning Without Explicit Conservatism</a>, arXiv:2512.04341, 2025.</li>
+          <li><a href="https://arxiv.org/abs/2606.21775">Beyond the Next Step: Variable-Length Latent World Models for Long-Horizon Planning</a>, arXiv:2606.21775, 2026.</li>
+          <li><a href="https://arxiv.org/abs/2606.13672">WEAVER, Better, Faster, Longer: An Effective World Model for Robotic Manipulation</a>, arXiv:2606.13672, 2026.</li>
+          <li><a href="https://arxiv.org/abs/2601.03782">PointWorld: A World Model with 3D Point Flow</a>, arXiv:2601.03782, 2026.</li>
+          <li><a href="https://arxiv.org/abs/2602.15922">DreamZero: World Action Models for Zero-Shot Robotics</a>, arXiv:2602.15922, 2026.</li>
+          <li><a href="https://arxiv.org/abs/1805.12114">Deep Reinforcement Learning in a Handful of Trials using Probabilistic Dynamics Models</a>, PETS, arXiv:1805.12114, 2018.</li>
+        </ol>
+      </section>
+    </article>
+  </main>
+</body>
+</html>
+<!--
+Provenance:
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 生成一篇面向个人网站发布的 long-horizon world model 研究方向判断文章，把已有博客、survey 线索和可做 idea 收束到 planner-facing trust horizon。
+- 触发 Prompt（逐字）: "以及你看我的个人博客里面其实更新了一些文章。哦，这里面的一些文章然后你先看一下多了哪些文章吧，然后我看怎么样把这些东西串起来。然后以及刚才你说的这个刚才我说的这个insight的部分、可做idea的部分，也会是一篇新的文章。然后这个就是最终了，就是说最终形成了这样的一份洞察和方向的一个判断。好，这个就是最终了，中间会有一些其他的东西。先把这个写了，后续我们还有其他的需要加的，我再跟你讨论。"
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 依据反馈重写文章主体，只保留并扩展五个推荐研究方向，并把依据扩展到 152 项 long-horizon / world-model corpus。
+- 关键追问（逐字）: "我觉得只有5个可以推荐的研究方式是有价值的。你可以只关注这部分的东西，然后让它变得更可信、更具有价值。现在的源泉并不只局限于我已经读过这文章，而是全部的100多篇。"
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 按反馈把五个方向重写为从闭环行动链条推出的层级化研究问题，并补足每个方向的最小实验、关键对照和证伪条件。
+- 关键追问（逐字）: "以及这里边需要去，你需要真的去看很多文章，然后从第一性原理去出发。它这边要求是具体的，然后是分层次的，是有层级的，然后语言是极简而克制的。"
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 将“五个方向”重写为 Planner / Verifier / Model 三层研究对象，并补入 ensemble disagreement / model cluster 作为 verifier 信号。
+- 触发 Prompt（逐字）: "我觉得这个继续讨论的阶段性产出的这个东西，你真的觉得这5个是有价值的吗？我不觉得这5个是非常有价值的。然后你需要再去看一下其他的。我其实对于Planner还有这个Verifier，包括这个model，就分这三个去讲吧。我认为要不就是在Planner上做文章，要不就是在Verifier上做文章，要不就是在backbone上去做文章。当然也有一些改一些架构的，整个基本就是这样的一个东西。然后在此期间你需要，哦，对，我记得还有一个是用用集群是吧？用集群，然后是让看他们的偏离度多少，然后是以他们的很多偏离度做那个Verifier。总之是而且这个我觉得这个可以作为写一个文档，就你觉得比较值得讨论的方向，可以写一个文档，不需要把这5个列上来。然后比如上线到我的个人网站。这个阶段性产出这一段可以不要。然后最后写了Longhorizon的5个研究方向，这个研究方向你需要再去看一下那些论文，然后把这个去真的觉得不错就行。然后是后面又沿着Longhorizon和Kori Kavukoglu继续补了几篇更具体的文章。我记得我都写那个博客了，在这里面需要提。"
+- 略去: 寒暄与中间执行细节
+- 日期 / 会话: 2026-06-30 · Codex (GPT-5)
+- 摘要: 将文章从解释型长文压缩成“研究方向”清单，只保留 Planner / Verifier / Backbone 三个小标题和每组具体可做点。
+- 触发 Prompt（逐字）: "我觉得这篇你不用写的太麻烦，就是你刚说的这个三个值得研究的方向，不需要文字，我现在给你规定了它的格式。就是首先一个大标题就是研究方向，然后下面分为几个小标题，这小标题可能是Planner、Verifier和Backbone。然后当然也可以有其他的，以及这三个可以变，因为我的理解不一定是最前沿的、最权威的。然后这三个小标题下面就是一什么什么什么什么，二什么什么什么什么，三什么什么什么什么。我觉得这个是重要的。你就按照这格式写，你现在写的文章太啰嗦了。"
+- 略去: 寒暄与中间执行细节
+-->
