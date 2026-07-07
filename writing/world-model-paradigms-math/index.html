@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>三类机器人 World Model 范式的底层数学 — Sense Wang</title>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+:root {
+  color-scheme: light;
+  --ink: #111;
+  --muted: #666;
+  --faint: #999;
+  --line: #e9e9e9;
+  --soft: #f8f8f8;
+}
+* { box-sizing: border-box; }
+body {
+  overflow-x: hidden;
+  margin: 0;
+  background: #fff;
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 17px;
+  line-height: 1.78;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 72px 20px 112px;
+}
+nav {
+  margin-bottom: 52px;
+  font-size: 13px;
+}
+.meta {
+  color: var(--faint);
+  font-size: 13px;
+  margin: -8px 0 30px;
+}
+h1 a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 5px;
+}
+h1 a:hover { opacity: 0.62; }
+h1 {
+  font-size: clamp(30px, 5vw, 42px);
+  line-height: 1.12;
+  letter-spacing: 0;
+  margin: 0 0 22px;
+  font-weight: 650;
+}
+h2 {
+  font-size: 25px;
+  line-height: 1.28;
+  letter-spacing: 0;
+  margin: 56px 0 16px;
+  font-weight: 650;
+}
+p { margin: 16px 0; }
+a { color: inherit; text-underline-offset: 3px; }
+ul { padding-left: 1.35em; margin: 18px 0; }
+li { margin: 6px 0; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 28px 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 8px;
+  vertical-align: top;
+  text-align: left;
+}
+th { font-weight: 650; border-top: 1px solid var(--line); }
+.MathJax, mjx-container { font-size: 105% !important; }
+.math.display, mjx-container[display="true"] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 12px 0;
+  margin: 14px 0;
+}
+hr { border: 0; border-top: 1px solid var(--line); margin: 42px 0; }
+blockquote {
+  margin: 24px 0;
+  padding: 0 0 0 18px;
+  border-left: 2px solid var(--ink);
+  color: #333;
+}
+code {
+  font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+}
+.refs {
+  border-top: 1px solid var(--line);
+  margin-top: 64px;
+  padding-top: 24px;
+}
+@media (max-width: 640px) {
+  body { font-size: 16px; line-height: 1.72; }
+  main { padding: 48px 18px 80px; }
+  h2 { font-size: 22px; margin-top: 44px; }
+  table { display: block; overflow-x: auto; white-space: nowrap; }
+}
+</style>
+</head>
+<body>
+<main>
+<nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+<h1 id="三类机器人-world-model-范式的底层数学"><a
+href="https://mp.weixin.qq.com/s/GLDeVtsRsyo4K6dwD_BgMg">三类机器人
+World Model 范式的底层数学</a></h1>
+<div class="meta">July 2026 · Chinese technical note</div>
+<p>本文是对《机器人学习中三类 World Model
+范式的数学本质》的教程式拆解。原文把机器人学习里的三类 World Model
+范式放在一起：</p>
+<ul>
+<li>Future-conditioned / IDM-style</li>
+<li>Single-backbone / VLA-style</li>
+<li>Shared-attention + Specialized Experts / MoT-style</li>
+</ul>
+<p>本文把原文当作一个数学对象来读：三条路线都在回答机器人控制里的同一个动作接口。</p>
+<p>机器人看到历史，读到语言指令，下一步到底怎么动？</p>
+<p>原文真正统一三种范式的，是下面这个条件策略：</p>
+<p><span class="math display">\[
+\pi(a_t\mid o_{1:t},a_{1:t-1},l).
+\]</span></p>
+<p>它的读法是：在机器人到当前为止的观测历史 <span
+class="math inline">\(o_{1:t}\)</span>、动作历史 <span
+class="math inline">\(a_{1:t-1}\)</span>、语言指令 <span
+class="math inline">\(l\)</span> 已知的条件下，当前动作 <span
+class="math inline">\(a_t\)</span> 的策略分布是什么。</p>
+<p>这一行公式可以当成整篇原文的入口。IDM-style、VLA-style、MoT-style
+都在近似这个分布。三条路线的分歧在动作分布的中间结构：先生成未来目标，直接让大模型输出动作，或先学习共享表示再由专家输出。</p>
+<p>本文后面每遇到一个核心公式，都会按四层来读：</p>
+<ol type="1">
+<li>它怎么读；</li>
+<li>每个符号是什么；</li>
+<li>哪一步来自概率论恒等式，哪一步来自神经网络近似；</li>
+<li>它在机器人系统里怎样影响动作。</li>
+</ol>
+<p>这样读，公式不再是排版出来的数学，它会变成一条可执行的计算链。</p>
+<h2 id="先把机器人问题写成数学对象">先把机器人问题写成数学对象</h2>
+<p>机器人处在一个动态世界里。世界在时间 <span
+class="math inline">\(t\)</span> 有真实状态：</p>
+<p><span class="math display">\[
+x_t\in\mathcal X.
+\]</span></p>
+<p>真实状态包括杯子位置、夹爪位置、物体速度、接触状态、摩擦、任务阶段等。机器人通常拿不到完整的
+<span class="math inline">\(x_t\)</span>，它只能拿到观测：</p>
+<p><span class="math display">\[
+o_t\in\mathcal O.
+\]</span></p>
+<p>观测可以是 RGB
+图像、深度图、关节角、力传感器、触觉信号。观测由真实状态产生：</p>
+<p><span class="math display">\[
+o_t\sim p(o_t\mid x_t).
+\]</span></p>
+<p>动作会改变世界状态：</p>
+<p><span class="math display">\[
+x_{t+1}\sim p(x_{t+1}\mid x_t,a_t).
+\]</span></p>
+<p>如果机器人能完整看到 <span
+class="math inline">\(x_t\)</span>，策略可以写成：</p>
+<p><span class="math display">\[
+\pi(a_t\mid x_t,l).
+\]</span></p>
+<p>现实中机器人通常只能看到不完整、带噪声、局部遮挡的观测。因此当前动作不能只依赖单帧
+<span class="math inline">\(o_t\)</span>。机器人需要历史：</p>
+<p><span class="math display">\[
+h_t=(o_{1:t},a_{1:t-1},l).
+\]</span></p>
+<p>这就是原文公式里 <span class="math inline">\(o_{1:t}\)</span>、<span
+class="math inline">\(a_{1:t-1}\)</span>、<span
+class="math inline">\(l\)</span> 一起出现的原因。<span
+class="math inline">\(h_t\)</span> 表示时间 <span
+class="math inline">\(t\)</span> 的历史上下文。它也可以递推写成：</p>
+<p><span class="math display">\[
+h_t=(h_{t-1},a_{t-1},o_t).
+\]</span></p>
+<p>工程上，这就是机器人控制系统里的 history buffer 或 memory
+context。每执行一步动作，每收到一帧新观测，系统的历史都会更新。</p>
+<p>于是机器人控制的局部问题变成：</p>
+<p><span class="math display">\[
+\pi(a_t\mid h_t).
+\]</span></p>
+<p>原文三种范式都服务这个对象。</p>
+<h2 id="这行概率式里每个符号在做什么">这行概率式里每个符号在做什么</h2>
+<p>先把几个符号分清楚。这些符号主要来自概率论、统计学习和强化学习：概率论提供条件分布和积分，统计学习提供参数化模型，强化学习把策略
+<span class="math inline">\(\pi\)</span>、动作 <span
+class="math inline">\(a_t\)</span>、状态或历史 <span
+class="math inline">\(h_t\)</span> 放进控制问题里。</p>
+<p><span class="math inline">\(\pi\)</span> 表示
+policy，策略。在强化学习语境里，它读作
+“pi”，这里表示动作的条件概率分布：</p>
+<p><span class="math display">\[
+\pi(a_t\mid h_t).
+\]</span></p>
+<p><span class="math inline">\(p\)</span> 表示一般概率分布。比如：</p>
+<p><span class="math display">\[
+p_{\theta_A}(A_t\mid Z_t)
+\]</span></p>
+<p>它是由参数 <span class="math inline">\(\theta_A\)</span>
+定义的动作概率模型。只有当这个分布用于生成动作时，它才承担策略的角色。</p>
+<p>竖线 <span class="math inline">\(\mid\)</span> 表示条件。比如：</p>
+<p><span class="math display">\[
+p_{\theta_O}(O_{t+1}\mid Z_t)
+\]</span></p>
+<p>读作：在共享表示 <span class="math inline">\(Z_t\)</span>
+已知的条件下，由视觉专家参数 <span
+class="math inline">\(\theta_O\)</span> 定义的模型，预测下一时刻观测
+<span class="math inline">\(O_{t+1}\)</span> 的概率分布。</p>
+<p>下标通常用来标记时间或模块。<span class="math inline">\(a_t\)</span>
+是时间 <span class="math inline">\(t\)</span> 的动作，<span
+class="math inline">\(Z_t\)</span> 是时间 <span
+class="math inline">\(t\)</span> 的内部表示，<span
+class="math inline">\(\theta_A\)</span> 里的 <span
+class="math inline">\(A\)</span> 表示 Action，也就是动作专家的参数。</p>
+<p>右上角或下标里的希腊字母通常表示参数集合。比如：</p>
+<p><span class="math display">\[
+f_\Phi,\quad q_\theta,\quad \kappa_\phi,\quad p_{\theta_A}.
+\]</span></p>
+<p><span class="math inline">\(\Phi,\theta,\phi,\theta_A\)</span>
+都表示一整组神经网络参数：权重矩阵、bias、attention 投影矩阵、MLP
+参数、LayerNorm 参数等。</p>
+<p>这个记号系统很重要。原文的数学看起来抽象，但大部分公式都在表达同一类事情：</p>
+<p><span class="math display">\[
+\text{某个输入}
+\xrightarrow{\text{带参数的函数}}
+\text{某个概率分布或表示}.
+\]</span></p>
+<h2 id="第一层基础条件化与边缘化">第一层基础：条件化与边缘化</h2>
+<p>IDM-style
+的核心来自概率论里一个最基本的操作：引入中间变量，再把它积分掉。</p>
+<p>原本要建模：</p>
+<p><span class="math display">\[
+p(a_t\mid h_t).
+\]</span></p>
+<p>引入一个未来目标变量 <span class="math inline">\(g_t\)</span>：</p>
+<p><span class="math display">\[
+g_t\in\mathcal G.
+\]</span></p>
+<p>这一步常见的困惑是：为什么可以凭空引入一个 <span
+class="math inline">\(g_t\)</span>？数学上的答案是，<span
+class="math inline">\(g_t\)</span>
+是一个中间随机变量。只要把动作和目标看成联合分布，就可以先讨论 <span
+class="math inline">\((a_t,g_t)\)</span> 一起发生的概率，再把 <span
+class="math inline">\(g_t\)</span>
+消去。建模上的答案更具体：机器人动作通常服务于某个短期未来，比如夹爪靠近杯子、杯子离开桌面、末端执行器移动到某个
+pose。<span class="math inline">\(g_t\)</span>
+把这个短期未来显式写出来。</p>
+<p>概率论告诉我们：</p>
+<p><span class="math display">\[
+p(a_t\mid h_t)
+=
+\int_{\mathcal G}p(a_t,g_t\mid h_t)\,dg_t.
+\]</span></p>
+<p>再用链式法则：</p>
+<p><span class="math display">\[
+p(a_t,g_t\mid h_t)
+=
+p(a_t\mid h_t,g_t)p(g_t\mid h_t).
+\]</span></p>
+<p>所以：</p>
+<p><span class="math display">\[
+p(a_t\mid h_t)
+=
+\int_{\mathcal G}
+p(a_t\mid h_t,g_t)
+p(g_t\mid h_t)
+\,dg_t.
+\]</span></p>
+<p>这是边缘化恒等式。它的自然语言读法是：给定历史 <span
+class="math inline">\(h_t\)</span>，动作 <span
+class="math inline">\(a_t\)</span> 的概率，等于“每一种未来目标 <span
+class="math inline">\(g_t\)</span> 的概率”乘以“在这个目标下产生动作
+<span class="math inline">\(a_t\)</span> 的概率”，再对所有可能的 <span
+class="math inline">\(g_t\)</span> 做加权平均。</p>
+<p>如果 <span class="math inline">\(g_t\)</span>
+是离散变量，积分换成求和：</p>
+<p><span class="math display">\[
+p(a_t\mid h_t)
+=
+\sum_{g\in\mathcal G}
+p(a_t\mid h_t,g)p(g\mid h_t).
+\]</span></p>
+<p>连续目标用积分，离散目标用求和。积分并不神秘，它只是在对所有可能目标做加权平均。</p>
+<p>原文中的 IDM-style 公式就是这个恒等式的模型化版本：</p>
+<p><span class="math display">\[
+\pi(a_t\mid h_t)
+\approx
+\int_{\mathcal G}
+\kappa_\phi(a_t\mid h_t,g_t)
+q_\theta(g_t\mid h_t)
+\,dg_t.
+\]</span></p>
+<p>如果跟内行口头读这行，读法是：</p>
+<p>“pi of <span class="math inline">\(a_t\)</span> given <span
+class="math inline">\(h_t\)</span> is approximated by the integral over
+<span class="math inline">\(g_t\)</span> of kappa phi of <span
+class="math inline">\(a_t\)</span> given <span
+class="math inline">\(h_t\)</span> and <span
+class="math inline">\(g_t\)</span>, times <span
+class="math inline">\(q_\theta\)</span> of <span
+class="math inline">\(g_t\)</span> given <span
+class="math inline">\(h_t\)</span>, <span class="math inline">\(d
+g_t\)</span>.”</p>
+<p>中文直译是：在历史 <span class="math inline">\(h_t\)</span>
+条件下当前动作的策略分布，近似等于对所有未来目标 <span
+class="math inline">\(g_t\)</span>
+做积分；每个目标的贡献，是“这个目标出现的概率”乘以“在这个目标下选择该动作的概率”。</p>
+<p>这里的约等号很关键。概率恒等式本身可以严格成立，但真实的 <span
+class="math inline">\(p(g_t\mid h_t)\)</span> 和 <span
+class="math inline">\(p(a_t\mid h_t,g_t)\)</span>
+不可得。原文这行公式是有方向的：为了得到策略 <span
+class="math inline">\(\pi(a_t\mid
+h_t)\)</span>，用两个可训练模型去近似它。模型只能用神经网络近似真实分布：</p>
+<p><span class="math display">\[
+q_\theta(g_t\mid h_t)
+\approx
+p(g_t\mid h_t),
+\]</span></p>
+<p><span class="math display">\[
+\kappa_\phi(a_t\mid h_t,g_t)
+\approx
+p(a_t\mid h_t,g_t).
+\]</span></p>
+<p>如果 <span class="math inline">\(q_\theta\)</span> 和 <span
+class="math inline">\(\kappa_\phi\)</span>
+刚好等于真实条件分布，右边就退化成严格的边缘化恒等式。现实中它们只是学出来的函数，所以原文用
+<span
+class="math inline">\(\approx\)</span>。这也是这类公式的常见读法：左边是要近似的目标分布，右边是模型选择的一种可计算分解。</p>
+<h2
+id="idm-style先预测未来再反推动作">IDM-style：先预测未来，再反推动作</h2>
+<p>IDM-style 的计算路径是：</p>
+<p><span class="math display">\[
+h_t\rightarrow g_t\rightarrow a_t.
+\]</span></p>
+<p>先从历史 <span class="math inline">\(h_t\)</span> 预测未来目标 <span
+class="math inline">\(g_t\)</span>，再根据历史和目标反推出当前动作。</p>
+<p>这里的 <span class="math inline">\(q_\theta\)</span> 是 future
+model：</p>
+<p><span class="math display">\[
+q_\theta(g_t\mid h_t).
+\]</span></p>
+<p>它回答：在当前历史已知的条件下，未来目标 <span
+class="math inline">\(g_t\)</span> 可能是什么。</p>
+<p><span class="math inline">\(\kappa\)</span> 是希腊字母
+kappa，口头上一般读 “kappa”。这里的 <span
+class="math inline">\(\kappa_\phi\)</span> 是 inverse dynamics
+model：</p>
+<p><span class="math display">\[
+\kappa_\phi(a_t\mid h_t,g_t).
+\]</span></p>
+<p>它回答：如果当前历史是 <span
+class="math inline">\(h_t\)</span>，目标未来是 <span
+class="math inline">\(g_t\)</span>，现在应该采取什么动作 <span
+class="math inline">\(a_t\)</span>。</p>
+<p>为什么叫 inverse dynamics？</p>
+<p>正向动力学是：</p>
+<p><span class="math display">\[
+(x_t,a_t)\rightarrow x_{t+1}.
+\]</span></p>
+<p>也就是当前状态和动作已知，预测下一状态。</p>
+<p>逆动力学反过来：</p>
+<p><span class="math display">\[
+(x_t,x_{t+1})\rightarrow a_t.
+\]</span></p>
+<p>当前状态和目标未来状态已知，反推出中间动作。</p>
+<p>在机器人抓杯子的例子里，future model
+可能预测“夹爪应该靠近红杯子”或“杯子应该离开桌面”。inverse dynamics model
+再根据这个目标输出当前动作：往左、往前、闭合夹爪或上抬。</p>
+<p>训练时，future model 可以用负对数似然：</p>
+<p><span class="math display">\[
+\mathbb E\left[
+-\log q_\theta(g_t^\star\mid h_t)
+\right].
+\]</span></p>
+<p>它要求真实未来目标 <span class="math inline">\(g_t^\star\)</span>
+在模型分布下概率更高。</p>
+<p>inverse dynamics model 也可以用负对数似然：</p>
+<p><span class="math display">\[
+\mathbb E\left[
+-\log \kappa_\phi(a_t^\star\mid h_t,g_t^\star)
+\right].
+\]</span></p>
+<p>它要求在历史和真实目标已知时，真实动作 <span
+class="math inline">\(a_t^\star\)</span> 的概率更高。</p>
+<p>推理时，完整积分通常难算。可以取最可能目标：</p>
+<p><span class="math display">\[
+\hat g_t=\arg\max_g q_\theta(g\mid h_t),
+\]</span></p>
+<p>再近似：</p>
+<p><span class="math display">\[
+\pi(a_t\mid h_t)
+\approx
+\kappa_\phi(a_t\mid h_t,\hat g_t).
+\]</span></p>
+<p>也可以采样多个目标：</p>
+<p><span class="math display">\[
+g_t^{(i)}\sim q_\theta(g_t\mid h_t),\quad i=1,\dots,N,
+\]</span></p>
+<p>然后平均：</p>
+<p><span class="math display">\[
+\pi(a_t\mid h_t)
+\approx
+\frac1N
+\sum_{i=1}^N
+\kappa_\phi(a_t\mid h_t,g_t^{(i)}).
+\]</span></p>
+<p>IDM-style
+的好处是结构清楚。它让模型显式表达“我要到哪里去”。风险也来自这里：未来目标预测错了，后面的动作会错；目标看起来合理，但在真实动力学下不可达，动作也会失败；未来目标和当前动作之间的误差会级联。</p>
+<h2 id="第二层基础神经网络如何学习">第二层基础：神经网络如何学习</h2>
+<p>原文第二类和第三类都绕不开一个问题：神经网络参数为什么会被 loss
+更新。</p>
+<p>一个神经网络可以看成带参数的函数：</p>
+<p><span class="math display">\[
+z=f_\theta(x).
+\]</span></p>
+<p>最简单一层是：</p>
+<p><span class="math display">\[
+z=\sigma(Wx+b).
+\]</span></p>
+<p>这里 <span class="math inline">\(W,b\)</span> 是参数，<span
+class="math inline">\(\sigma\)</span>
+是非线性函数。很多层叠起来，就是一个复杂的 <span
+class="math inline">\(f_\theta\)</span>。</p>
+<p>训练分三步。</p>
+<p>第一步是前向计算。比如动作预测：</p>
+<p><span class="math display">\[
+h_t
+\rightarrow
+Z_t=f_\Phi(h_t)
+\rightarrow
+\hat A_t=E_A^{\theta_A}(Z_t)
+\rightarrow
+\mathcal L_A(\hat A_t,A_t^\star).
+\]</span></p>
+<p>前向计算的作用是得到预测 <span class="math inline">\(\hat
+A_t\)</span> 和 loss。</p>
+<p>第二步是后向计算。后向计算不会倒着生成输入；它从 loss
+出发，计算每个参数对 loss 的敏感度：</p>
+<p><span class="math display">\[
+\frac{\partial\mathcal L_A}{\partial\theta_A},
+\quad
+\frac{\partial\mathcal L_A}{\partial\Phi}.
+\]</span></p>
+<p>对某个参数求导的意思是：如果只把这个参数微小改变一点，loss
+会变大还是变小，变化多少。</p>
+<p>动作 loss 对共享参数 <span class="math inline">\(\Phi\)</span>
+的影响来自链式法则：</p>
+<p><span class="math display">\[
+\frac{\partial\mathcal L_A}{\partial\Phi}
+=
+\frac{\partial\mathcal L_A}{\partial\hat A_t}
+\frac{\partial\hat A_t}{\partial Z_t}
+\frac{\partial Z_t}{\partial\Phi}.
+\]</span></p>
+<p>自然语言是：动作预测错了，错误先作用在预测动作 <span
+class="math inline">\(\hat A_t\)</span>，再传到动作专家输入 <span
+class="math inline">\(Z_t\)</span>，最后传到生成 <span
+class="math inline">\(Z_t\)</span> 的共享网络参数 <span
+class="math inline">\(\Phi\)</span>。</p>
+<p>第三步是参数更新：</p>
+<p><span class="math display">\[
+\Phi\leftarrow\Phi-\eta\nabla_\Phi\mathcal L.
+\]</span></p>
+<p><span class="math inline">\(\eta\)</span> 是 learning rate。梯度
+<span class="math inline">\(\nabla_\Phi\mathcal L\)</span> 指向 loss
+上升最快的方向，负梯度方向是局部下降方向。</p>
+<p>一阶近似解释了为什么这个更新合理：</p>
+<p><span class="math display">\[
+\mathcal L(\Phi+\Delta\Phi)
+\approx
+\mathcal L(\Phi)
++
+\nabla_\Phi\mathcal L^\top\Delta\Phi.
+\]</span></p>
+<p>选择：</p>
+<p><span class="math display">\[
+\Delta\Phi=-\eta\nabla_\Phi\mathcal L,
+\]</span></p>
+<p>得到：</p>
+<p><span class="math display">\[
+\mathcal L(\Phi+\Delta\Phi)
+\approx
+\mathcal L(\Phi)
+-
+\eta\|\nabla_\Phi\mathcal L\|^2.
+\]</span></p>
+<p>因为：</p>
+<p><span class="math display">\[
+\|\nabla_\Phi\mathcal L\|^2\ge 0,
+\]</span></p>
+<p>所以一阶近似下 loss 会下降。神经网络学习的底层机制就是：前向算
+loss，后向算梯度，优化器沿着负梯度方向改参数。</p>
+<p>这个机制解释了为什么语言、视觉、动作可以一起训练。自然语言先被 token
+化，再变成 embedding 向量；图像变成 patch token
+或视觉特征；动作变成连续向量或动作
+token。只要进入神经网络后的计算是可微的，loss
+就能通过反向传播更新参数。</p>
+<h2
+id="vla-style一个大模型直接学动作分布">VLA-style：一个大模型直接学动作分布</h2>
+<p>Single-backbone / VLA-style 取消 IDM 里的显式未来目标 <span
+class="math inline">\(g_t\)</span>。它直接学习：</p>
+<p><span class="math display">\[
+\pi(a_t\mid h_t)
+\approx
+p_\Theta(a_t\mid h_t).
+\]</span></p>
+<p>也可以预测一段动作：</p>
+<p><span class="math display">\[
+A_t=(a_t,a_{t+1},\dots,a_{t+H-1}),
+\]</span></p>
+<p>于是：</p>
+<p><span class="math display">\[
+\pi(a_t\mid h_t)
+\approx
+p_\Theta(A_t\mid h_t).
+\]</span></p>
+<p>这条路线很像语言模型。语言模型给定上下文，预测下一个 token；VLA
+给定视觉、动作历史和语言指令，预测动作 token 或连续动作。</p>
+<p>如果它同时预测未来观测、动作和语言输出，可以写成：</p>
+<p><span class="math display">\[
+p_\Theta(O_{t+1},A_t,y_t^L\mid h_t).
+\]</span></p>
+<p>这里：</p>
+<p><span class="math display">\[
+O_{t+1}=(o_{t+1},o_{t+2},\dots,o_{t+L})
+\]</span></p>
+<p>是未来观测序列。</p>
+<p><span class="math display">\[
+y_t^L
+\]</span></p>
+<p>是语言输出，右上角 <span class="math inline">\(L\)</span> 表示
+Language。</p>
+<p>VLA-style 的优势来自统一。视觉、语言、动作都进入同一个
+backbone，模型可以通过 scaling
+吸收大量数据。它的风险也来自统一：不同任务共享同一套参数。</p>
+<p>原文写了多任务 loss：</p>
+<p><span class="math display">\[
+\mathcal L(\Theta)
+=
+\lambda_V\mathcal L_V(\Theta)
++
+\lambda_A\mathcal L_A(\Theta)
++
+\lambda_L\mathcal L_L(\Theta).
+\]</span></p>
+<p><span class="math inline">\(\mathcal L_V\)</span> 是视觉 loss，<span
+class="math inline">\(\mathcal L_A\)</span> 是动作 loss，<span
+class="math inline">\(\mathcal L_L\)</span> 是语言 loss。<span
+class="math inline">\(\lambda_V,\lambda_A,\lambda_L\)</span> 读作 lambda
+V、lambda A、lambda L，通常是人为设定或调参得到的 loss
+权重，用来控制每个任务对总训练目标的影响。</p>
+<p>这里要把三个对象分开：</p>
+<ul>
+<li>policy 是推理时产生动作的概率分布；</li>
+<li>loss 是训练时评价预测好坏的标尺；</li>
+<li><span class="math inline">\(\lambda\)</span> 是不同 loss
+在总目标里的配比。</li>
+</ul>
+<p>训练不直接“优化 policy 这个词”。训练优化的是参数 <span
+class="math inline">\(\Theta\)</span>。当 <span
+class="math inline">\(\Theta\)</span> 被更新后，<span
+class="math inline">\(p_\Theta(A_t\mid h_t)\)</span>
+这个动作分布随之改变，于是策略行为改变。</p>
+<p>因为它们共享 <span
+class="math inline">\(\Theta\)</span>，所以总梯度是：</p>
+<p><span class="math display">\[
+\nabla_\Theta\mathcal L
+=
+\lambda_V\nabla_\Theta\mathcal L_V
++
+\lambda_A\nabla_\Theta\mathcal L_A
++
+\lambda_L\nabla_\Theta\mathcal L_L.
+\]</span></p>
+<p>这就是 VLA
+的优化压力。视觉任务希望参数保留视觉细节，语言任务希望参数保留语义结构，动作任务希望参数保留可控制信息。三者不一定朝同一方向更新。</p>
+<p>令：</p>
+<p><span class="math display">\[
+g_V=\nabla_\Theta\mathcal L_V,\quad
+g_A=\nabla_\Theta\mathcal L_A.
+\]</span></p>
+<p>如果：</p>
+<p><span class="math display">\[
+\langle g_V,g_A\rangle&lt;0,
+\]</span></p>
+<p>视觉梯度和动作梯度夹角大于 <span
+class="math inline">\(90^\circ\)</span>。沿着降低视觉 loss
+的方向更新，可能增加动作 loss。</p>
+<p>这个结论可以从一阶近似直接看出来。若为了降低视觉 loss 更新：</p>
+<p><span class="math display">\[
+\Theta&#39;=\Theta-\eta g_V,
+\]</span></p>
+<p>动作 loss 变化为：</p>
+<p><span class="math display">\[
+\mathcal L_A(\Theta&#39;)
+\approx
+\mathcal L_A(\Theta)
+-
+\eta g_A^\top g_V.
+\]</span></p>
+<p>如果 <span class="math inline">\(g_A^\top g_V&lt;0\)</span>，则动作
+loss 上升。</p>
+<p>这就是原文说的梯度冲突。它在机器人里很具体：模型可能更会预测图像、更会生成语言，但动作控制变差。机器人最后要执行动作，动作
+loss 被视觉或语言任务稀释，就会直接影响成功率。</p>
+<p>工业场景里的后果通常不抽象。一个仓储机械臂可能能正确识别箱子、读懂“拿左边红色物体”的指令，却在接触阶段抖动，或者闭合夹爪太早。此时视觉和语言模块看起来都正常，失败发生在动作分布的细节：连续控制里几毫米、几十毫秒的误差就可能改变接触结果。</p>
+<p>原文还引入 Hessian：</p>
+<p><span class="math display">\[
+H=
+\nabla_\Theta^2\mathcal L
+=
+\lambda_VH_V+\lambda_AH_A+\lambda_LH_L.
+\]</span></p>
+<p>Hessian 描述 loss 对参数的二阶曲率。梯度回答“往哪个方向走 loss
+下降最快”，Hessian
+回答“这个局部地形有多弯、不同方向有多陡”。不同任务的曲率尺度差异很大时，总
+Hessian 的条件数可能变差：</p>
+<p><span class="math display">\[
+\kappa(H)=\frac{\lambda_{\max}(H)}{\lambda_{\min}(H)}.
+\]</span></p>
+<p>条件数大，表示某些方向很陡，某些方向很平，优化容易变慢或不稳定。问题不在于视觉维度天然更大，而在于共享参数把多个任务的梯度和曲率混在一起，训练需要结构或优化方法来缓解冲突。</p>
+<p>VLA-style 的底层判断是：直接学习条件动作分布有 scaling
+潜力，但把所有任务放在同一个参数空间里，会把表示学习问题变成多任务优化问题。</p>
+<h2 id="第三层基础什么是共享表示">第三层基础：什么是共享表示</h2>
+<p>MoT-style 的入口是：</p>
+<p><span class="math display">\[
+Z_t=f_\Phi(h_t).
+\]</span></p>
+<p>这行式子的读法是：共享网络 <span
+class="math inline">\(f_\Phi\)</span> 读取历史 <span
+class="math inline">\(h_t\)</span>，输出当前时刻的共享表示 <span
+class="math inline">\(Z_t\)</span>。</p>
+<p><span class="math inline">\(f\)</span>
+是函数，在工程里通常是神经网络。可以是视觉 encoder、multimodal
+backbone、Transformer 或 shared attention stack。<span
+class="math inline">\(\Phi\)</span> 是这套共享网络的参数。</p>
+<p><span class="math inline">\(Z\)</span> 是机器学习里常用来表示 latent
+variable 或 hidden representation
+的字母。它通常没有固定全拼，更多是一种数学惯例：<span
+class="math inline">\(x\)</span> 常表示观测变量，<span
+class="math inline">\(y\)</span> 常表示标签或输出，<span
+class="math inline">\(z\)</span> 常表示潜变量或中间表示。</p>
+<p><span class="math inline">\(Z_t\)</span>
+是网络输出的中间表示。它可以是一个向量：</p>
+<p><span class="math display">\[
+Z_t\in\mathbb R^{2048},
+\]</span></p>
+<p>也可以是一组 token，也就是矩阵：</p>
+<p><span class="math display">\[
+Z_t\in\mathbb R^{N\times d}.
+\]</span></p>
+<p><span class="math inline">\(N\)</span> 是 token 数量，<span
+class="math inline">\(d\)</span> 是每个 token 的维度。</p>
+<p>从概率模型看，<span class="math inline">\(Z_t\)</span> 是 latent
+variable。从深度学习看，它是 representation 或 hidden
+activation。从控制论看，它是历史信息的状态摘要。从信息论看，它是对历史的任务相关压缩。</p>
+<p>如果画成工程模块，<span class="math inline">\(f_\Phi\)</span>
+可能包含几类神经网络：</p>
+<ul>
+<li>视觉 encoder，把图像变成视觉 token；</li>
+<li>语言 embedding / language encoder，把指令变成语言 token；</li>
+<li>动作历史 encoder，把过去动作变成动作 token；</li>
+<li>shared Transformer / shared
+attention，让视觉、语言、动作历史互相读取；</li>
+<li>MLP 或 projection head，把共享 token 变成专家可用的表示。</li>
+</ul>
+<p>这些模块里的权重是一组张量，常由许多矩阵组成。比如 attention 里常见
+<span class="math inline">\(W_Q,W_K,W_V,W_O\)</span>，MLP 里常见 <span
+class="math inline">\(W_1,W_2\)</span>，每个矩阵大小由模型宽度、head
+数、hidden dimension、token
+维度等架构超参数规定。训练开始时这些数字通常随机初始化或来自预训练模型，训练过程中由反向传播逐步更新。</p>
+<p>理想情况下，<span class="math inline">\(Z_t\)</span>
+应该保留动作、视觉和语言任务共同需要的信息：</p>
+<ul>
+<li>目标物体在哪里；</li>
+<li>机器人夹爪在哪里；</li>
+<li>语言指令指向哪个对象；</li>
+<li>当前是否接触；</li>
+<li>任务处在靠近、抓取还是抬起阶段；</li>
+<li>过去动作导致世界发生了什么变化。</li>
+</ul>
+<p>共享的意思是多个专家模块都读取同一个 <span
+class="math inline">\(Z_t\)</span>。这里讨论的是同一个机器人模型里的动作、视觉、语言输出头，共用前半段理解世界的表示。</p>
+<p>动作专家读取它：</p>
+<p><span class="math display">\[
+p_{\theta_A}(A_t\mid Z_t).
+\]</span></p>
+<p>视觉专家读取它：</p>
+<p><span class="math display">\[
+p_{\theta_O}(O_{t+1}\mid Z_t).
+\]</span></p>
+<p>语言专家读取它：</p>
+<p><span class="math display">\[
+p_{\theta_L}(y_t^L\mid Z_t).
+\]</span></p>
+<p>所以共享表示的前向结构是：</p>
+<p><span class="math display">\[
+h_t
+\xrightarrow{f_\Phi}
+Z_t
+\rightarrow
+\begin{cases}
+p_{\theta_A}(A_t\mid Z_t),\\
+p_{\theta_O}(O_{t+1}\mid Z_t),\\
+p_{\theta_L}(y_t^L\mid Z_t).
+\end{cases}
+\]</span></p>
+<p>共享还发生在训练里。MoT 的 loss 可以写成：</p>
+<p><span class="math display">\[
+\mathcal L(\Phi,\theta_O,\theta_A,\theta_L)
+=
+\lambda_O\mathcal L_O(\Phi,\theta_O)
++
+\lambda_A\mathcal L_A(\Phi,\theta_A)
++
+\lambda_L\mathcal L_L(\Phi,\theta_L).
+\]</span></p>
+<p>对共享参数 <span class="math inline">\(\Phi\)</span> 求导：</p>
+<p><span class="math display">\[
+\nabla_\Phi\mathcal L
+=
+\lambda_O\nabla_\Phi\mathcal L_O
++
+\lambda_A\nabla_\Phi\mathcal L_A
++
+\lambda_L\nabla_\Phi\mathcal L_L.
+\]</span></p>
+<p>这说明视觉、动作、语言三个任务都会更新生成 <span
+class="math inline">\(Z_t\)</span> 的共享网络。<span
+class="math inline">\(Z_t\)</span>
+本身是每次输入历史后临时算出来的中间值；真正被学习的是 <span
+class="math inline">\(f_\Phi\)</span> 的参数 <span
+class="math inline">\(\Phi\)</span>。训练改变 <span
+class="math inline">\(\Phi\)</span>，下一次 <span
+class="math inline">\(f_\Phi(h_t)\)</span> 生成的 <span
+class="math inline">\(Z_t\)</span> 就会变。</p>
+<h2 id="mot-style共享理解专家输出">MoT-style：共享理解，专家输出</h2>
+<p>MoT-style 的全称在这类 VLA 语境里通常是
+Mixture-of-Transformers。原文讨论的是 shared-attention + specialized
+experts
+这一类结构：模型既保留跨模态共享计算，也给不同输出任务设置专家参数。</p>
+<p>动作专家可以写成：</p>
+<p><span class="math display">\[
+\hat A_t=E_A^{\theta_A}(Z_t).
+\]</span></p>
+<p><span class="math inline">\(E\)</span> 表示 Expert。右下角 <span
+class="math inline">\(A\)</span> 表示 Action，说明这是动作专家。右上角
+<span class="math inline">\(\theta_A\)</span> 是动作专家的参数。</p>
+<p>如果输出概率分布，更一般地写成：</p>
+<p><span class="math display">\[
+p_{\theta_A}(A_t\mid Z_t).
+\]</span></p>
+<p>这句的自然语言是：在 <span class="math inline">\(Z_t\)</span>
+已知的条件下，由动作专家网络 <span
+class="math inline">\(\theta_A\)</span> 预测动作序列 <span
+class="math inline">\(A_t\)</span> 的概率分布。</p>
+<p>视觉专家是：</p>
+<p><span class="math display">\[
+p_{\theta_O}(O_{t+1}\mid Z_t).
+\]</span></p>
+<p>这句的自然语言是：在 <span class="math inline">\(Z_t\)</span>
+已知的条件下，由视觉专家网络 <span
+class="math inline">\(\theta_O\)</span> 预测下一段观测 <span
+class="math inline">\(O_{t+1}\)</span> 的概率分布。</p>
+<p>语言专家是：</p>
+<p><span class="math display">\[
+p_{\theta_L}(y_t^L\mid Z_t).
+\]</span></p>
+<p>这句的自然语言是：在 <span class="math inline">\(Z_t\)</span>
+已知的条件下，由语言专家网络 <span
+class="math inline">\(\theta_L\)</span> 预测语言输出 <span
+class="math inline">\(y_t^L\)</span> 的概率分布。</p>
+<p>原文把联合分布近似分解为：</p>
+<p><span class="math display">\[
+\begin{aligned}
+&amp;p_{\Phi,\theta_O,\theta_A,\theta_L}
+(O_{t+1},A_t,y_t^L\mid h_t)\\
+&amp;\quad\approx
+p_{\theta_O}(O_{t+1}\mid Z_t)
+p_{\theta_A}(A_t\mid Z_t)
+p_{\theta_L}(y_t^L\mid Z_t).
+\end{aligned}
+\]</span></p>
+<p>这个乘法来自条件独立近似：</p>
+<p><span class="math display">\[
+O_{t+1}\perp A_t\perp y_t^L\mid Z_t.
+\]</span></p>
+<p>它的含义是：如果共享表示 <span class="math inline">\(Z_t\)</span>
+已经包含足够多的任务相关信息，那么在给定 <span
+class="math inline">\(Z_t\)</span>
+后，视觉、动作、语言可以由各自专家分别建模。</p>
+<p>这是一条建模假设。真实世界里，未来观测、动作和语言输出当然相关。MoT
+把共同因素放进 <span
+class="math inline">\(Z_t\)</span>，把输出差异交给专家。</p>
+<p>shared attention 的作用是提供跨模态交互的路径。Transformer attention
+可以写成：</p>
+<p><span class="math display">\[
+\operatorname{Attention}(Q,K,V)
+=
+\operatorname{softmax}
+\left(
+\frac{QK^\top}{\sqrt d}
+\right)V.
+\]</span></p>
+<p>图像 token、语言 token、动作历史 token 可以通过 attention
+互相读取。语言里的“red cup”可以影响视觉 token
+对红杯子的表示，动作历史可以影响模型对接触阶段的判断。</p>
+<p>attention 提供融合能力，但它不会自动保证 <span
+class="math inline">\(Z_t\)</span> 对控制有用。<span
+class="math inline">\(Z_t\)</span>
+保留什么，取决于训练目标、数据分布、模型容量和表示瓶颈。</p>
+<p>MoT 的优化优势体现在参数分块。视觉专家参数 <span
+class="math inline">\(\theta_O\)</span>、动作专家参数 <span
+class="math inline">\(\theta_A\)</span>、语言专家参数 <span
+class="math inline">\(\theta_L\)</span> 分属不同模块。若视觉 loss
+不含动作专家参数，动作 loss
+不含视觉专家参数，则专家之间的直接二阶耦合为零：</p>
+<p><span class="math display">\[
+\frac{\partial^2\mathcal L}{\partial\theta_O\partial\theta_A}=0,\quad
+\frac{\partial^2\mathcal L}{\partial\theta_O\partial\theta_L}=0,\quad
+\frac{\partial^2\mathcal L}{\partial\theta_A\partial\theta_L}=0.
+\]</span></p>
+<p>完整 Hessian 呈现部分块结构：</p>
+<p><span class="math display">\[
+H=
+\begin{bmatrix}
+H_{\Phi\Phi} &amp; H_{\Phi O} &amp; H_{\Phi A} &amp; H_{\Phi L}\\
+H_{O\Phi} &amp; H_{OO} &amp; 0 &amp; 0\\
+H_{A\Phi} &amp; 0 &amp; H_{AA} &amp; 0\\
+H_{L\Phi} &amp; 0 &amp; 0 &amp; H_{LL}
+\end{bmatrix}.
+\]</span></p>
+<p>零块表示专家之间没有直接二阶耦合。第一行和第一列仍然不为零，因为
+<span class="math inline">\(\Phi\)</span>
+是共享参数。视觉、动作、语言仍然会通过共享表示层互相影响。</p>
+<p>这就是 MoT 和 Single-backbone 的关键差异。Single-backbone
+让视觉、动作、语言任务更多地共用同一个参数空间。MoT
+保留共享表示，同时把专家输出参数分开。它降低专家之间的直接优化干扰，但共享层的冲突仍然存在。</p>
+<h2 id="三种范式的共同问题">三种范式的共同问题</h2>
+<p>现在可以重新读原文的三类方法。</p>
+<p>IDM-style 的问题是：</p>
+<p><span class="math display">\[
+\text{能否先预测未来目标，再反推出当前动作？}
+\]</span></p>
+<p>它用 <span class="math inline">\(g_t\)</span> 显式拆分动作生成。</p>
+<p>VLA-style 的问题是：</p>
+<p><span class="math display">\[
+\text{能否直接从多模态历史生成动作？}
+\]</span></p>
+<p>它用一个统一模型直接参数化动作分布。</p>
+<p>MoT-style 的问题是：</p>
+<p><span class="math display">\[
+\text{能否共享世界理解，同时让不同输出任务分专家训练？}
+\]</span></p>
+<p>它用 <span class="math inline">\(Z_t\)</span>
+作为共享表示，再由专家分工输出。</p>
+<p>三者并列，是因为它们都在处理：</p>
+<p><span class="math display">\[
+\pi(a_t\mid h_t).
+\]</span></p>
+<p>区别在中间变量：</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>范式</th>
+<th>中间结构</th>
+<th>数学基础</th>
+<th>主要风险</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IDM-style</td>
+<td>未来目标 <span class="math inline">\(g_t\)</span></td>
+<td>隐变量、边缘化、逆动力学</td>
+<td>目标错误、不可达、误差级联</td>
+</tr>
+<tr>
+<td>VLA-style</td>
+<td>无显式中间变量</td>
+<td>条件分布建模、多任务学习</td>
+<td>梯度冲突、曲率不匹配、动作能力被稀释</td>
+</tr>
+<tr>
+<td>MoT-style</td>
+<td>共享表示 <span class="math inline">\(Z_t\)</span></td>
+<td>表示学习、条件独立、专家参数分块</td>
+<td>共享表示瓶颈、共享层仍然耦合</td>
+</tr>
+</tbody>
+</table>
+<p>因此，原文的核心判断可以表述得更精确：在机器人动作生成这个问题上，三类方法分别选择了不同的概率分解和参数共享方式。</p>
+<h2 id="闭环控制视角">闭环控制视角</h2>
+<p>原文主要从概率建模和结构化优化讲三类范式。把它放到机器人系统里，还需要补上闭环控制视角。</p>
+<p>机器人每一步动作都会改变下一步输入：</p>
+<p><span class="math display">\[
+o_t
+\rightarrow
+h_t
+\rightarrow
+a_t
+\rightarrow
+o_{t+1}
+\rightarrow
+h_{t+1}.
+\]</span></p>
+<p>这意味着动作分布是物理系统里的控制接口，并非最终文件。一个模型可以生成合理的未来图像，但如果动作不可执行，机器人不会成功。一个模型可以有很强语言能力，但如果
+<span class="math inline">\(Z_t\)</span>
+没有保留接触状态，动作专家仍然会失败。</p>
+<p>这也是为什么原文把三类范式都放到 <span
+class="math inline">\(\pi(a_t\mid h_t)\)</span> 下很重要。World Model
+对机器人有价值，是因为它能帮助机器人选择动作、评估动作或规划动作。</p>
+<h2 id="td-mpc-为什么没有放进这三类">TD-MPC 为什么没有放进这三类</h2>
+<p>在这个意义上，TD-MPC 是一个有用的边界参照。TD-MPC
+最终也输出动作，但它的组织轴是 model-based RL 和
+MPC。它并不直接把动作策略写成一个大条件生成模型：</p>
+<p><span class="math display">\[
+\pi(a_t\mid h_t).
+\]</span></p>
+<p>TD-MPC 先把当前观测编码成 latent state：</p>
+<p><span class="math display">\[
+z_t=h_\theta(o_t).
+\]</span></p>
+<p>然后学习 task-oriented latent dynamics：</p>
+<p><span class="math display">\[
+z_{t+1}=d_\theta(z_t,a_t),
+\]</span></p>
+<p>同时学习 reward、value 和 policy prior：</p>
+<p><span class="math display">\[
+\hat r_t=R_\theta(z_t,a_t),
+\]</span></p>
+<p><span class="math display">\[
+\hat Q_t=Q_\theta(z_t,a_t),
+\]</span></p>
+<p><span class="math display">\[
+a_t\sim p_\theta(a_t\mid z_t).
+\]</span></p>
+<p>推理时，它在 latent space 里搜索一段候选动作序列。对某个候选序列
+<span class="math inline">\(a_{t:t+H-1}\)</span>，模型反复调用
+dynamics：</p>
+<p><span class="math display">\[
+z_{t+k+1}=d_\theta(z_{t+k},a_{t+k}),
+\]</span></p>
+<p>得到一段短 horizon 的 imagined rollout。然后用 reward 和 terminal
+value 给这段动作打分：</p>
+<p><span class="math display">\[
+J(a_{t:t+H-1})
+=
+\sum_{k=0}^{H-1}
+\gamma^kR_\theta(z_{t+k},a_{t+k})
++
+\gamma^HV_\theta(z_{t+H}).
+\]</span></p>
+<p>这里的 <span class="math inline">\(J\)</span>
+是候选动作序列的预计回报。MPC
+的执行方式是：每次只执行当前最优序列的第一个动作，拿到新观测后重新规划。</p>
+<p>训练时，TD-MPC 的重点也不在重建完整图像，而在让 latent dynamics
+对控制有用。一个简化的训练目标可以写成：</p>
+<p><span class="math display">\[
+\mathcal L_{\text{TD-MPC}}
+=
+\mathcal L_{\text{consistency}}
++
+\mathcal L_{\text{reward}}
++
+\mathcal L_{\text{TD-value}}
++
+\mathcal L_{\text{policy}}.
+\]</span></p>
+<p>其中 consistency loss 要求模型 rollout 出来的 latent state
+接近真实下一步观测编码出来的 latent target：</p>
+<p><span class="math display">\[
+\mathcal L_{\text{consistency}}
+=
+\sum_{k=1}^{H}
+\left\|
+\hat z_{t+k}
+-
+\operatorname{sg}(z^{\text{target}}_{t+k})
+\right\|^2.
+\]</span></p>
+<p><span class="math inline">\(\operatorname{sg}\)</span> 表示
+stop-gradient，意思是目标分支只提供对齐目标，不被这项 loss
+反向更新。TD-value loss 用 temporal-difference target 训练价值函数：</p>
+<p><span class="math display">\[
+y_t
+=
+r_t+\gamma V_{\bar\theta}(z_{t+1}),
+\]</span></p>
+<p><span class="math display">\[
+\mathcal L_{\text{TD-value}}
+=
+\left(
+Q_\theta(z_t,a_t)-y_t
+\right)^2.
+\]</span></p>
+<p>这就是 TD-MPC
+和原文三类范式的分界。原文三类方法围绕多模态历史到动作分布的条件建模：</p>
+<p><span class="math display">\[
+h_t\rightarrow \pi(a_t\mid h_t).
+\]</span></p>
+<p>TD-MPC 围绕可规划的 latent dynamics：</p>
+<p><span class="math display">\[
+z_t,a_t
+\rightarrow
+z_{t+1},r_t,V_t
+\rightarrow
+\text{planning}
+\rightarrow
+a_t.
+\]</span></p>
+<p>它和原文三类方法共享“动作是最终接口”的问题意识，但数学主轴是 latent
+dynamics、temporal-difference learning 和 model predictive
+control。原文没有把 TD-MPC 放进去，主要是分类轴不同。</p>
+<h2 id="结语">结语</h2>
+<p>《机器人学习中三类 World Model
+范式的数学本质》这篇文章值得拆解，是因为它把一个容易泛化的词重新放回了动作接口。World
+Model
+在机器人里不能只表示“预测未来”。它必须回答未来预测如何服务动作、动作如何改变下一帧观测、模型训练如何让表示保留控制相关信息。</p>
+<p>IDM-style 通过未来目标 <span class="math inline">\(g_t\)</span>
+组织动作。VLA-style 直接用一个大模型学习动作分布。MoT-style
+先生成共享表示 <span
+class="math inline">\(Z_t\)</span>，再用专家网络分别处理动作、视觉和语言输出。</p>
+<p>三种路线背后是同一个底层问题：</p>
+<p><span class="math display">\[
+h_t\rightarrow a_t.
+\]</span></p>
+<p>概率论提供条件化和边缘化，强化学习定义策略和动作，控制论提醒系统是闭环的，神经网络提供可训练函数，优化理论解释为什么共享参数会冲突、为什么专家分块有意义。</p>
+<p>读完原文以后，真正应该留下的内容会从三个名词转换为一条计算链：</p>
+<p><span class="math display">\[
+\text{历史观测与动作}
+\rightarrow
+\text{内部变量或表示}
+\rightarrow
+\text{动作分布}
+\rightarrow
+\text{物理世界的下一步}.
+\]</span></p>
+<p>这条链条决定了一个机器人 World Model 是否真的服务控制。</p>
+<h2 id="references">References</h2>
+<ul>
+<li>Jiahang Cao et al., 《机器人学习中三类 World Model 范式的数学本质》,
+微信公众号 human five, 2026-06-23. <a
+href="https://mp.weixin.qq.com/s/GLDeVtsRsyo4K6dwD_BgMg">公众号原文</a>,
+<a
+href="https://sagecao1125.github.io/blog/math-of-world-model-paradigms/?lang=zh">作者站版本</a>.</li>
+<li>Nicklas Hansen, Xiaolong Wang, Hao Su, <em>Temporal Difference
+Learning for Model Predictive Control</em>, ICML 2022. <a
+href="https://arxiv.org/abs/2203.04955">arXiv</a>, <a
+href="https://www.nicklashansen.com/td-mpc/">project page</a>.</li>
+</ul>
+
+</main>
+</body>
+</html>
