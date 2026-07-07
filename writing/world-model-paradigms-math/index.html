@@ -1033,31 +1033,6 @@ a_t.
 <p>它和原文三类方法共享“动作是最终接口”的问题意识，但数学主轴是 latent
 dynamics、temporal-difference learning 和 model predictive
 control。原文没有把 TD-MPC 放进去，主要是分类轴不同。</p>
-<h2 id="结语">结语</h2>
-<p>《机器人学习中三类 World Model
-范式的数学本质》这篇文章值得拆解，是因为它把一个容易泛化的词重新放回了动作接口。World
-Model
-在机器人里不能只表示“预测未来”。它必须回答未来预测如何服务动作、动作如何改变下一帧观测、模型训练如何让表示保留控制相关信息。</p>
-<p>IDM-style 通过未来目标 <span class="math inline">\(g_t\)</span>
-组织动作。VLA-style 直接用一个大模型学习动作分布。MoT-style
-先生成共享表示 <span
-class="math inline">\(Z_t\)</span>，再用专家网络分别处理动作、视觉和语言输出。</p>
-<p>三种路线背后是同一个底层问题：</p>
-<p><span class="math display">\[
-h_t\rightarrow a_t.
-\]</span></p>
-<p>概率论提供条件化和边缘化，强化学习定义策略和动作，控制论提醒系统是闭环的，神经网络提供可训练函数，优化理论解释为什么共享参数会冲突、为什么专家分块有意义。</p>
-<p>读完原文以后，真正应该留下的内容会从三个名词转换为一条计算链：</p>
-<p><span class="math display">\[
-\text{历史观测与动作}
-\rightarrow
-\text{内部变量或表示}
-\rightarrow
-\text{动作分布}
-\rightarrow
-\text{物理世界的下一步}.
-\]</span></p>
-<p>这条链条决定了一个机器人 World Model 是否真的服务控制。</p>
 <h2 id="references">References</h2>
 <ul>
 <li>Jiahang Cao et al., 《机器人学习中三类 World Model 范式的数学本质》,
