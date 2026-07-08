@@ -1,0 +1,1178 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TD-MPC 为什么是三类范式之外的 outlier — Sense Wang</title>
+  <meta name="description" content="TD-MPC 与 IDM、VLA、MoT 三类动作生成范式的数学接口比较。">
+  <style>
+    :root {
+      --ink: #111;
+      --muted: #666;
+      --faint: #999;
+      --line: #ececec;
+      --soft-line: #f3f3f3;
+      --paper: #fff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      margin: 0;
+      padding: 72px 20px 112px;
+      background: var(--paper);
+    }
+
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    nav {
+      margin-bottom: 52px;
+      font-size: 13px;
+    }
+
+    article {
+      width: 100%;
+    }
+
+    h1 {
+      margin: 0 0 22px;
+      color: var(--ink);
+      font-size: clamp(30px, 5vw, 42px);
+      line-height: 1.14;
+      font-weight: 760;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 58px 0 18px;
+      color: var(--ink);
+      font-size: 25px;
+      line-height: 1.28;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 17px;
+      color: var(--ink);
+      font-size: 17px;
+      line-height: 1.82;
+    }
+
+    a {
+      color: var(--ink);
+      text-decoration: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 4px;
+    }
+
+    a:hover {
+      color: #444;
+    }
+
+    strong {
+      font-weight: 700;
+    }
+
+    ul {
+      margin: 18px 0 24px;
+      padding-left: 1.25em;
+    }
+
+    li {
+      margin: 8px 0;
+      font-size: 17px;
+      line-height: 1.72;
+    }
+
+    article > p:first-of-type {
+      margin-top: 10px;
+    }
+
+    .math.display {
+      display: block;
+      margin: 26px 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 2px 0;
+      font-size: 1.02em;
+    }
+
+    mjx-container[jax="CHTML"][display="true"] {
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 6px 0;
+    }
+
+    table {
+      width: 100%;
+      margin: 30px 0 34px;
+      border-collapse: collapse;
+      font-size: 15px;
+      line-height: 1.58;
+    }
+
+    th {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--ink);
+      text-align: left;
+      font-weight: 700;
+      vertical-align: bottom;
+    }
+
+    td {
+      padding: 13px 10px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid var(--line);
+      margin: 44px 0;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 46px 18px 76px;
+      }
+
+      h2 {
+        margin-top: 44px;
+      }
+
+      p,
+      li {
+        font-size: 16px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        font-size: 14px;
+      }
+    }
+  </style>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['$', '$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+  <main>
+    <nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+    <article>
+<h1 id="td-mpc-为什么是三类范式之外的-outlier">TD-MPC
+为什么是三类范式之外的 outlier</h1>
+<p>这篇文章的中心问题很窄：为什么《<a
+href="https://mp.weixin.qq.com/s/GLDeVtsRsyo4K6dwD_BgMg">机器人学习中三类
+World Model 范式的数学本质</a>》比较了三类范式，却没有把 TD-MPC
+放进去？</p>
+<p>答案要从比较对象开始。原文讨论的三类路线，主要属于当前机器人 world
+model 里更主流的 <strong>world model + action prediction</strong>
+范式。它们把核心问题写成：机器人已经看到历史观测、执行过历史动作、读到语言指令，下一步动作应该服从什么分布？</p>
+<p><span class="math display">\[
+h_t=(o_{1:t},a_{1:t-1},l),
+\qquad
+\pi(a_t\mid h_t).
+\]</span></p>
+<p>围绕这个条件策略，可以得到三种参数化方式：</p>
+<ul>
+<li><strong>Future-conditioned，也就是 IDM-style</strong>。IDM 是
+<strong>Inverse Dynamics Model</strong>
+的缩写，意思是“逆动力学模型”。</li>
+<li><strong>Single-backbone，也就是 VLA-style</strong>。VLA 是
+<strong>Vision-Language-Action</strong>
+的缩写，意思是视觉、语言、动作统一建模。</li>
+<li><strong>Shared-attention + Specialized Experts，也就是
+MoT-style</strong>。这一类写法强调共享 attention
+或共享表示，再交给专门的 expert head。</li>
+</ul>
+<p>三者的共同点比名字更重要：动作 <span
+class="math inline">\(a_t\)</span> 是被预测的对象。模型从历史 <span
+class="math inline">\(h_t\)</span> 出发，经过未来目标、单一 backbone
+或共享表示，最终得到动作分布。</p>
+<p>TD-MPC
+的数学对象换了一个方向。它最终也输出动作，但动作在计算链里先作为条件出现。模型先回答一个反事实问题：如果我在当前
+latent state 里尝试动作 <span class="math inline">\(a_t\)</span>，下一步
+latent state 会怎样，reward 是多少，future value 是多少？</p>
+<p><span class="math display">\[
+z_t,a_t
+\longrightarrow
+z_{t+1},r_t,Q_t
+\longrightarrow
+\mathrm{planning}
+\longrightarrow
+a_t.
+\]</span></p>
+<p>这里的 <span class="math inline">\(z_t\)</span> 是 TD-MPC 的 latent
+state，也就是模型从当前观测或状态里编码出来的内部状态向量。它通常避开原始图像和完整物理状态，只保留服务
+reward、value 和 dynamics prediction 的任务相关信息。</p>
+<p><span class="math inline">\(Q_t\)</span> 来自 <span
+class="math inline">\(Q_\theta(z_t,a_t)\)</span>，表示 action-value：在
+latent state <span class="math inline">\(z_t\)</span> 下尝试动作 <span
+class="math inline">\(a_t\)</span>
+后，模型估计未来还能拿到多少折扣累计回报。字母 <span
+class="math inline">\(Q\)</span> 在强化学习里通常读作 “Q
+value”，历史上可以理解成某个 state-action pair 的 quality。</p>
+<p>所以 TD-MPC 的 outlier 性来自主对象错位。三类原文范式以 <span
+class="math inline">\(h_t\to a_t\)</span> 为主线；TD-MPC 以 <span
+class="math inline">\((z_t,a_t)\to z_{t+1},r_t,Q_t\)</span>
+为主线。前者首先是条件动作生成，后者首先是 action-conditioned 建模，再接
+planning。</p>
+<p>如果一定要把 TD-MPC 放进一个更大的范畴，它更接近
+<strong>action-conditioned</strong> 这一类路线，也接近
+action-conditioned JEPA
+这种“给定当前表示和动作，预测未来表示”的建模方式。它和 inverse
+dynamics、end-to-end action backbone、MoT
+的关系，首先是一种数学方向上的差别。</p>
+<h2 id="共同起点机器人最终要选动作">共同起点：机器人最终要选动作</h2>
+<p>先把机器人控制写成最朴素的数学对象。环境在时间 <span
+class="math inline">\(t\)</span> 有真实状态 <span
+class="math inline">\(x_t\)</span>，机器人执行动作 <span
+class="math inline">\(a_t\)</span>，环境进入下一状态 <span
+class="math inline">\(x_{t+1}\)</span>，并返回 reward <span
+class="math inline">\(r_t\)</span>：</p>
+<p><span class="math display">\[
+x_{t+1}\sim p(x_{t+1}\mid x_t,a_t),
+\qquad
+r_t=r(x_t,a_t).
+\]</span></p>
+<p>机器人控制首先关注未来累计回报；单帧图像预测只是可能的辅助信号：</p>
+<p><span class="math display">\[
+G_t=\sum_{k=0}^{\infty}\gamma^k r_{t+k},
+\qquad
+\pi^\star=\arg\max_\pi \mathbb E_\pi[G_t].
+\]</span></p>
+<p>这里 <span class="math inline">\(\gamma\in[0,1)\)</span>
+是折扣因子。它让近期 reward 权重更高，也让无限和在数学上更稳定。</p>
+<p>如果机器人能完整看到 <span
+class="math inline">\(x_t\)</span>，策略可以写成：</p>
+<p><span class="math display">\[
+\pi(a_t\mid x_t).
+\]</span></p>
+<p>真实机器人通常拿不到完整状态。它看到的是 observation：</p>
+<p><span class="math display">\[
+o_t\sim p(o_t\mid x_t).
+\]</span></p>
+<p>单帧 <span class="math inline">\(o_t\)</span>
+往往不够。桌面图像里看不出杯子是否已经被碰松，单个关节角看不出速度，单帧
+RGB 看不出物体刚刚滑动过。所以控制系统会使用历史：</p>
+<p><span class="math display">\[
+h_t=(o_{1:t},a_{1:t-1},l).
+\]</span></p>
+<p>这就得到原文三类范式共同服务的动作预测对象：</p>
+<p><span class="math display">\[
+\pi(a_t\mid h_t).
+\]</span></p>
+<p>这行公式属于概率论、统计学习和强化学习的交界。概率论提供条件分布，统计学习用神经网络近似这个分布，强化学习把这个分布放进长期回报最大化问题里。</p>
+<h2 id="三类范式的边界action-prediction">三类范式的边界：action
+prediction</h2>
+<p>原文的三类范式都可以看作对 <span class="math inline">\(\pi(a_t\mid
+h_t)\)</span>
+的不同分解。这个范围很关键：它的比较边界落在“动作怎样被预测出来”，没有覆盖所有可能的
+robot world model。</p>
+<p><strong>IDM-style</strong> 引入未来目标 <span
+class="math inline">\(g_t\)</span>。动作先由未来目标组织：</p>
+<p><span class="math display">\[
+\pi(a_t\mid h_t)
+\approx
+\int_{\mathcal G}
+\kappa_\phi(a_t\mid h_t,g_t)
+q_\theta(g_t\mid h_t)
+\,dg_t.
+\]</span></p>
+<p>这行公式来自边缘化。若 <span class="math inline">\(g_t\)</span>
+是一个中间随机变量，则有严格恒等式：</p>
+<p><span class="math display">\[
+p(a_t\mid h_t)
+=
+\int_{\mathcal G}
+p(a_t\mid h_t,g_t)
+p(g_t\mid h_t)
+\,dg_t.
+\]</span></p>
+<p>IDM-style 把真实的两个条件分布替换成可训练模型。<span
+class="math inline">\(q_\theta(g_t\mid h_t)\)</span>
+预测可能的未来目标，<span class="math inline">\(\kappa_\phi(a_t\mid
+h_t,g_t)\)</span>
+根据目标反推当前动作。积分是在对所有未来目标做加权平均。如果 <span
+class="math inline">\(g_t\)</span> 是离散目标，积分换成求和。</p>
+<p><span class="math display">\[
+p(a_t\mid h_t)
+=
+\sum_{g\in\mathcal G}
+p(a_t\mid h_t,g)
+p(g\mid h_t).
+\]</span></p>
+<p><strong>VLA-style</strong> 直接用一个大 backbone 建模多模态输出：</p>
+<p><span class="math display">\[
+p_\Theta(O_{t+1},A_t,y_t^L\mid h_t).
+\]</span></p>
+<p>这里 <span class="math inline">\(O_{t+1}\)</span>
+是下一时刻观测，<span class="math inline">\(A_t\)</span> 是动作或 action
+chunk，<span class="math inline">\(y_t^L\)</span>
+是语言输出。这个路线把视觉、语言、动作放进一个统一生成模型里，训练时通常用
+imitation learning、cross-entropy、diffusion loss、flow-matching loss
+或多任务 loss。它的数学中心是联合条件分布，工程中心是一个足够大的
+multimodal backbone。</p>
+<p><strong>MoT-style</strong>
+先学习共享表示，再由专家网络分别预测不同输出：</p>
+<p><span class="math display">\[
+Z_t=f_\Phi(h_t),
+\]</span></p>
+<p><span class="math display">\[
+p_{\Phi,\theta_O,\theta_A,\theta_L}
+(O_{t+1},A_t,y_t^L\mid h_t)
+\approx
+p_{\theta_O}(O_{t+1}\mid Z_t)
+p_{\theta_A}(A_t\mid Z_t)
+p_{\theta_L}(y_t^L\mid Z_t).
+\]</span></p>
+<p>这里 <span class="math inline">\(Z_t\)</span>
+是共享表示。视觉专家、动作专家、语言专家都读取同一个 <span
+class="math inline">\(Z_t\)</span>，但各自有独立参数。这个结构试图保留共享感知和任务语义，同时减少不同输出头之间的梯度冲突。</p>
+<p>大写 <span class="math inline">\(Z_t\)</span> 和 TD-MPC 里的小写
+<span class="math inline">\(z_t\)</span> 都在表达 latent
+representation。常见记号习惯是：大写 <span
+class="math inline">\(Z_t\)</span> 更像随机变量或共享表示对象，小写
+<span class="math inline">\(z_t\)</span> 更像某次前向计算得到的具体
+latent vector。二者都属于 observation 之外的内部表示。</p>
+<p>把三者放在一起，可以得到一个统一描述：</p>
+<p><span class="math display">\[
+h_t
+\longrightarrow
+\text{intermediate structure}
+\longrightarrow
+a_t.
+\]</span></p>
+<p>IDM-style 的 intermediate structure 是未来目标 <span
+class="math inline">\(g_t\)</span>。VLA-style 的 intermediate structure
+是单一 multimodal backbone 的内部 hidden states。MoT-style 的
+intermediate structure 是共享表示 <span
+class="math inline">\(Z_t\)</span> 加专家输出头。</p>
+<p>它们都在回答“动作怎样从历史中产生”。这也是 TD-MPC
+缺席的直接原因：TD-MPC
+的主要建模对象从动作预测换成了动作条件下的未来预测。</p>
+<h2 id="td-mpc-的-outlier-性action-conditioned">TD-MPC 的 outlier
+性：action-conditioned</h2>
+<p>TD-MPC 的论文题名是 <strong>Temporal Difference Learning for Model
+Predictive Control</strong>。这几个词已经暴露了它的结构：TD learning
+负责长期价值，MPC 负责短期在线规划，world model 负责提供可规划的 latent
+dynamics。</p>
+<p>TD-MPC 使用的模型叫 TOLD，Task-Oriented Latent
+Dynamics。它有五个核心接口：</p>
+<p><span class="math display">\[
+\begin{aligned}
+z_t &amp;= h_\theta(s_t),\\
+z_{t+1} &amp;= d_\theta(z_t,a_t),\\
+\hat r_t &amp;= R_\theta(z_t,a_t),\\
+\hat q_t &amp;= Q_\theta(z_t,a_t),\\
+\hat a_t &amp;\sim \pi_\theta(z_t).
+\end{aligned}
+\]</span></p>
+<p>逐个读：</p>
+<p><span class="math inline">\(s_t\)</span> 是当前 state 或
+observation，在图像任务里也可以理解成当前观测输入。<br />
+<span class="math inline">\(h_\theta\)</span> 是 encoder，把输入编码成
+latent state <span class="math inline">\(z_t\)</span>。<br />
+<span class="math inline">\(d_\theta\)</span> 是 latent
+dynamics，输入当前 latent state 和动作，输出下一 latent state。<br />
+<span class="math inline">\(R_\theta\)</span> 是 reward
+model，预测这一步动作会带来的即时 reward。<br />
+<span class="math inline">\(Q_\theta\)</span> 是 action-value
+function，也就是 critic，估计在 <span class="math inline">\(z_t\)</span>
+执行动作 <span class="math inline">\(a_t\)</span> 后的长期
+return。<br />
+<span class="math inline">\(\pi_\theta\)</span> 是 policy prior，给
+planner 提供动作采样的 warm start。</p>
+<p>这组函数都带参数 <span
+class="math inline">\(\theta\)</span>。在神经网络里，<span
+class="math inline">\(\theta\)</span> 代表权重矩阵、bias、LayerNorm
+参数、MLP 参数等所有可学习数字。</p>
+<p>这里的关键在于动作进入 world model
+的位置。三类动作预测范式把动作当成要预测的标签或输出；TD-MPC 把动作当成
+dynamics model 的条件：</p>
+<p><span class="math display">\[
+(z_t,a_t)
+\xrightarrow{d_\theta}
+z_{t+1}.
+\]</span></p>
+<p>动作 <span class="math inline">\(a_t\)</span> 先作为候选动作进入
+dynamics model，代表 planning 中的一种行动假设。TD-MPC
+先构造很多候选动作序列，在模型里试算它们的后果，然后再选择最终执行的动作。</p>
+<p>这一步把因果方向翻了过来。Inverse dynamics
+问的是：给定历史和目标，什么动作能解释这个变化？Forward dynamics
+问的是：给定当前状态和动作，未来会怎样变化？TD-MPC 属于后一类。</p>
+<h2 id="差别一prediction-与-planning">差别一：prediction 与
+planning</h2>
+<p>MPC 的基本操作很机械。当前时刻先得到 <span
+class="math inline">\(z_t\)</span>，然后采样很多候选动作序列：</p>
+<p><span class="math display">\[
+\tau=a_{t:t+H-1}.
+\]</span></p>
+<p>对每条候选序列，模型递推预测 latent future：</p>
+<p><span class="math display">\[
+\begin{aligned}
+\hat z_{t+1} &amp;= d_\theta(z_t,a_t),\\
+\hat z_{t+2} &amp;= d_\theta(\hat z_{t+1},a_{t+1}),\\
+&amp;\cdots\\
+\hat z_{t+H} &amp;= d_\theta(\hat z_{t+H-1},a_{t+H-1}).
+\end{aligned}
+\]</span></p>
+<p>每一步都用 reward model 给短期分数：</p>
+<p><span class="math display">\[
+\hat r_{t+k}=R_\theta(\hat z_{t+k},a_{t+k}).
+\]</span></p>
+<p>短 rollout 末端再用 value function 估计后面的长期回报：</p>
+<p><span class="math display">\[
+J_\theta(\tau)
+=
+\sum_{k=0}^{H-1}\gamma^k
+R_\theta(\hat z_{t+k},a_{t+k})
++
+\gamma^H
+V_\theta(\hat z_{t+H}).
+\]</span></p>
+<p>如果使用 <span class="math inline">\(Q\)</span>
+形式，终端项可以写成：</p>
+<p><span class="math display">\[
+\gamma^H Q_\theta(\hat z_{t+H},a_{t+H}).
+\]</span></p>
+<p>Planner 选择分数高的动作序列：</p>
+<p><span class="math display">\[
+\tau^\star
+=
+\arg\max_{\tau}
+J_\theta(\tau),
+\qquad
+a_t=\mathrm{first}(\tau^\star).
+\]</span></p>
+<p>只执行第一步是 MPC 的重要特征。真实环境执行 <span
+class="math inline">\(a_t\)</span> 后，机器人收到新的
+observation，再重新编码成 <span
+class="math inline">\(z_{t+1}\)</span>，重新规划下一步。它每一步都在校正模型误差。</p>
+<p>这就是 TD-MPC 的核心计算链：</p>
+<p><span class="math display">\[
+o_t
+\xrightarrow{h_\theta}
+z_t
+\xrightarrow{\text{candidate actions}}
+\hat z_{t+1:t+H}
+\xrightarrow{R_\theta,V_\theta}
+J_\theta
+\xrightarrow{\mathrm{planner}}
+a_t.
+\]</span></p>
+<p>这个链条和三类动作生成范式的差异很清楚。动作生成范式把 <span
+class="math inline">\(a_t\)</span> 当成模型输出的主对象；TD-MPC
+把候选动作当成 world model 的输入，让 planner 在 imagined consequences
+上做选择。</p>
+<h2 id="差别二value-进入动作选择">差别二：value 进入动作选择</h2>
+<p>MPC 只往前想 <span class="math inline">\(H\)</span>
+步。真实任务可能需要很长时间。机器人走到门口、开门、搬物体、绕障，远远超过几步
+dynamics rollout。TD-MPC 用 TD learning 学一个终端 value，补上短 horizon
+之后的 return。</p>
+<p>从 Bellman 方程开始：</p>
+<p><span class="math display">\[
+Q^\pi(s_t,a_t)
+=
+\mathbb E_\pi
+\left[
+r_t+\gamma Q^\pi(s_{t+1},a_{t+1})
+\mid s_t,a_t
+\right].
+\]</span></p>
+<p>它的意思是：当前 state-action 的长期价值，等于当前 reward 加上下一个
+state-action 的折扣后长期价值。</p>
+<p>TD-MPC 在 latent space 里使用同一个递推思想：</p>
+<p><span class="math display">\[
+y_t
+=
+r_t+\gamma Q_{\bar\theta}
+\bigl(
+z_{t+1},
+\pi_\theta(z_{t+1})
+\bigr).
+\]</span></p>
+<p>这里 <span class="math inline">\(y_t\)</span> 是 TD target，<span
+class="math inline">\(\bar\theta\)</span> 是 target network 参数。Target
+network 是一个慢更新的副本，用来让训练目标更稳定。</p>
+<p>Value loss 是：</p>
+<p><span class="math display">\[
+\mathcal L_Q(\theta)
+=
+\left\|
+Q_\theta(z_t,a_t)-y_t
+\right\|_2^2.
+\]</span></p>
+<p>这就是 TD 的含义：完整 episode 结束前也可以构造训练目标，目标由“一步
+reward + 下一步 value”组成。它让短 horizon planning
+和长期回报估计能接起来。</p>
+<p>所以 TD-MPC 里 <span class="math inline">\(Q_\theta\)</span>
+承担一个明确职责：在 <span class="math inline">\(H\)</span>-step rollout
+末端估计剩余未来，使 planner 不必把模型往很远滚动。</p>
+<h2 id="差别三latent-学习服务-planner">差别三：latent 学习服务
+planner</h2>
+<p>很多 world model 会预测未来 observation：</p>
+<p><span class="math display">\[
+\hat o_{t+1}=g_\theta(z_t,a_t).
+\]</span></p>
+<p>如果 observation
+是图像，这个目标可能迫使模型学习背景纹理、光照、阴影、无关物体等大量细节。它们对视觉预测重要，对当前控制未必重要。</p>
+<p>TD-MPC 的判断更窄：latent state 应该保留对 reward、value、dynamics
+有用的信息。它用三类 loss 训练 TOLD：</p>
+<p><span class="math display">\[
+\mathcal L(\theta)
+=
+c_1\mathcal L_{\mathrm{reward}}
++
+c_2\mathcal L_{\mathrm{value}}
++
+c_3\mathcal L_{\mathrm{consistency}}.
+\]</span></p>
+<p>Reward loss 让模型预测即时 reward：</p>
+<p><span class="math display">\[
+\mathcal L_{\mathrm{reward}}
+=
+\left\|
+R_\theta(z_t,a_t)-r_t
+\right\|_2^2.
+\]</span></p>
+<p>Value loss 让模型满足 TD target：</p>
+<p><span class="math display">\[
+\mathcal L_{\mathrm{value}}
+=
+\left\|
+Q_\theta(z_t,a_t)
+-
+\bigl(
+r_t+\gamma Q_{\bar\theta}(z_{t+1},\pi_\theta(z_{t+1}))
+\bigr)
+\right\|_2^2.
+\]</span></p>
+<p>Latent consistency 让 dynamics 预测的下一 latent state 对齐真实下一
+observation 的编码：</p>
+<p><span class="math display">\[
+\mathcal L_{\mathrm{consistency}}
+=
+\left\|
+d_\theta(z_t,a_t)
+-
+h_{\bar\theta}(s_{t+1})
+\right\|_2^2.
+\]</span></p>
+<p>这组 loss 共同定义了 task-oriented latent。训练目标会推动 <span
+class="math inline">\(z_t\)</span> 优先保存足够支持 reward
+prediction、value estimation 和 short-horizon rollout 的信息。</p>
+<p>换成一句工程话：TD-MPC 的 world model 是 planner
+的内部模型。它服务动作选择，完整还原退到背景里。</p>
+<h2 id="四类接口的数学比较">四类接口的数学比较</h2>
+<p>把原文三类范式和 TD-MPC 放在同一张数学比较里，差异会更清楚。</p>
+<table>
+<thead>
+<tr>
+<th>
+路线
+</th>
+<th>
+主对象
+</th>
+<th>
+中间变量
+</th>
+<th>
+训练压力
+</th>
+<th>
+推理时怎样得到动作
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+IDM-style
+</td>
+<td>
+<span class="math inline">\(\pi(a_t\mid h_t)\)</span>
+</td>
+<td>
+未来目标 <span class="math inline">\(g_t\)</span>
+</td>
+<td>
+未来目标预测、inverse dynamics
+</td>
+<td>
+从未来目标边缘化得到动作分布
+</td>
+</tr>
+<tr>
+<td>
+VLA-style
+</td>
+<td>
+<span class="math inline">\(p_\Theta(O_{t+1},A_t,y_t^L\mid h_t)\)</span>
+</td>
+<td>
+单一 multimodal hidden state
+</td>
+<td>
+多模态监督、动作损失、语言和视觉损失
+</td>
+<td>
+backbone 直接生成动作或 action chunk
+</td>
+</tr>
+<tr>
+<td>
+MoT-style
+</td>
+<td>
+<span class="math inline">\(p(O,A,y^L\mid h_t)\)</span>
+</td>
+<td>
+共享表示 <span class="math inline">\(Z_t\)</span> 加专家头
+</td>
+<td>
+共享表示学习、专家分工、多任务优化
+</td>
+<td>
+动作专家读取 <span class="math inline">\(Z_t\)</span> 输出动作分布
+</td>
+</tr>
+<tr>
+<td>
+TD-MPC
+</td>
+<td>
+<span class="math inline">\(d_\theta,R_\theta,Q_\theta\)</span>
+</td>
+<td>
+可规划 latent state <span class="math inline">\(z_t\)</span>
+</td>
+<td>
+latent consistency、reward loss、TD value loss
+</td>
+<td>
+planner 搜索动作序列，只执行第一步
+</td>
+</tr>
+</tbody>
+</table>
+<p>这张表里最重要的一列是“主对象”。三类原文范式主要在建模动作条件分布。TD-MPC
+主要在学习 planner 可以调用的 transition、reward、value 接口。</p>
+<p>更紧凑地写：</p>
+<p><span class="math display">\[
+\begin{aligned}
+\text{IDM-style:}\quad &amp;h_t\longrightarrow g_t\longrightarrow a_t,\\
+\text{VLA-style:}\quad &amp;h_t\longrightarrow a_t,\\
+\text{MoT-style:}\quad &amp;h_t\longrightarrow Z_t\longrightarrow a_t.
+\end{aligned}
+\]</span></p>
+<p><span class="math display">\[
+\text{TD-MPC:}
+\qquad
+z_t,a_t
+\longrightarrow
+z_{t+1},r_t,Q_t
+\longrightarrow
+\mathrm{planning}
+\longrightarrow
+a_t.
+\]</span></p>
+<p>注意第二行里 <span class="math inline">\(a_t\)</span>
+出现了两次。第一次是候选动作，作为模型输入；第二次是最终执行动作，作为
+planning 输出。这是 TD-MPC 和直接动作生成路线的关键差别。</p>
+<h2 id="范式归属model-based-rl-的问题轴">范式归属：model-based RL
+的问题轴</h2>
+<p>强化学习里常把方法分成 model-free 和 model-based。</p>
+<p>Model-free 方法直接学习策略或 value：</p>
+<p><span class="math display">\[
+\pi_\theta(a_t\mid s_t),
+\qquad
+Q_\theta(s_t,a_t).
+\]</span></p>
+<p>它不显式学习环境转移 <span class="math inline">\(p(s_{t+1}\mid
+s_t,a_t)\)</span>。SAC、PPO、TD3 等都可以放在这个大类里。</p>
+<p>Model-based 方法学习一个环境模型：</p>
+<p><span class="math display">\[
+\hat p_\theta(s_{t+1},r_t\mid s_t,a_t),
+\]</span></p>
+<p>然后用这个模型做 planning、policy improvement 或 imagined
+training。</p>
+<p>TD-MPC 的 model-based 特征非常明确：它学习 <span
+class="math inline">\(d_\theta(z_t,a_t)\)</span>、<span
+class="math inline">\(R_\theta(z_t,a_t)\)</span>，并在推理时用它们做
+trajectory optimization。它同时保留 TD value，因此和传统纯 MPC
+的计算对象不同。它把两者组合起来：</p>
+<p><span class="math display">\[
+\text{short-horizon model-based planning}
++
+\text{long-horizon TD bootstrap}.
+\]</span></p>
+<p>这也是它在数学上有趣的地方。纯 model-free 依赖 value 和 policy
+学习，纯 long-horizon model-based planning 容易被模型误差拖垮。TD-MPC
+让模型只负责短 horizon 的局部预测，把更远的未来交给 <span
+class="math inline">\(Q_\theta\)</span>。</p>
+<h2 id="td-mpc2-改了什么">TD-MPC2 改了什么</h2>
+<p>TD-MPC2 可以看作对 TD-MPC 接口的规模化和工程稳定化。TD-MPC2 论文把
+TD-MPC 描述为在 learned implicit decoder-free world model 的 latent
+space 里做 local trajectory optimization；TD-MPC2 在更多任务、更强
+robustness、更统一超参、更大模型上推进这套方法。</p>
+<p>从接口角度看，TD-MPC2 没有改变最核心的闭环：</p>
+<p><span class="math display">\[
+z_t
+\xrightarrow{\text{candidate }a}
+\hat z_{t+1:t+H}
+\xrightarrow{R,Q}
+J
+\xrightarrow{\mathrm{planner}}
+a_t.
+\]</span></p>
+<p>它主要把 TD-MPC 变成更可扩展的 continuous-control
+backbone：更稳的模型训练、更强的任务覆盖、更大的 agent，以及一个单一
+agent 跨多个 domain、embodiment、action space 的尝试。</p>
+<p>所以 TD-MPC2 的数学意义不在于重新定义 world model，而在于证明这套
+decoder-free latent planning 接口可以从早期 TD-MPC 推到更大规模的
+continuous control。</p>
+<h2 id="prism-wm-改的是-transition-function">PRISM-WM 改的是 transition
+function</h2>
+<p>PRISM-WM 沿着 TD-MPC 和 TD-MPC2 的接口继续往下拆。它保留
+planner、reward 和 value 评分、latent rollout
+这些外层结构，集中改一个最容易出错的函数：</p>
+<p><span class="math display">\[
+\hat z_{t+1}=d_\theta(z_t,a_t).
+\]</span></p>
+<p>机器人接触世界时，物理经常是 hybrid
+dynamics：连续运动中夹着离散模式切换。脚在空中和脚踩地，杯子滑动和杯子被夹住，身体腾空和落地冲击，局部动力学都不一样。</p>
+<p>单一 MLP 可以写成：</p>
+<p><span class="math display">\[
+\hat z_{t+1}=z_t+f_\theta(z_t,a_t).
+\]</span></p>
+<p>这种 monolithic dynamics
+可能把多个物理模式平均成一个平滑函数。一步预测的误差可能还小，planner
+连续调用 <span class="math inline">\(d_\theta\)</span> 做 rollout
+时，误差会累积。</p>
+<p>PRISM-WM 把 residual dynamics 改成 gated mixture of experts：</p>
+<p><span class="math display">\[
+x_t=[z_t,a_t],
+\qquad
+w_t=\mathrm{softmax}(g_\psi(x_t)).
+\]</span></p>
+<p>第 <span class="math inline">\(k\)</span> 个 expert 输出一个 residual
+direction：</p>
+<p><span class="math display">\[
+u_{t,k}=e_{\theta_k}(x_t).
+\]</span></p>
+<p>为了减少专家学成同一个方向，PRISM-WM 使用 latent
+orthogonalization。稳定版 Gram-Schmidt 可以写成：</p>
+<p><span class="math display">\[
+\tilde v_{t,k}
+=
+u_{t,k}
+-
+\sum_{j=1}^{k-1}
+\frac{\langle u_{t,k},v_{t,j}\rangle}
+{\lVert v_{t,j}\rVert_2^2+\epsilon}
+v_{t,j},
+\qquad
+v_{t,k}
+=
+\frac{\tilde v_{t,k}}
+{\lVert \tilde v_{t,k}\rVert_2+\epsilon}.
+\]</span></p>
+<p>最终 transition 是：</p>
+<p><span class="math display">\[
+\hat z_{t+1}
+=
+z_t
++
+\sum_{k=1}^K
+w_{t,k}v_{t,k}.
+\]</span></p>
+<p>这里的 <span class="math inline">\(g_\psi\)</span> 是 gate
+network，<span class="math inline">\(e_{\theta_k}\)</span> 是第 <span
+class="math inline">\(k\)</span> 个 expert network。Softmax 保证 <span
+class="math inline">\(w_{t,k}\ge 0\)</span>，并且 <span
+class="math inline">\(\sum_k w_{t,k}=1\)</span>。Gate 读取当前 latent
+state 和候选动作，决定每个 expert 的权重。Expert 提出不同 residual
+basis，orthogonalization 让这些 basis 更不容易重复。</p>
+<p>PRISM-WM 的本质改动可以写成一行：</p>
+<p><span class="math display">\[
+d_\theta(z_t,a_t)
+\quad\leadsto\quad
+d_{\psi,\theta_1,\ldots,\theta_K}^{\mathrm{MoE}}
+(z_t,a_t).
+\]</span></p>
+<p>它改的是 planner 反复调用的 transition operator。它没有把 TD-MPC
+改成直接动作生成模型，也没有把 world model 改回图像重建模型。</p>
+<h2 id="newt-改的是任务规模和训练组织">Newt
+改的是任务规模和训练组织</h2>
+<p>Newt 继续保留 TD-MPC2-style world model，但把问题推进到 200 个异构
+continuous-control tasks。它引入 language
+instruction、demonstrations、可选视觉观测，并让一个 agent 在多任务上
+joint online RL。</p>
+<p>一个简化接口可以写成：</p>
+<p><span class="math display">\[
+g=\mathrm{CLIP}_{text}(s_{\mathrm{lang}}),
+\qquad
+x=\mathrm{DINOv2}(s_{\mathrm{img}}),
+\qquad
+z=h(s_{\mathrm{state}},x,g).
+\]</span></p>
+<p>然后 world model 接受 task-conditioned latent：</p>
+<p><span class="math display">\[
+\begin{aligned}
+z&#39; &amp;= d(z,a,g),\\
+r &amp;= R(z,a,g),\\
+q &amp;= Q(z,a,g),\\
+a &amp;\sim p(z,g).
+\end{aligned}
+\]</span></p>
+<p>Newt 的关键在于保持 <span class="math inline">\(d,R,Q\)</span>
+这组接口，并把它们放进 massively multitask online RL。Demonstrations
+同时用于 representation pretraining、action prior、早期 constrained
+planning、replay oversampling 和 BC
+supervision，行为克隆只是其中一部分。</p>
+<p>所以 Newt 的数学对象仍然是 latent world model + planning +
+value，只是条件变量多了 task、language 和
+vision，训练分布从单任务扩展到多任务。</p>
+<p>可以写成：</p>
+<p><span class="math display">\[
+(z_t,a_t,g)
+\longrightarrow
+z_{t+1},r_t,Q_t
+\longrightarrow
+\mathrm{planning}
+\longrightarrow
+a_t.
+\]</span></p>
+<p>这里 <span class="math inline">\(g\)</span> 表示任务语言
+embedding。它和 IDM-style 里的未来目标变量 <span
+class="math inline">\(g_t\)</span> 语义不同：IDM 里的 <span
+class="math inline">\(g_t\)</span> 组织未来目标；Newt 里的 <span
+class="math inline">\(g\)</span> 条件化当前任务。</p>
+<h2 id="puppeteer-改的是控制层级">Puppeteer 改的是控制层级</h2>
+<p>Puppeteer 把 visual whole-body humanoid control 拆成两层
+TD-MPC2-style world model。</p>
+<p>低层 tracking agent：</p>
+<p><span class="math display">\[
+(q_t,c_t)
+\longrightarrow
+z_t^{\mathrm{low}}
+\longrightarrow
+a_t^{\mathrm{joint}}.
+\]</span></p>
+<p>这里 <span class="math inline">\(q_t\)</span> 是 humanoid
+proprioception，<span class="math inline">\(c_t\)</span> 是 abstract
+command，例如 head、hands、feet 的 end-effector 位置。低层在 MoCap
+数据上训练，学会把几何 command 转成自然 joint-level action。</p>
+<p>高层 puppeteering agent：</p>
+<p><span class="math display">\[
+(q_t,v_t)
+\longrightarrow
+z_t^{\mathrm{high}}
+\longrightarrow
+c_t.
+\]</span></p>
+<p>这里 <span class="math inline">\(v_t\)</span>
+是视觉观测。高层输出低层可以执行的 command，避开直接生成 56-DoF joint
+action。低层 frozen 后，高层在视觉任务上训练。</p>
+<p>两层内部都使用类似 TD-MPC2 的世界模型组件：encoder、latent
+dynamics、reward head、termination head、terminal value、policy
+prior、planner。</p>
+<p>Puppeteer 的改动是动作接口分层。原本一步要从视觉直接到高维 joint
+action：</p>
+<p><span class="math display">\[
+v_t,q_t\longrightarrow a_t^{\mathrm{joint}}.
+\]</span></p>
+<p>Puppeteer 把它分成：</p>
+<p><span class="math display">\[
+v_t,q_t
+\longrightarrow
+c_t
+\longrightarrow
+a_t^{\mathrm{joint}}.
+\]</span></p>
+<p>这仍然属于 TD-MPC 和 TD-MPC2 的 planning-centric
+路线，因为两个层级都通过 learned world model 做 latent
+planning。它的创新点在于把 humanoid 控制的 action space
+重新组织成可复用的低层运动 prior 和高层视觉任务决策。</p>
+<h2 id="现在的-world-model-这个词指什么">现在的 world model
+这个词指什么</h2>
+<p>在 2026 年的机器人语境里，world model
+的定义并不单一。它可能指像素级未来视频模型，可能指 latent
+dynamics，可能指可交互 simulator，可能指 action-conditioned predictive
+model，也可能指带 reward 和 value 的 planning substrate。</p>
+<p>为了避免概念变散，可以用一个功能定义：</p>
+<p><span class="math display">\[
+\text{world model}
+=
+\text{agent 用来预测行动后果并改进决策的内部模型}.
+\]</span></p>
+<p>这一定义保留三个条件：</p>
+<p>第一，它和行动有关。模型通常需要知道 action 或 policy
+怎样改变未来：</p>
+<p><span class="math display">\[
+p(o_{t+1},r_t\mid h_t,a_t),
+\qquad
+p(z_{t+1},r_t\mid z_t,a_t).
+\]</span></p>
+<p>第二，它要服务决策。预测未来本身不够，预测结果需要进入
+planning、policy improvement、value estimation、data generation 或
+safety evaluation。</p>
+<p>第三，它可以是 latent
+的。对机器人来说，未来图像逼真不等于控制有用。很多时候更重要的是
+contact、pose、velocity、reward、termination、value
+这些变量是否足够准确。</p>
+<p>所以当前 world model
+的分歧常常不在“是否预测未来”，而在预测什么、为谁预测、怎样被动作选择调用。</p>
+<h2 id="这条线怎么串起来">这条线怎么串起来</h2>
+<p>现在把 TD-MPC 到后续工作的改动串成一条数学链。</p>
+<p>TD-MPC 定义控制型 world model 的基本接口：</p>
+<p><span class="math display">\[
+z_t,a_t
+\longrightarrow
+z_{t+1},r_t,Q_t
+\longrightarrow
+\mathrm{MPC}
+\longrightarrow
+a_t.
+\]</span></p>
+<p>TD-MPC2 把这个接口做得更稳定、更可扩展：</p>
+<p><span class="math display">\[
+\text{same interface}
+\quad+\quad
+\text{larger scale, robustness, unified continuous-control recipe}.
+\]</span></p>
+<p>PRISM-WM 改内部 transition operator：</p>
+<p><span class="math display">\[
+d_\theta(z_t,a_t)
+\quad\leadsto\quad
+\sum_{k=1}^K
+w_{t,k}v_{t,k}.
+\]</span></p>
+<p>Newt 改任务条件和训练分布：</p>
+<p><span class="math display">\[
+z_t,a_t,g_{\mathrm{task}}
+\longrightarrow
+z_{t+1},r_t,Q_t
+\longrightarrow
+\mathrm{planning}
+\longrightarrow
+a_t.
+\]</span></p>
+<p>Puppeteer 改 action hierarchy：</p>
+<p><span class="math display">\[
+\text{vision}
+\longrightarrow
+\text{abstract command}
+\longrightarrow
+\text{joint action},
+\]</span></p>
+<p>并在两个层级分别使用 TD-MPC2-style world model。</p>
+<p>这条线的共同点是，动作选择需要 imagined
+consequence。模型不只输出动作，还要能被 planner 或控制器反复查询：</p>
+<p><span class="math display">\[
+\text{What happens if I take this action?}
+\]</span></p>
+<p>动作生成路线更像回答：</p>
+<p><span class="math display">\[
+\text{Given the history, what action should I output?}
+\]</span></p>
+<p>这两个问题都服务机器人控制，但数学接口不同。动作生成路线的强项在多模态语义、数据规模、语言条件和端到端
+imitation；TD-MPC 这条线的强项在 reward-aware 与 value-aware latent
+rollout、在线 trajectory optimization、样本效率和连续控制。</p>
+<h2
+id="一个落地例子机器人要跨过台阶">一个落地例子：机器人要跨过台阶</h2>
+<p>假设一个 humanoid 看到前方有台阶，当前任务是往前走。</p>
+<p>动作生成式 VLA 可以学习：</p>
+<p><span class="math display">\[
+\pi_\Theta(a_t\mid o_{1:t},a_{1:t-1},l).
+\]</span></p>
+<p>它从大量演示中学到：看到这种视觉场景、这种身体姿态、这种语言目标时，下一段
+joint action 应该怎样输出。它的能力来自数据覆盖、backbone
+表示、动作解码，以及 imitation loss 或 generative loss。</p>
+<p>TD-MPC 式方法会先编码当前状态：</p>
+<p><span class="math display">\[
+z_t=h_\theta(o_t).
+\]</span></p>
+<p>然后 planner
+生成多条候选动作序列。比如有些序列抬腿更高，有些序列步幅更短，有些序列让身体前倾。World
+model 对每条序列做 latent rollout：</p>
+<p><span class="math display">\[
+(z_t,a_t^{(i)})
+\to
+\hat z_{t+1}^{(i)}
+\to
+\cdots
+\to
+\hat z_{t+H}^{(i)}.
+\]</span></p>
+<p>Reward model 估计这条轨迹是否前进、是否稳定、是否摔倒；terminal value
+估计短 horizon 之后还能不能继续走。Planner
+选最高分的候选序列，只执行第一步。</p>
+<p>如果 transition function 把“脚在空中”和“脚接触台阶”平均掉，planner
+可能以为一个动作会稳定落地，真实环境里却绊倒。PRISM-WM 的 MoE dynamics
+正是在这个地方发挥作用：让不同 contact regime 的 residual dynamics
+由不同 expert basis 组合表达。</p>
+<p>如果任务从一个台阶扩展到 200 个不同环境、不同身体、不同目标，Newt
+处理的是多任务训练问题。如果动作还要看起来自然，并且视觉任务需要低层运动
+prior，Puppeteer 处理的是层级动作接口问题。</p>
+<p>这个例子说明：三类动作生成范式和 TD-MPC
+系列处理机器人系统里的不同环节。VLA
+适合把语言、视觉、演示动作整合进一个大条件模型；TD-MPC
+适合把候选动作放进 learned dynamics 里在线评估；PRISM-WM 适合改进被
+planner 反复调用的 dynamics；Puppeteer 适合把高维 humanoid action space
+拆成可复用控制层级。</p>
+<h2 id="缺席的数学原因">缺席的数学原因</h2>
+<p>最后直接回答缺席问题。</p>
+<p>原文三类范式的共同母题是：</p>
+<p><span class="math display">\[
+\pi(a_t\mid h_t).
+\]</span></p>
+<p>IDM-style 把动作分布写成未来目标的边缘化：</p>
+<p><span class="math display">\[
+\pi(a_t\mid h_t)
+\approx
+\int
+\kappa_\phi(a_t\mid h_t,g_t)
+q_\theta(g_t\mid h_t)
+\,dg_t.
+\]</span></p>
+<p>VLA-style 把动作放进多模态联合生成：</p>
+<p><span class="math display">\[
+p_\Theta(O_{t+1},A_t,y_t^L\mid h_t).
+\]</span></p>
+<p>MoT-style 先学共享表示，再用专家输出：</p>
+<p><span class="math display">\[
+Z_t=f_\Phi(h_t),
+\qquad
+p(O,A,y^L\mid h_t)
+\approx
+\prod_m p_{\theta_m}(Y_m\mid Z_t).
+\]</span></p>
+<p>TD-MPC 的母题是：</p>
+<p><span class="math display">\[
+z_{t+1}=d_\theta(z_t,a_t),
+\qquad
+r_t=R_\theta(z_t,a_t),
+\qquad
+Q_t=Q_\theta(z_t,a_t).
+\]</span></p>
+<p>动作由 planner 产生：</p>
+<p><span class="math display">\[
+a_t
+=
+\mathrm{first}
+\left(
+\arg\max_{a_{t:t+H-1}}
+\left[
+\sum_{k=0}^{H-1}
+\gamma^kR_\theta(\hat z_{t+k},a_{t+k})
++
+\gamma^HV_\theta(\hat z_{t+H})
+\right]
+\right).
+\]</span></p>
+<p>这几行公式说明了 TD-MPC 的 outlier
+性。原文三类范式的共同母题可以写成：</p>
+<p><span class="math display">\[
+h_t
+\longrightarrow
+\text{action prediction structure}
+\longrightarrow
+a_t.
+\]</span></p>
+<p>TD-MPC 的共同母题可以写成：</p>
+<p><span class="math display">\[
+z_t,a_t
+\longrightarrow
+\text{future prediction and value}
+\longrightarrow
+\mathrm{planning}
+\longrightarrow
+a_t.
+\]</span></p>
+<p>动作在第一条链里是预测目标；动作在第二条链里先是条件变量，经过
+planning 后才成为执行变量。这个差别解释了 TD-MPC
+为什么没有落进原文三类范式：原文比较的是 inverse dynamics、single
+end-to-end backbone、MoT 这些 action prediction 的数学组织方式；TD-MPC
+属于 action-conditioned 建模加 online planning。</p>
+<p>读 TD-MPC 时，应把注意力放在 <span
+class="math inline">\(d_\theta,R_\theta,Q_\theta\)</span> 和 planner
+的关系上。读 PRISM-WM 时，应看 <span
+class="math inline">\(d_\theta\)</span> 怎样从 monolithic MLP 变成 gated
+orthogonalized experts。读 Newt 时，应看同一个接口怎样加入 language 和
+task conditioning，以及 200-task online RL。读 Puppeteer 时，应看同一个
+planning-centric world model 怎样拆成低层 tracking 和高层视觉
+command。</p>
+<p>如果只记一条链，可以记这一条：</p>
+<p><span class="math display">\[
+\text{history}
+\to
+\text{latent state}
+\to
+\text{action-conditioned future}
+\to
+\text{reward and value score}
+\to
+\text{planned action}.
+\]</span></p>
+<p>对机器人 world model
+来说，未来预测的价值最终要回到动作。预测什么、保留什么、舍弃什么、怎样被
+planner 调用，决定了这个 world model 是否真的服务控制。</p>
+<h2 id="参考资料">参考资料</h2>
+<ul>
+<li>Jiahang Cao, <a
+href="https://sagecao1125.github.io/blog/math-of-world-model-paradigms/">The
+Math Behind World Model Paradigms for Robot Learning</a>, 2026.</li>
+<li>Nicklas Hansen, Xiaolong Wang, Hao Su, <a
+href="https://arxiv.org/abs/2203.04955">Temporal Difference Learning for
+Model Predictive Control</a>, arXiv:2203.04955, 2022.</li>
+<li>Nicklas Hansen, Hao Su, Xiaolong Wang, <a
+href="https://arxiv.org/abs/2310.16828">TD-MPC2: Scalable, Robust World
+Models for Continuous Control</a>, arXiv:2310.16828, 2024.</li>
+<li>Mingwei Li, Xiaoyuan Zhang, Chengwei Yang, Zilong Zheng, Yaodong
+Yang, <a href="https://arxiv.org/abs/2512.08411">Prismatic World Model:
+Learning Compositional Dynamics for Planning in Hybrid Systems</a>,
+arXiv:2512.08411, 2025, revised 2026.</li>
+<li>Nicklas Hansen, Hao Su, Xiaolong Wang, <a
+href="https://arxiv.org/abs/2511.19584">Learning Massively Multitask
+World Models for Continuous Control</a>, arXiv:2511.19584, 2025.</li>
+<li>Nicklas Hansen, Jyothir S V, Vlad Sobal, Yann LeCun, Xiaolong Wang,
+Hao Su, <a href="https://arxiv.org/abs/2405.18418">Hierarchical World
+Models as Visual Whole-Body Humanoid Controllers</a>, arXiv:2405.18418,
+2024, revised 2025.</li>
+</ul>
+    </article>
+  </main>
+</body>
+</html>
