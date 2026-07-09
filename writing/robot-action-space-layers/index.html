@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="一篇短札记：机器人 policy 输出的 action 可以位于高层目标、中层控制命令或低层电机接口；三种 action space 对应不同的学习难度、安全边界和工程职责。">
+  <title>Policy 输出的 Action 到底是什么 - Sense Wang</title>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      color: #111;
+      background: #fff;
+      line-height: 1.78;
+      font-size: 17px;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    main {
+      max-width: 760px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 72px 20px 112px;
+    }
+
+    nav {
+      margin-bottom: 52px;
+      font-size: 13px;
+    }
+
+    a {
+      color: #111;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    a:hover { opacity: 0.55; }
+
+    h1 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: clamp(30px, 5vw, 42px);
+      line-height: 1.12;
+      font-weight: 700;
+      letter-spacing: 0;
+      margin-bottom: 14px;
+      max-width: 720px;
+    }
+
+    h2 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
+      font-size: 25px;
+      line-height: 1.28;
+      letter-spacing: 0;
+      margin: 56px 0 14px;
+    }
+
+    p { margin-bottom: 17px; }
+
+    .meta {
+      color: #999;
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+
+    .dek {
+      color: #444;
+      font-size: 19px;
+      line-height: 1.62;
+      max-width: 700px;
+      margin-bottom: 42px;
+    }
+
+    .equation {
+      margin: 26px 0 30px;
+      padding: 20px 16px;
+      border-top: 1px solid #e5e5e5;
+      border-bottom: 1px solid #e5e5e5;
+      overflow-x: auto;
+    }
+
+    .note {
+      border-left: 3px solid #111;
+      color: #333;
+      font-size: 16px;
+      line-height: 1.72;
+      margin: 28px 0 30px;
+      padding: 2px 0 2px 18px;
+    }
+
+    .compare {
+      margin: 34px 0 38px;
+      border-top: 1px solid #d8d8d8;
+      border-bottom: 1px solid #e8e8e8;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      min-width: 680px;
+      border-collapse: collapse;
+      font-size: 14px;
+      line-height: 1.56;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 12px 14px;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      color: #555;
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: #fafafa;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+    td:first-child { color: #111; font-weight: 650; width: 22%; }
+
+    .references {
+      color: #555;
+      font-size: 15px;
+      margin-left: 22px;
+    }
+
+    .references li {
+      margin-bottom: 10px;
+      padding-left: 4px;
+    }
+
+    @media (max-width: 560px) {
+      main {
+        margin: 0;
+        max-width: 100%;
+        padding: 48px 18px 88px;
+      }
+
+      h2 { font-size: 22px; margin-top: 46px; }
+      body { font-size: 16px; }
+      .dek { font-size: 18px; }
+      table { min-width: 620px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+    <article>
+      <h1>Policy 输出的 Action 到底是什么</h1>
+      <div class="meta">July 2026</div>
+
+      <p class="dek">
+        机器人学习里常写 policy 根据观测输出 action。这个 action 可以位于任务目标、控制命令或电机接口三层。层级不同，学习问题、控制责任和安全边界都会改变。
+      </p>
+
+      <p>
+        机器人策略常被写成一个很短的式子：
+      </p>
+
+      <div class="equation">
+        \[
+        \pi(o_t)\rightarrow a_t
+        \]
+      </div>
+
+      <p>
+        这个式子容易让人以为策略网络看到观测以后，直接告诉电机怎么转。实际系统里，\(a_t\) 的含义取决于 action space 定义在哪一层。同样写作 action，它可能是目标位姿，也可能是包含力和柔顺性的控制命令，也可能是关节力矩。
+      </p>
+
+      <h2>高层动作：目标和位姿</h2>
+
+      <p>
+        高层 action 描述机器人应该到哪里、沿什么轨迹移动。最常见的形式是目标位姿：
+      </p>
+
+      <div class="equation">
+        \[
+        a_t=x_t^\star
+        \]
+      </div>
+
+      <p>
+        \(x_t^\star\) 可以包含三维位置，也可以包含末端姿态。策略在这一层输出任务目标，后续控制器再把目标转换成电机命令。机械臂移动到杯子上方、夹爪对准门把手、末端沿桌面轨迹移动，都可以先被表达成高层位姿目标。
+      </p>
+
+      <div class="equation">
+        \[
+        o_t
+        \rightarrow
+        \pi
+        \rightarrow
+        x_t^\star
+        \rightarrow
+        \text{IK / tracking controller}
+        \rightarrow
+        \tau_t
+        \rightarrow
+        \text{motor}
+        \]
+      </div>
+
+      <p>
+        这里 \(\tau_t\) 才是关节力矩。高层 action 把复杂动力学交给逆运动学、轨迹跟踪或阻抗控制器处理，策略只决定下一段目标。
+      </p>
+
+      <h2>中层动作：位置、力和柔顺性</h2>
+
+      <p>
+        接触任务里，只给位姿目标经常不够。机器人碰到桌子、门、杯子或人时，任务成败还取决于接触力和力-位移关系。
+      </p>
+
+      <div class="equation">
+        \[
+        a_t=(x_t^\star,F_t^\star,K_t,D_t)
+        \]
+      </div>
+
+      <p>
+        \(F_t^\star\) 是目标力，例如擦桌子时希望保持的下压力。\(K_t\) 是刚度，决定偏离目标时机器人拉回去多用力：
+      </p>
+
+      <div class="equation">
+        \[
+        F=K(x^\star-x)
+        \]
+      </div>
+
+      <p>
+        \(D_t\) 是阻尼，决定运动太快或发生振荡时系统施加多强的刹车力：
+      </p>
+
+      <div class="equation">
+        \[
+        F_D=D(\dot{x}^\star-\dot{x})
+        \]
+      </div>
+
+      <p>
+        这一层 action 同时定义目标位置、目标力、系统刚度和阻尼。同样让末端向下移动 1 厘米，刚度不同，接触力可能相差很大；阻尼不同，碰到桌面后的行为可能稳定，也可能振荡。
+      </p>
+
+      <div class="equation">
+        \[
+        (x_t^\star,F_t^\star,K_t,D_t)
+        \rightarrow
+        \text{admittance / impedance controller}
+        \rightarrow
+        \tau_t
+        \rightarrow
+        \text{robot}
+        \]
+      </div>
+
+      <p>
+        中层 action 保留了力、刚度、阻尼这些物理接口，同时避免让神经网络直接承担全部电机控制。对接触任务来说，这一层经常是更可控的选择。
+      </p>
+
+      <h2>低层动作：电机和关节接口</h2>
+
+      <p>
+        最低层 action 直接接近电机接口。它可以是关节力矩：
+      </p>
+
+      <div class="equation">
+        \[
+        a_t=\tau_t
+        \]
+      </div>
+
+      <p>
+        也可以是目标关节速度或目标关节位置：
+      </p>
+
+      <div class="equation">
+        \[
+        a_t=\dot q_t^\star
+        \qquad
+        \text{or}
+        \qquad
+        a_t=q_t^\star
+        \]
+      </div>
+
+      <p>
+        低层 action 给策略最大的控制自由度。代价也直接：训练更依赖动力学和接触建模，真实机器人上更容易出现高频抖动、过大力矩和安全问题。让神经网络输出电机级命令通常还需要限幅、滤波、安全检查和 fallback controller。
+      </p>
+
+      <div class="equation">
+        \[
+        o_t
+        \rightarrow
+        \pi
+        \rightarrow
+        \tau_t
+        \rightarrow
+        \text{motor}
+        \]
+      </div>
+
+      <h2>Action Space 是接口选择</h2>
+
+      <p>
+        policy 输出 action 这句话没有唯一含义。真正的问题是：
+      </p>
+
+      <div class="equation">
+        \[
+        a_t \text{ 被定义在哪一层？}
+        \]
+      </div>
+
+      <div class="compare">
+        <table>
+          <thead>
+            <tr>
+              <th>层级</th>
+              <th>典型 action</th>
+              <th>主要责任</th>
+              <th>主要风险</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>高层</td>
+              <td>waypoint, pose, trajectory</td>
+              <td>任务目标和几何路径</td>
+              <td>接触力和动力学被隐藏，复杂接触容易失真</td>
+            </tr>
+            <tr>
+              <td>中层</td>
+              <td>pose, target force, stiffness, damping</td>
+              <td>接触控制和物理交互风格</td>
+              <td>接口设计更复杂，需要控制器配合</td>
+            </tr>
+            <tr>
+              <td>低层</td>
+              <td>torque, current, joint velocity</td>
+              <td>直接控制电机或关节</td>
+              <td>训练和安全难度最高</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        层级越高，学习更稳定，底层控制器承担更多动力学细节。层级越低，策略自由度更大，训练和安全难度更高。中层 action 保留接触任务需要的物理变量，又把电机级安全交给控制器，因此常常是机器人接触学习里值得优先检查的接口。
+      </p>
+
+      <p>
+        机器人策略真正输出的是一个被工程系统定义过的控制接口。看清 action space 的层级，才能判断一个 robot policy 在学习任务目标、接触行为，还是电机控制。
+      </p>
+
+      <h2>References</h2>
+      <ol class="references">
+        <li>Oussama Khatib, <a href="https://khatib.stanford.edu/publications/pdfs/Khatib_1987_RA.pdf">“A Unified Approach for Motion and Force Control of Robot Manipulators: The Operational Space Formulation,”</a> 1987.</li>
+        <li>Neville Hogan, <a href="https://asmedigitalcollection.asme.org/dynamicsystems/article/107/1/1/400604/Impedance-Control-An-Approach-to-Manipulation-Part">“Impedance Control: An Approach to Manipulation,”</a> 1985.</li>
+        <li>Steven M. LaValle, <a href="https://lavalle.pl/planning/">Planning Algorithms</a>, Cambridge University Press, 2006.</li>
+      </ol>
+    </article>
+  </main>
+</body>
+</html>
