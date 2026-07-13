@@ -13,8 +13,12 @@ report.
 
 ## Evidence
 
+- `evidence/benchmark-selection-overview.html`: public-safe overview of the research question, evidence chain, and current selection conclusion.
 - `evidence/task-selection-criteria.html`: public-safe task-selection criteria.
 - `evidence/benchmark-candidate-evidence.html`: current evidence and counterevidence for the three retained task directions.
+- `evidence/benchmark-candidate-diagnostics.html`: BendPick measured-motion counterevidence and fixed-version OpenFaucet source inspection.
+- `evidence/benchmark-evaluator-validation.html`: evaluator criteria and human-readable adversarial-test results.
+- `evidence/benchmark-evaluator-test-summary.json`: machine-readable results for sixteen synthetic evaluator fixtures.
 - `evidence/upper-body-rescue-verification.json`: paired upper-body correction checks.
 - `evidence/bendpick-stationary-evaluation.json`: stationary-envelope evaluation.
 - `evidence/trajectory-interface-acceptance.json`: cross-platform trajectory-interface checks.

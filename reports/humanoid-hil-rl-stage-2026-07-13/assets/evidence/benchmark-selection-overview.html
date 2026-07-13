@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Humanoid HIL-RL benchmark 选型的研究问题、证据链与当前结论。">
+  <link rel="icon" href="data:,">
+  <title>Benchmark 选型进展 · Humanoid HIL-RL</title>
+  <style>
+    :root {
+      --bg: #fdfbf7;
+      --ink: #1a1a1a;
+      --muted: #6b6b66;
+      --link: #587483;
+      --line: #d9d6cf;
+      --max: 700px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Songti SC", STSong, "Noto Serif CJK SC", "Source Han Serif SC", Georgia, serif;
+      font-size: 18px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    main {
+      width: 100%;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 56px 32px 96px;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 34px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 400;
+      line-height: 1.45;
+    }
+
+    .lead { margin: 18px 0 0; color: #333; }
+
+    h2 {
+      margin: 48px 0 20px;
+      font-size: 23px;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    p { margin: 0; }
+    p + p { margin-top: 14px; }
+
+    ol, ul { margin: 0; padding-left: 1.35em; }
+    li { padding-left: 0.25em; }
+    li + li { margin-top: 14px; }
+
+    strong { font-weight: 600; }
+
+    .boundary {
+      margin-top: 46px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    @media (max-width: 620px) {
+      body { font-size: 17px; }
+      main { padding: 42px 24px 72px; }
+      h1 { font-size: 26px; }
+      h2 { margin-top: 42px; font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="../../index.html">← 返回阶段进展</a>
+
+    <h1>Benchmark 选型进展</h1>
+    <p class="lead">最终 benchmark 尚未确定。目前保留 BendPick、stationary OpenFaucet 和 G1 Powerlift，P&amp;PBox 已退出默认方案。</p>
+
+    <h2>要验证的科研问题</h2>
+    <p>在上肢主导、stationary、接触丰富且下肢参与姿态或平衡的 humanoid 任务中，验证局部人工纠正数据能否在固定 Controller、无持续人工辅助的评估条件下提升 held-out 任务表现，同时避免接触安全与全身稳定性出现不可接受的退化。</p>
+    <p>这句话冻结了 benchmark 必须支持的研究结论；具体平台、任务、Policy 和 Controller 仍由证据决定。</p>
+
+    <h2>本轮形成的产出</h2>
+    <ol>
+      <li><a href="task-selection-criteria.html">任务选择标准</a>：把上肢主导、下肢贡献、stationary、force / compliance 价值、纠正窗口、实验闭环和 Controller 兼容性写成可检查条件。</li>
+      <li><a href="benchmark-candidate-evidence.html">三个候选的证据卡</a>：分别记录保留理由、当前证据、最强反证和下一步验证。</li>
+      <li><a href="benchmark-candidate-diagnostics.html">候选定型与实测反证</a>：补充 BendPick 的完整移动测量，以及 OpenFaucet 固定版本的动作与评测对象检查。</li>
+      <li><a href="benchmark-evaluator-validation.html">Evaluator 对抗测试</a>：定义任务完成、接触安全、stationary / 稳定性和终止原因，并用 16 个合成案例检查假成功。</li>
+    </ol>
+
+    <h2>对抗审查修正了什么</h2>
+    <ul>
+      <li>代码中缺少 <code>WalkSpec</code> 只能说明未显式调用该模块，无法单独证明完整动作满足 stationary。</li>
+      <li>官方数据和 checkpoint 只能证明平台具备基础资产，无法单独证明当前具体任务已经形成数据、Policy 与 evaluator 闭环。</li>
+      <li>官方 expert action 主要作用于上肢，仍不足以证明上肢动作决定任务成败。</li>
+      <li>关节角或物体高度可以描述任务进度，仍需接触、稳定保持和身体碰撞条件来排除假成功。</li>
+    </ul>
+
+    <h2>当前结论</h2>
+    <p>三个候选都还没有同时冻结具体任务、数据与 Policy、Controller 插入位置和评测协议，因此尚未进入正式动态对照。当前保留顺序表示关闭关键未知项的成本，不表示永久科学排名。</p>
+    <ul>
+      <li><strong>BendPick：</strong>已有真实运行和上肢纠正证据；需要先完成 stationary 版本与稳定举升 evaluator。</li>
+      <li><strong>stationary OpenFaucet：</strong>接触与顺应价值清楚；需要实现正确 handle 动作链和近身 stationary 配置。</li>
+      <li><strong>G1 Powerlift：</strong>可形成独立平台路径；需要补齐 contact-aware evaluator、数据闭环和 Controller 接口。</li>
+    </ul>
+
+    <p class="boundary">本轮产出缩小了搜索空间，也明确了每个候选目前缺少的证据。它们尚未证明任何候选已经成为最终 benchmark。</p>
+  </main>
+</body>
+</html>

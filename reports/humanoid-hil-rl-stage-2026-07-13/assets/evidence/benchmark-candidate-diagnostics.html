@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="BendPick、stationary OpenFaucet 与 G1 Powerlift 候选的定型检查和实测反证。">
+  <link rel="icon" href="data:,">
+  <title>候选定型与实测反证 · Humanoid HIL-RL</title>
+  <style>
+    :root {
+      --bg: #fdfbf7;
+      --ink: #1a1a1a;
+      --muted: #6b6b66;
+      --link: #587483;
+      --line: #d9d6cf;
+      --max: 700px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Songti SC", STSong, "Noto Serif CJK SC", "Source Han Serif SC", Georgia, serif;
+      font-size: 18px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    main {
+      width: 100%;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 56px 32px 96px;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 34px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 400;
+      line-height: 1.45;
+    }
+
+    .lead { margin: 18px 0 0; color: #333; }
+
+    article {
+      margin-top: 48px;
+      padding-top: 42px;
+      border-top: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0 0 22px;
+      font-size: 23px;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    h3 {
+      margin: 28px 0 8px;
+      font-size: 17px;
+      font-weight: 600;
+      line-height: 1.6;
+    }
+
+    p { margin: 0; }
+    p + p { margin-top: 14px; }
+
+    ul { margin: 0; padding-left: 1.35em; }
+    li { padding-left: 0.25em; }
+    li + li { margin-top: 12px; }
+
+    .table-wrap { margin: 22px 0; overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 16px;
+      line-height: 1.55;
+    }
+
+    th, td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th { font-weight: 600; }
+
+    .sources {
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    .boundary {
+      margin-top: 46px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    @media (max-width: 620px) {
+      body { font-size: 17px; }
+      main { padding: 42px 24px 72px; }
+      h1 { font-size: 26px; }
+      article { margin-top: 42px; padding-top: 36px; }
+      h2 { font-size: 22px; }
+      table { font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="../../index.html">← 返回阶段进展</a>
+
+    <h1>候选定型与实测反证</h1>
+    <p class="lead">静态候选名称需要落实到可运行的任务版本、动作路径和 evaluator。本页记录目前最关键的实测与源码反证。</p>
+
+    <article>
+      <h2>1. BendPick：完整动作仍有明显移动</h2>
+      <p>对一条完整 MotionPlannerAgent 诊断轨迹记录了 328 个时间点。数据字段完整，时间戳连续递增，动作过程中没有非零导航命令。</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>测量项</th><th>结果</th><th>暂定边界</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>目标物最大抬升</td><td>0.452 m</td><td>描述性指标</td></tr>
+            <tr><td>最佳 0.5 s 保持窗口高度波动</td><td>0.126 m</td><td>≤ 0.030 m</td></tr>
+            <tr><td>root 最大水平位移</td><td>0.342 m</td><td>≤ 0.100 m</td></tr>
+            <tr><td>左脚最大水平位移</td><td>0.191 m</td><td>≤ 0.080 m</td></tr>
+            <tr><td>右脚最大水平位移</td><td>0.509 m</td><td>≤ 0.080 m</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>这条轨迹没有通过稳定举升判据，也没有落入暂定 stationary envelope。它说明“没有非零导航命令”仍不能替代 root 与双脚的实测。</p>
+      <p class="sources"><a href="../media/bendpick-stationary-trace.mp4">查看完整移动视频</a> · <a href="bendpick-stationary-evaluation.json">查看结果数据</a></p>
+    </article>
+
+    <article>
+      <h2>2. stationary OpenFaucet：固定版本仍缺正确自动动作链</h2>
+      <p>对固定版本的自动动作路径进行源码检查后，得到以下链条：</p>
+      <ul>
+        <li>reset 过程把普通目标物设为自动动作对象；faucet 是另一个 articulated actor。</li>
+        <li>现有动作分解与 MotionPlannerAgent 操作普通目标物。</li>
+        <li>evaluator 读取 faucet 的 articulated joint angle。</li>
+        <li>直接替换目标 UID 会破坏现有普通物体动作接口，无法形成正确 handle 操作。</li>
+        <li>近身初始化、限足、接触转动和稳定保持的 stationary overlay 仍待实现。</li>
+      </ul>
+      <p>因此，被审查固定版本的自动动作路径与 evaluator 指向不同对象。这个结果限定在该固定版本的自动路径；teleoperation 数据与项目中的其他实现路线仍需分别检查。</p>
+      <p class="sources"><a href="https://github.com/physical-superintelligence-lab/SIMPLE/blob/d010f0f537af97a0376168d00e7e27e159226b07/src/simple/tasks/g1_wholebody_open_faucet_teleop.py">查看固定版本任务代码</a></p>
+    </article>
+
+    <article>
+      <h2>3. G1 Powerlift：保留为独立备选</h2>
+      <p>现有代码证明平台提供 G1 任务、MuJoCo 资产与 RL 训练入口；成功 evaluator、可复用数据、Diffusion Policy 路线和 task-space Controller 接口仍未闭合。目前保留它作为独立于 SIMPLE 的备选，暂未投入动态运行。</p>
+      <p class="sources"><a href="benchmark-candidate-evidence.html">查看三个候选的完整证据卡</a></p>
+    </article>
+
+    <p class="boundary">BendPick 的结论来自单条诊断轨迹，OpenFaucet 的结论来自固定版本源码检查。它们识别了进入正式动态验证前必须解决的问题，没有给出最终候选淘汰结论。</p>
+  </main>
+</body>
+</html>

@@ -1,0 +1,39 @@
+{
+  "scope": "Synthetic evaluator-semantics QA for two provisional task designs",
+  "summary": {
+    "passed": 16,
+    "total": 16
+  },
+  "separate_outputs": [
+    "task_completion",
+    "contact_safety",
+    "stationary_stability",
+    "termination_reason"
+  ],
+  "fixtures": [
+    {"id": "bendpick_true_positive", "expected": "pass", "result": "passed"},
+    {"id": "bendpick_no_contact", "expected": "reject", "result": "passed"},
+    {"id": "bendpick_transient_lift", "expected": "reject", "result": "passed"},
+    {"id": "bendpick_unstable_hold", "expected": "reject", "result": "passed"},
+    {"id": "bendpick_torso_collision", "expected": "reject", "result": "passed"},
+    {"id": "bendpick_hand_and_knee_collision", "expected": "reject", "result": "passed"},
+    {"id": "bendpick_table_supported_lift", "expected": "reject", "result": "passed"},
+    {"id": "bendpick_complete_with_force_violation", "expected": "separate_completion_and_safety", "result": "passed"},
+    {"id": "bendpick_complete_with_stationary_violation", "expected": "separate_completion_and_stationary", "result": "passed"},
+    {"id": "openfaucet_true_positive", "expected": "pass", "result": "passed"},
+    {"id": "openfaucet_torso_opening", "expected": "reject", "result": "passed"},
+    {"id": "openfaucet_transient_rotation", "expected": "reject", "result": "passed"},
+    {"id": "openfaucet_below_rotation_threshold", "expected": "reject", "result": "passed"},
+    {"id": "openfaucet_initially_open_without_motion", "expected": "reject", "result": "passed"},
+    {"id": "target_binding_match", "expected": "accept", "result": "passed"},
+    {"id": "wrong_environment_binding", "expected": "reject", "result": "passed"}
+  ],
+  "claim_boundary": {
+    "supported": "The evaluator implementation handles the listed synthetic true and false positives as specified.",
+    "not_supported": [
+      "real OpenFaucet trajectory validation",
+      "repeated scientific validation of either task candidate",
+      "final benchmark selection"
+    ]
+  }
+}
