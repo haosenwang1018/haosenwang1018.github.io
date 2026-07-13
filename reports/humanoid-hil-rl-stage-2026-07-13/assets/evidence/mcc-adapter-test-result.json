@@ -1,0 +1,19 @@
+{
+  "date": "2026-07-13",
+  "host": "BigAI privacy-safe Ubuntu workspace",
+  "command": "python -m unittest -v test_mcc_composite_adapter.py",
+  "tests_run": 7,
+  "failures": 0,
+  "errors": 0,
+  "elapsed_s": 0.226,
+  "status": "PASS",
+  "covered_contracts": [
+    "alpha zero is exact tracker identity",
+    "only arm whitelist may change",
+    "deterministic after reset",
+    "stale invalid and over-force inputs fail closed",
+    "missing mapping and non-finite values are rejected",
+    "SONIC LowCmd writer maps by joint name",
+    "adapter p99 remains below 20 ms"
+  ]
+}

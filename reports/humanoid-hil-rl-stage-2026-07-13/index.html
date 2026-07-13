@@ -85,6 +85,8 @@
 
     p { margin: 0; }
 
+    .work-list p + p { margin-top: 10px; }
+
     .outputs {
       margin-top: 14px;
       color: var(--muted);
@@ -169,9 +171,17 @@
         </li>
 
         <li>
-          <h3>5. 跑通了 MCC Controller 的核心部分</h3>
-          <p>Controller 核心能够启动并输出有效结果。目前完成的是基础运行，还没有接入具体任务。</p>
-          <div class="outputs"><strong>产出：</strong><a href="assets/evidence/mcc-component-smoke-result.json">基础运行结果</a></div>
+          <h3>5. 完成了 MCC 固定基座对照实验</h3>
+          <p>对 10 组配对初始条件分别运行 TWIST2-only 和 TWIST2+MCC，共保存 20 条完整 trajectory。两组的最低接触判据都通过 10/10。</p>
+          <p>加入 MCC 后，累计接触冲量的配对中位数下降 27.23%，接触状态 F95 只下降 0.97%，接触时平均力反而上升 4.65%。控制链路最坏一次运行的 p99 为 5.88 ms，另有一个 46.75 ms 单步异常值。</p>
+          <p>这说明在固定基座、TWIST2 inference replay 和 MuJoCo 真值力输入下，MCC 能在不降低最低接触判据通过率的同时减少累计接触暴露。收益主要来自接触时间缩短，不能证明接触力普遍下降、5 N 力跟踪、live Policy、SONIC 实际接入、estimated wrench、自由基座稳定或真机效果。</p>
+          <div class="outputs">
+            <div class="output-row"><strong>报告：</strong><a href="assets/evidence/mcc-hard-effect-report.html">硬效果实验报告</a> · <a href="assets/evidence/mcc-independent-qa.html">独立质检</a></div>
+            <div class="output-row"><strong>数据：</strong><a href="assets/evidence/mcc-aggregate-metrics.json">汇总统计</a> · <a href="assets/evidence/mcc-paired-metrics.csv">10 组配对数据</a> · <a href="assets/evidence/mcc-machine-qc-summary.json">数据质检</a></div>
+            <div class="output-row"><strong>图像：</strong><a href="assets/media/mcc-paired-contact-impulse.png">接触冲量对照</a> · <a href="assets/media/mcc-median-force-trace.png">力曲线</a></div>
+            <div class="output-row"><strong>视频：</strong><a href="assets/media/mcc-twist2-only-seed10.mp4">TWIST2-only</a> · <a href="assets/media/mcc-twist2-plus-mcc-seed10.mp4">TWIST2+MCC</a> · <a href="assets/evidence/mcc-video-qc.json">视频质检</a></div>
+            <div class="output-row"><strong>验证：</strong><a href="assets/evidence/mcc-adapter-test-result.json">7 项自动测试结果</a></div>
+          </div>
         </li>
       </ol>
     </section>
@@ -181,7 +191,7 @@
       <ul class="open-list">
         <li>最终任务还没有选定。stationary OpenFaucet 和 G1 Powerlift 还没有完成动态运行。</li>
         <li>还没有生成自己的仿真数据、训练自己的 Diffusion Policy，也没有在相同条件下比较两个 checkpoint。</li>
-        <li>MCC 还没有完成力标定和任务接入；force / tactile、真人 intervention 和真机安全也还没有验证。</li>
+        <li>MCC 还没有完成 5 N 力跟踪、live Policy、SONIC 任务接入、estimated wrench、自由基座和真机验证；tactile 与真人 intervention 也还没有验证。</li>
       </ul>
     </section>
 

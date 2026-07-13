@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex" />
+  <meta name="referrer" content="no-referrer" />
+  <title>TWIST2 + MCC independent QA</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">TWIST2 + MCC independent QA</h1>
+</header>
+<h1 id="twist2--mcc-formal-v1-independent-qa">TWIST2 + MCC formal v1
+independent QA</h1>
+<h2 id="verdict">Verdict</h2>
+<ul>
+<li>Preregistered numeric contract: <strong>PASS</strong>.</li>
+<li>Archive, trajectories, paired isolation, Controller wiring and
+automatic criteria: <strong>PASS</strong>.</li>
+<li>Original video file integrity: <strong>PASS</strong>.</li>
+<li>Original video interpretability: <strong>FAIL</strong> because the
+opaque green panel obscures the upper body, right arm and contact
+region.</li>
+</ul>
+<p>The supported result is a scoped fixed-base contact-mechanism result.
+It is not evidence for a full task, free-base stability,
+estimated-wrench control, real sensors or real hardware.</p>
+<h2 id="1-archive-and-data-integrity">1. Archive and data integrity</h2>
+<ul>
+<li>Formal archive size: <code>52,848,995</code> bytes.</li>
+<li>Archive SHA-256:
+<code>d22a671d2acea21bd4af15bf89d4d8b8e3f7e6cab54aed82a8b269ce8a38e94f</code>.</li>
+<li>The archive contains 87 files. The manifest registers 86 artifacts;
+<code>86/86</code> exist and all <code>86/86</code> SHA-256 values
+match, with no missing, duplicate or unregistered payload.</li>
+<li>All 20 formal trajectories contain 1,200 steps, totaling 24,000
+steps.</li>
+<li>A scan of 46,453,085 numeric scalars found zero NaN/Inf values.</li>
+<li>The local checkpoint hash, HumanoidArena commit, MCC commit, runner
+hash and adapter hash all match the manifest.</li>
+</ul>
+<h2 id="2-paired-ab-isolation">2. Paired A/B isolation</h2>
+<p>For every paired condition from seed 10 through seed 19, the
+independent audit confirmed exact equality of:</p>
+<ul>
+<li>initial condition;</li>
+<li>35D task reference;</li>
+<li>1,432D observation at every step;</li>
+<li>TWIST2 raw action at every step;</li>
+<li>29D <code>q_track</code> at every step.</li>
+</ul>
+<p>In tracker-only runs, <code>q_exec == q_track</code>, and correction
+and alpha remain zero. In MCC runs, every non-arm joint remains
+unchanged; only right-arm indices 22–28 change. MCC alpha is active for
+147–159 steps per condition and reaches <code>0.20–0.25</code>. The
+maximum correction is <code>0.03647 rad</code> and the maximum step
+change is <code>0.00802 rad</code>, within the frozen
+<code>0.15 rad</code> and <code>0.01 rad/step</code> bounds.</p>
+<p>The ten conditions share one observation/TWIST2 replay and vary only
+the panel position across an approximately <code>1.65 mm</code> range.
+They are narrow contact geometry perturbations, not ten independent
+tasks or Policy trajectories.</p>
+<h2 id="3-preregistered-effect-criteria">3. Preregistered effect
+criteria</h2>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th style="text-align: right;">Independent result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Task success</td>
+<td style="text-align: right;"><code>10/10</code> versus
+<code>10/10</code></td>
+</tr>
+<tr>
+<td>Minimum contact-duration ratio</td>
+<td style="text-align: right;"><code>0.6507937</code> against a
+<code>0.65</code> floor</td>
+</tr>
+<tr>
+<td>Median contact-duration ratio</td>
+<td style="text-align: right;"><code>0.6943657</code></td>
+</tr>
+<tr>
+<td>Median contact-impulse reduction</td>
+<td style="text-align: right;"><code>27.2254%</code></td>
+</tr>
+<tr>
+<td>Bootstrap 95% CI for median impulse reduction</td>
+<td style="text-align: right;"><code>24.4728%–29.1494%</code></td>
+</tr>
+<tr>
+<td>Conditions with lower impulse</td>
+<td style="text-align: right;"><code>10/10</code></td>
+</tr>
+<tr>
+<td>Median contact-state F95 reduction</td>
+<td style="text-align: right;"><code>0.9714%</code></td>
+</tr>
+<tr>
+<td>Conditions with non-increasing F95</td>
+<td style="text-align: right;"><code>10/10</code></td>
+</tr>
+<tr>
+<td>Maximum simulated contact force</td>
+<td style="text-align: right;"><code>38.9668 N</code>, below the
+<code>100 N</code> trip</td>
+</tr>
+<tr>
+<td>Safety stops</td>
+<td style="text-align: right;"><code>0/20</code></td>
+</tr>
+<tr>
+<td>Worst run-level latency p99</td>
+<td style="text-align: right;"><code>5.8797 ms</code>, below
+<code>20 ms</code></td>
+</tr>
+<tr>
+<td>Largest single-step latency</td>
+<td style="text-align: right;"><code>46.7529 ms</code></td>
+</tr>
+</tbody>
+</table>
+<p>The two-sided sign-test value for both the impulse direction and F95
+direction is <code>p=0.001953125</code>. This is descriptive evidence
+across ten predefined narrow fixture perturbations; it is not
+population-level generalization across ten independent tasks or
+Policies.</p>
+<p>The preregistered latency contract constrains p99, so it passes. The
+retained <code>46.7529 ms</code> outlier means the result must not be
+described as every control cycle meeting a 20 ms deadline.</p>
+<h2 id="4-scientific-boundary-of-lower-contact-force">4. Scientific
+boundary of “lower contact force”</h2>
+<p>The primary improvement comes from shorter contact exposure, not a
+broad reduction of force magnitude while contact is active:</p>
+<ul>
+<li>median contact-step count decreases by about
+<code>30.56%</code>;</li>
+<li>time-average force and total impulse decrease by a median
+<code>27.23%</code>;</li>
+<li>contact-state F95 decreases by only <code>0.97%</code>;</li>
+<li>peak force decreases in <code>8/10</code> conditions;</li>
+<li>contact-conditioned mean force increases by a median of about
+<code>4.65%</code>, and increases in all <code>10/10</code>
+conditions;</li>
+<li>the Controller asks for <code>5 N</code>, while observed
+contact-state F95 remains near <code>38 N</code>; the protocol does not
+pass 5 N force tracking.</li>
+</ul>
+<p>Supported wording:</p>
+<blockquote>
+<p>MCC consistently reduces cumulative contact load across the ten
+predefined offsets in this fixed fixture and produces a small,
+consistent reduction in contact-state F95.</p>
+</blockquote>
+<p>Unsupported wording:</p>
+<blockquote>
+<p>MCC has demonstrated stable regulation to the requested force, or a
+broad reduction in force magnitude throughout active contact.</p>
+</blockquote>
+<h2 id="5-stability-boundary">5. Stability boundary</h2>
+<p>Paired root and pelvis-tilt deltas are zero, so the automatic
+<code>stability_noninferior</code> field passes. The pelvis is welded to
+the world, and MCC does not modify leg commands. This proves only that
+the fixed-base fixture does not introduce an additional recorded pose
+delta; it does not prove free-base balance, locomotion stability or
+real-robot stability.</p>
+<h2 id="6-original-video-audit">6. Original video audit</h2>
+<p>File-level checks pass for all <code>20/20</code> original
+videos:</p>
+<ul>
+<li><code>640×480</code>, <code>25 fps</code>, <code>12 s</code>, 300
+frames;</li>
+<li>all 300 decoded frames in every video are distinct;</li>
+<li>the longest consecutive identical-frame run is one frame.</li>
+</ul>
+<p>Visual evidence fails: the green spring panel occupies about
+<code>31.07%</code> of the frame and sits over the upper body, right arm
+and primary contact region. The original videos demonstrate a continuous
+rollout and fixture state, but do not let a human directly compare the
+contact behavior. This does not overturn the trajectory evidence. It
+requires an offline side/rear or transparent-panel rerender from the
+frozen qpos trajectories; such a rerender must remain a visualization
+derivative and must not alter the numeric result.</p>
+<h2 id="7-strict-scope">7. Strict scope</h2>
+<p>The result supports only:</p>
+<blockquote>
+<p>Released TWIST2 ONNX 29D inference-replay seam + official MCC
+admittance/IK core + named-joint composite adapter, in a fixed-base,
+passive-damped, stationary spring-panel fixture driven by
+one-tick-delayed MuJoCo truth wrench in the diagnostic
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>F</mi><msub><mn>1</mn><mrow><mi>g</mi><mi>t</mi></mrow></msub></mrow><annotation encoding="application/x-tex">F1_{gt}</annotation></semantics></math>
+branch.</p>
+</blockquote>
+<p>It does not validate live observation feedback after MCC execution, a
+learned task Policy or Diffusion Policy, the final benchmark, free-base
+balance, torque-estimated wrench, a real F/T sensor, deployable safety
+input, real hardware, or continuous 5 N force tracking.</p>
+<h2 id="8-post-audit-readable-video-derivative">8. Post-audit
+readable-video derivative</h2>
+<p>After the original camera failed visual interpretability, a seed-10
+A/B pair was rerendered from the frozen trajectories with a fixed side
+camera and translucent panel. Independent incremental QA confirmed:</p>
+<ul>
+<li>source trajectory, output video and rerender-script hashes match
+their manifests;</li>
+<li>both videos are H.264, <code>640×480</code>, 100 fps, 12 seconds and
+1,200 decoded frames;</li>
+<li>each has 1,200 distinct frame hashes and no repeated-frame run
+longer than one frame;</li>
+<li>at media PTS <code>10.07 s</code>, corresponding to displayed
+simulation time <code>10.08 s</code>, both views expose the upper body,
+arms, right-palm marker and panel edge; the overlays show the same
+<code>38.11 N</code> contact event with alpha <code>0.000</code> versus
+<code>0.050</code>.</li>
+</ul>
+<p>The one-frame offset exists because media frame zero stores
+simulation time <code>0.01 s</code>. It is documented rather than
+hidden. The derivative now passes human-readability QA, but covers only
+seed 10 and creates no new numeric effect evidence; the locked
+trajectories and formal manifest remain authoritative. Because the
+time/force overlay changes every frame, unique frame hashes alone do not
+prove underlying robot motion; they prove file decodability and distinct
+complete bitmaps. Motion remains supported by trajectory data and human
+video inspection.</p>
+</body>
+</html>

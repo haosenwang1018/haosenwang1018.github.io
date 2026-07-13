@@ -1,0 +1,25 @@
+{
+  "manifest_hashes_checked": 86,
+  "manifest_hash_mismatches": 0,
+  "formal_pairs_checked": 10,
+  "trajectory_files_checked": 20,
+  "steps_per_trajectory": 1200,
+  "all_selected_numeric_fields_finite": true,
+  "all_pair_initial_conditions_equal": true,
+  "all_pair_task_policy_equal": true,
+  "all_pair_observations_equal": true,
+  "all_pair_q_track_equal": true,
+  "all_tracker_only_q_exec_equal_q_track": true,
+  "all_mcc_nonarm_q_exec_equal_q_track": true,
+  "all_mcc_pairs_have_positive_alpha": true,
+  "videos_checked": 20,
+  "video_contract": {
+    "width": 640,
+    "height": 480,
+    "fps": 25,
+    "frames": 300,
+    "duration_s": 12.0
+  },
+  "pass": true,
+  "audit_script": "../code/qc_twist2_formal.py"
+}

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex" />
+  <meta name="referrer" content="no-referrer" />
+  <title>B1 硬效果验证 v1</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">B1 硬效果验证 v1</h1>
+</header>
+<h1 id="b1-hard-effect-validation-v1">B1 hard-effect validation v1</h1>
+<h2 id="delivered-effect">Delivered effect</h2>
+<p>The project now has executable evidence, not only a written
+Controller contract:</p>
+<ol type="1">
+<li>A named-joint <code>TWIST2/MCC</code> composite adapter changes only
+the fourteen arm joints, preserves all other tracker joints exactly,
+rate-limits blending, and fails closed on stale, invalid, unmapped or
+over-force input.</li>
+<li>Seven automated tests pass, including exact <code>alpha=0</code>
+identity, non-arm invariance, deterministic reset, SONIC
+<code>LowCmd</code> name mapping, fail-closed behavior and
+<code>p99 &lt; 20 ms</code> timing.</li>
+<li>A locked held-out paired experiment produced complete trajectories
+and videos for ten TWIST2-only and ten TWIST2+MCC runs.</li>
+</ol>
+<h2 id="quantitative-result">Quantitative result</h2>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th style="text-align: right;">TWIST2 only</th>
+<th style="text-align: right;">TWIST2 + MCC</th>
+<th>Judgment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Task success</td>
+<td style="text-align: right;">10/10</td>
+<td style="text-align: right;">10/10</td>
+<td>non-inferior</td>
+</tr>
+<tr>
+<td>Contact impulse</td>
+<td style="text-align: right;">paired</td>
+<td style="text-align: right;">median <code>27.23%</code> lower</td>
+<td>all 10 seeds improved</td>
+</tr>
+<tr>
+<td>Contact-state F95</td>
+<td style="text-align: right;">paired</td>
+<td style="text-align: right;">median <code>0.97%</code> lower</td>
+<td>no seed regressed; small effect</td>
+</tr>
+<tr>
+<td>Contact-conditioned mean force</td>
+<td style="text-align: right;">paired</td>
+<td style="text-align: right;">median <code>4.65%</code> higher</td>
+<td>all 10 seeds increased; adverse mechanism detail</td>
+</tr>
+<tr>
+<td>Contact duration</td>
+<td style="text-align: right;">baseline reference</td>
+<td style="text-align: right;">ratio <code>0.651–0.733</code></td>
+<td>passed frozen <code>0.65</code> floor</td>
+</tr>
+<tr>
+<td>Safety stop</td>
+<td style="text-align: right;">0/10</td>
+<td style="text-align: right;">0/10</td>
+<td>passed</td>
+</tr>
+<tr>
+<td>Fixed-base pose invariance</td>
+<td style="text-align: right;">paired</td>
+<td style="text-align: right;">unchanged</td>
+<td>diagnostic only; not free-base stability evidence</td>
+</tr>
+<tr>
+<td>Controller latency</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">worst run <code>p99 = 5.88 ms</code></td>
+<td>passed; one <code>46.75 ms</code> single-step outlier remains
+visible</td>
+</tr>
+</tbody>
+</table>
+<p>The strongest supported statement is:</p>
+<blockquote>
+<p>In this fixed-base stationary contact mechanism rig, adding the
+official MCC admittance/IK core after the released TWIST2 ONNX target
+preserved the binary task outcome and reduced cumulative palm-panel
+contact load.</p>
+</blockquote>
+<p>The data do <strong>not</strong> support the stronger statement that
+instantaneous contact force was broadly reduced. The conditional F95
+improvement is about one percent, while contact-conditioned mean force
+rises by a median <code>4.65%</code>; the impulse benefit mainly comes
+from shorter contact exposure. The minimum duration ratio is
+<code>0.6508</code>, only narrowly above the frozen <code>0.65</code>
+floor. The requested force was <code>5 N</code> while contact F95 stayed
+near <code>38 N</code>, so force tracking itself did not pass and is not
+claimed.</p>
+<p>The impulse median has a bootstrap 95% interval of
+<code>[24.47%, 29.15%]</code>, and all ten predefined offsets improve.
+These offsets span only a narrow fixture perturbation and share one
+Policy replay, so the statistic is descriptive of this panel, not
+population-level evidence across independent tasks or Policies.</p>
+<h2 id="evidence">Evidence</h2>
+<ul>
+<li><a href="mcc-aggregate-metrics.json">Aggregate metrics</a></li>
+<li><a href="mcc-paired-metrics.csv">Ten paired conditions</a></li>
+<li><a href="mcc-adapter-test-result.json">Seven-test result</a></li>
+<li><a href="mcc-machine-qc-summary.json">Machine data QA</a></li>
+<li><a href="mcc-video-qc.json">Readable-video QA</a></li>
+<li><a href="mcc-independent-qa.html">Independent QA</a></li>
+<li><a href="../media/mcc-paired-contact-impulse.png">Paired impulse plot</a></li>
+<li><a href="../media/mcc-median-force-trace.png">Median force trace</a></li>
+<li><a href="../media/mcc-twist2-only-seed10.mp4">Readable TWIST2-only video</a></li>
+<li><a href="../media/mcc-twist2-plus-mcc-seed10.mp4">Readable TWIST2+MCC video</a></li>
+</ul>
+<h2 id="scope-boundary">Scope boundary</h2>
+<p>This experiment uses the released TWIST2 ONNX checkpoint and real
+1432D-to-29D inference at the tracker seam, but it is a mechanism
+fixture:</p>
+<ul>
+<li>pelvis welded to world;</li>
+<li>identical passive arm damping in both branches;</li>
+<li>recorded-observation replay followed by a held TWIST2
+observation;</li>
+<li>MuJoCo contact truth supplied to the MCC admittance/IK core
+(<code>F1_gt</code>);</li>
+<li>a spring-loaded stationary panel, not the final benchmark task.</li>
+</ul>
+<p>Therefore it validates the adapter and a Controller effect under
+correct force input. It does not validate the deployable
+<code>tau_est</code> wrench route, free-base whole-body behavior, a
+learned Diffusion Policy, a final benchmark, real robot safety, or
+actual SONIC integration. Those remain separate gates.</p>
+<p>The ten formal seeds represent ten paired <code>±1 mm</code> fixture
+offsets. They are held out from development, but they are not ten
+different task or live-Policy rollouts. The released ONNX executes on
+the locked 1432D replay input each step; this is a real inference seam
+test, not a full <code>ReplayDecoupledAgent</code> closed loop.</p>
+<p>All 20 original videos are valid, continuous 12-second recordings,
+but the opaque green panel obscures the upper-body contact region. They
+prove rollout continuity, not the force effect by visual inspection; the
+numeric claim comes from the hashed trajectories. A readable
+transparent-panel rerender is treated only as a visualization derivative
+of those frozen trajectories.</p>
+<p>The delivered readable pair restores every one of the 1,200 recorded
+states at 100 fps and uses a translucent panel and fixed side camera.
+Both files have 1,200 unique decoded frames and visibly expose the
+palm/contact edge. No <code>mj_step</code>, Policy or Controller is
+executed during rerendering, so the pair is human-facing evidence for
+the already-hashed trajectory rather than a new run.</p>
+</body>
+</html>
