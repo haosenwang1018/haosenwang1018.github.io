@@ -10,11 +10,11 @@
   <title>Humanoid HIL-RL · 阶段进展</title>
   <style>
     :root {
-      --bg: #fcfcfa;
-      --ink: #111111;
-      --muted: #62625c;
-      --line: #deded8;
-      --max: 760px;
+      --bg: #fdfbf7;
+      --ink: #1a1a1a;
+      --muted: #6b6b66;
+      --link: #5d7a8a;
+      --max: 680px;
     }
 
     * { box-sizing: border-box; }
@@ -23,159 +23,113 @@
       margin: 0;
       background: var(--bg);
       color: var(--ink);
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
-      font-size: 17px;
-      line-height: 1.78;
+      font-family: "Songti SC", STSong, "Noto Serif CJK SC", "Source Han Serif SC", Georgia, serif;
+      font-size: 18px;
+      line-height: 1.75;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
     }
 
     a {
-      color: inherit;
-      text-decoration-thickness: 1px;
-      text-underline-offset: 0.2em;
+      color: var(--link);
+      text-decoration: none;
     }
 
-    a:hover { opacity: 0.62; }
-
-    .topline {
-      width: min(calc(100% - 40px), var(--max));
-      margin: 0 auto;
-      padding: 28px 0 22px;
-      border-bottom: 1px solid var(--line);
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 650;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
+    a:hover { text-decoration: underline; }
 
     main {
-      width: min(calc(100% - 40px), var(--max));
+      width: 100%;
+      max-width: var(--max);
       margin: 0 auto;
-      padding: 68px 0 112px;
+      padding: 64px 32px 96px;
     }
 
-    header {
-      padding-bottom: 44px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .kicker {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
+    header { margin-bottom: 46px; }
 
     h1 {
-      margin: 15px 0 18px;
-      font-size: clamp(31px, 5vw, 42px);
-      line-height: 1.12;
-      letter-spacing: -0.018em;
-    }
-
-    .intro {
-      max-width: 680px;
       margin: 0;
-      color: #3f3f3a;
-      font-size: 19px;
-      line-height: 1.65;
+      font-size: 28px;
+      font-weight: 400;
+      line-height: 1.45;
     }
 
     .meta {
-      margin-top: 26px;
+      margin-top: 6px;
       color: var(--muted);
-      font-size: 13px;
+      font-size: 14px;
     }
 
-    section { padding-top: 58px; }
+    section + section { margin-top: 56px; }
 
     h2 {
-      margin: 0 0 18px;
-      font-size: 25px;
-      line-height: 1.28;
+      margin: 0 0 32px;
+      font-size: 24px;
+      font-weight: 400;
+      line-height: 1.5;
     }
 
     .work-list {
       margin: 0;
       padding: 0;
       list-style: none;
-      border-top: 1px solid var(--line);
     }
 
-    .work-list > li {
-      padding: 25px 0 27px;
-      border-bottom: 1px solid var(--line);
-    }
+    .work-list > li + li { margin-top: 32px; }
 
     h3 {
-      margin: 0 0 8px;
-      font-size: 19px;
-      line-height: 1.42;
+      margin: 0 0 10px;
+      font-size: 18px;
+      font-weight: 600;
+      line-height: 1.75;
     }
 
     p { margin: 0; }
 
     .outputs {
-      margin-top: 12px;
+      margin-top: 14px;
       color: var(--muted);
-      font-size: 15px;
+      font-size: 16px;
       line-height: 1.8;
     }
 
-    .outputs strong { color: var(--ink); }
+    .outputs strong {
+      color: var(--ink);
+      font-weight: 600;
+    }
 
     .output-row + .output-row { margin-top: 3px; }
 
     .open-list {
       margin: 0;
-      padding: 0;
-      list-style: none;
-      border-top: 1px solid var(--line);
+      padding-left: 1.2em;
     }
 
-    .open-list li {
-      padding: 19px 0;
-      border-bottom: 1px solid var(--line);
-    }
-
-    footer {
-      margin-top: 64px;
-      padding-top: 22px;
-      border-top: 1px solid var(--line);
-      color: var(--muted);
-      font-size: 12px;
-    }
+    .open-list li { padding-left: 0.2em; }
+    .open-list li + li { margin-top: 16px; }
 
     @media (max-width: 620px) {
-      body { font-size: 16px; }
-      .topline, main { width: min(calc(100% - 32px), var(--max)); }
-      main { padding-top: 48px; padding-bottom: 72px; }
-      header { padding-bottom: 36px; }
-      .intro { font-size: 17px; }
-      section { padding-top: 48px; }
-      h2 { font-size: 23px; }
+      body { font-size: 17px; }
+      main { padding: 44px 24px 72px; }
+      header { margin-bottom: 40px; }
+      h1 { font-size: 26px; }
+      section + section { margin-top: 48px; }
+      h2 { margin-bottom: 26px; font-size: 22px; }
+      .work-list > li + li { margin-top: 28px; }
+      .outputs { font-size: 15px; }
     }
 
     @media print {
       body { background: #fff; font-size: 12pt; }
-      .topline, main { width: 100%; }
-      main { padding: 34px 0; }
+      main { max-width: none; padding: 34px 0; }
       a { text-decoration: none; }
       .work-list > li, .open-list li { break-inside: avoid; }
     }
   </style>
 </head>
 <body>
-  <div class="topline">Humanoid HIL-RL</div>
-
   <main>
     <header>
-      <div class="kicker">Project progress</div>
       <h1>Humanoid HIL-RL 阶段进展</h1>
-      <p class="intro">这里记录目前已经做完的工作、对应产出，以及还没有完成的事情。</p>
       <div class="meta">Sense Wang · 2026.07.13</div>
     </header>
 
@@ -231,7 +185,6 @@
       </ul>
     </section>
 
-    <footer>Updated 2026.07.13</footer>
   </main>
 </body>
 </html>
