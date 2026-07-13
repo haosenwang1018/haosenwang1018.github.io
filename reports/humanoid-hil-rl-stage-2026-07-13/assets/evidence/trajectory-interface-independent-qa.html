@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="跨平台轨迹记录与评测接口的独立复验、可复现性和结论边界质检。">
+  <link rel="icon" href="data:,">
+  <title>跨平台轨迹与评测接口 · 独立质检</title>
+  <style>
+    :root {
+      --bg: #fdfbf7;
+      --ink: #1a1a1a;
+      --muted: #6b6b66;
+      --link: #587483;
+      --line: #d9d6cf;
+      --max: 700px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Songti SC", STSong, "Noto Serif CJK SC", "Source Han Serif SC", Georgia, serif;
+      font-size: 18px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    main { width: 100%; max-width: var(--max); margin: 0 auto; padding: 56px 32px 96px; }
+    .back { display: inline-block; margin-bottom: 34px; color: var(--muted); font-size: 14px; }
+    h1 { margin: 0; font-size: 28px; font-weight: 400; line-height: 1.45; }
+    .lead { margin: 18px 0 0; color: #333; }
+    h2 { margin: 48px 0 20px; font-size: 23px; font-weight: 400; line-height: 1.5; }
+    p { margin: 0; }
+    p + p { margin-top: 14px; }
+    ul { margin: 0; padding-left: 1.35em; }
+    li { padding-left: 0.25em; }
+    li + li { margin-top: 12px; }
+    .links { color: var(--muted); font-size: 15px; line-height: 1.9; }
+    .boundary { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 16px; }
+    @media (max-width: 620px) {
+      body { font-size: 17px; }
+      main { padding: 42px 24px 72px; }
+      h1 { font-size: 26px; }
+      h2 { margin-top: 42px; font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="trajectory-interface-report.html">← 返回接口报告</a>
+
+    <h1>跨平台轨迹与评测接口 · 独立质检</h1>
+    <p class="lead">独立复验重新生成四条统一记录，复查篡改拒绝、运行资产绑定、force 比较边界和跨版本一致性。最终结论为 PASS。</p>
+
+    <h2>重新运行的检查</h2>
+    <ul>
+      <li>完整验收门禁返回成功，37/37 项测试通过。</li>
+      <li>16 类语义篡改和 2 类源文件篡改全部被拒绝。</li>
+      <li>四套带哈希的原始轨迹重新转换后，统一轨迹字节一致。</li>
+      <li>成功、超时和主动停止继续使用原始来源中的终止语义。</li>
+      <li>平台内 force 满足比较条件；跨平台 force 继续返回 <code>not_comparable</code>。</li>
+      <li>17/17 个交付文件哈希与清单一致。</li>
+    </ul>
+
+    <h2>跨版本复现</h2>
+    <p>同一验收程序在 Python 3.9、3.12 和 3.14 下重新运行。三种环境生成的验收 JSON 和四份分析 JSON 逐字节一致；量化只作用于派生报告值，原始轨迹和统一记录保持不变。</p>
+
+    <h2>结论审查</h2>
+    <p>复验支持“同一套接口可以读取并检查两个平台的四条真实逐控制步轨迹”。复验没有把记录兼容性扩展成算法效果，也没有把平台内可比的 force 扩展成跨平台统一指标。</p>
+
+    <h2>机器结果</h2>
+    <p class="links"><a href="trajectory-interface-acceptance.json">查看公开验收摘要</a></p>
+
+    <p class="boundary">PASS 只覆盖记录、来源追溯、篡改拒绝和分析一致性。最终 benchmark、Controller 效果、训练数据与 Policy checkpoint 仍需各自的实验验收。</p>
+  </main>
+</body>
+</html>

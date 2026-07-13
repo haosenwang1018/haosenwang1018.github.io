@@ -171,9 +171,14 @@
         </li>
 
         <li>
-          <h3>4. 统一了实验运行记录</h3>
-          <p>同一种记录格式已经能够读取 SIMPLE 和 HumanoidArena 的成功、超时和主动停止运行，后续更换任务时可以继续使用。</p>
-          <div class="outputs"><strong>产出：</strong><a href="assets/evidence/trajectory-interface-acceptance.json">运行记录结果</a></div>
+          <h3>4. 完成了跨平台轨迹与评测接口</h3>
+          <p>同一套记录格式、validator 和 analyzer 已经读取 SIMPLE 与 HumanoidArena 的四条真实逐控制步轨迹，覆盖成功、超时和主动停止。</p>
+          <p>37/37 项自动测试通过；16 类语义篡改和 2 类源文件篡改均被拒绝。Python 3.9、3.12 和 3.14 生成的验收结果与四份分析结果逐字节一致，独立质检结论为 PASS。</p>
+          <p>这为后续候选任务提供了统一的记录与分析基础；新平台或任务仍需实现并验证对应 adapter。最终 benchmark、Controller 效果和 Policy 训练仍需分别验证。</p>
+          <div class="outputs">
+            <div class="output-row"><strong>报告：</strong><a href="assets/evidence/trajectory-interface-report.html">跨平台轨迹与评测接口</a></div>
+            <div class="output-row"><strong>验证：</strong><a href="assets/evidence/trajectory-interface-acceptance.json">机器验收结果</a> · <a href="assets/evidence/trajectory-interface-independent-qa.html">独立质检</a></div>
+          </div>
         </li>
 
         <li>

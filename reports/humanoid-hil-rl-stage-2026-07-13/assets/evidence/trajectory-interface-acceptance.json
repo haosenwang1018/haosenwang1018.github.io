@@ -1,5 +1,6 @@
 {
-  "artifact": "cross-platform trajectory record acceptance",
+  "artifact": "cross-platform trajectory and evaluation interface",
+  "status": "PASS",
   "platforms": [
     "HumanoidArena",
     "SIMPLE"
@@ -7,28 +8,28 @@
   "episodes": [
     {
       "id": "humanoidarena-success",
-      "steps": 537,
+      "transitions": 537,
       "success": true,
       "termination_reason": "success",
       "mapping_audit": "PASS"
     },
     {
       "id": "humanoidarena-timeout",
-      "steps": 10,
+      "transitions": 10,
       "success": false,
       "termination_reason": "timeout",
       "mapping_audit": "PASS"
     },
     {
       "id": "simple-success",
-      "steps": 214,
+      "transitions": 214,
       "success": true,
       "termination_reason": "task_success",
       "mapping_audit": "PASS"
     },
     {
       "id": "simple-censored",
-      "steps": 120,
+      "transitions": 120,
       "success": false,
       "termination_reason": "intentional_stop_after_phase_1",
       "censored": true,
@@ -37,33 +38,66 @@
   ],
   "recorded_fields": [
     "observation",
-    "policy_action",
-    "controller_input",
-    "controller_output",
+    "policy_request_and_action",
+    "controller_input_and_output",
     "robot_state",
     "root_pose",
     "foot_pose",
-    "contact_force",
+    "contact_and_force",
     "reward",
     "success",
-    "termination",
+    "termination_and_censoring",
     "seed",
     "version",
-    "configuration"
+    "configuration_and_source_identity"
   ],
   "verification": {
-    "real_episodes_checked": 4,
-    "all_mapping_audits_pass": true,
-    "deterministic_second_conversion": true,
-    "invalid_summary_without_step_trajectory_rejected": true,
+    "real_episodes": {
+      "passed": 4,
+      "total": 4
+    },
+    "unit_and_adversarial_tests": {
+      "passed": 37,
+      "total": 37
+    },
+    "semantic_mutations": {
+      "rejected": 16,
+      "total": 16
+    },
+    "source_tamper_cases": {
+      "rejected": 2,
+      "total": 2
+    },
+    "delivery_file_hashes": {
+      "verified": 17,
+      "total": 17
+    },
+    "cross_python_reproducibility": {
+      "versions": [
+        "3.9",
+        "3.12",
+        "3.14"
+      ],
+      "acceptance_and_four_analysis_files_byte_identical": true
+    },
+    "independent_release_qa": "PASS",
     "status": "PASS"
   },
+  "force_comparison": {
+    "within_platform": "allowed only when measurement identity matches",
+    "cross_platform": "not_comparable"
+  },
   "interpretation": {
-    "supported": "One common record and analysis format can represent success, timeout and censored active-stop episodes from both tested platforms.",
+    "supported": [
+      "one common schema, validator and analyzer can process the four tested real per-control-step trajectories",
+      "success, timeout and censored active-stop outcomes retain their source semantics",
+      "invalid semantic edits and source tampering fail closed"
+    ],
     "not_supported": [
       "final benchmark selection",
       "controller effectiveness",
-      "policy training"
+      "policy training",
+      "direct cross-platform force comparison"
     ]
   }
 }

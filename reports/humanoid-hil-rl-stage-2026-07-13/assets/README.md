@@ -21,7 +21,9 @@ report.
 - `evidence/benchmark-evaluator-test-summary.json`: machine-readable results for sixteen synthetic evaluator fixtures.
 - `evidence/upper-body-rescue-verification.json`: paired upper-body correction checks.
 - `evidence/bendpick-stationary-evaluation.json`: stationary-envelope evaluation.
-- `evidence/trajectory-interface-acceptance.json`: cross-platform trajectory-interface checks.
+- `evidence/trajectory-interface-report.html`: public-safe report for the two-platform, four-trajectory recording and evaluation interface.
+- `evidence/trajectory-interface-independent-qa.html`: independent rerun, reproducibility and scientific-boundary review for the interface delivery.
+- `evidence/trajectory-interface-acceptance.json`: final public-safe machine summary covering four real trajectories, 37 tests, semantic/source tamper rejection and cross-runtime reproducibility.
 - `evidence/mcc-component-smoke-result.json`: MCC component smoke-test summary.
 - `evidence/mcc-hard-effect-report.html`: fixed-base TWIST2-only / TWIST2+MCC hard-effect report.
 - `evidence/mcc-independent-qa.html`: independent result and claim-boundary audit.
