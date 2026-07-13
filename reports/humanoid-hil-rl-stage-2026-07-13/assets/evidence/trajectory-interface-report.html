@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Humanoid HIL-RL 跨平台轨迹记录与评测接口的交付结果、验收证据与科学边界。">
+  <link rel="icon" href="data:,">
+  <title>跨平台轨迹与评测接口 · Humanoid HIL-RL</title>
+  <style>
+    :root {
+      --bg: #fdfbf7;
+      --ink: #1a1a1a;
+      --muted: #6b6b66;
+      --link: #587483;
+      --line: #d9d6cf;
+      --max: 700px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Songti SC", STSong, "Noto Serif CJK SC", "Source Han Serif SC", Georgia, serif;
+      font-size: 18px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.92em; }
+    main { width: 100%; max-width: var(--max); margin: 0 auto; padding: 56px 32px 96px; }
+    .back { display: inline-block; margin-bottom: 34px; color: var(--muted); font-size: 14px; }
+    h1 { margin: 0; font-size: 28px; font-weight: 400; line-height: 1.45; }
+    .lead { margin: 18px 0 0; color: #333; }
+    h2 { margin: 48px 0 20px; font-size: 23px; font-weight: 400; line-height: 1.5; }
+    p { margin: 0; }
+    p + p { margin-top: 14px; }
+    ul { margin: 0; padding-left: 1.35em; }
+    li { padding-left: 0.25em; }
+    li + li { margin-top: 12px; }
+    .flow { margin: 24px 0 0; color: #333; text-align: center; }
+    .links { color: var(--muted); font-size: 15px; line-height: 1.9; }
+    .boundary { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 16px; }
+    @media (max-width: 620px) {
+      body { font-size: 17px; }
+      main { padding: 42px 24px 72px; }
+      h1 { font-size: 26px; }
+      h2 { margin-top: 42px; font-size: 22px; }
+      .flow { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="../../index.html">← 返回阶段进展</a>
+
+    <h1>跨平台轨迹与评测接口</h1>
+    <p class="lead">HumanoidArena 与 SIMPLE 的四条真实逐控制步轨迹已经进入同一套记录、验证和分析接口。</p>
+
+    <h2>完成了什么</h2>
+    <p>接口保留 observation、Policy request 与 action、Controller 输入输出、robot state、root 与 foot pose、contact / force、reward、success、termination、seed、版本和来源身份。</p>
+    <p class="flow">原始逐控制步轨迹 → 平台 adapter → 统一记录 → 公共 validator 与 analyzer</p>
+    <ul>
+      <li>HumanoidArena success：537 个 transition，终止原因为 success。</li>
+      <li>HumanoidArena timeout：10 个 transition，终止原因为 timeout。</li>
+      <li>SIMPLE success：214 个 transition，终止原因为 task success。</li>
+      <li>SIMPLE 主动停止：120 个 transition，保留 censored 状态和停止原因。</li>
+    </ul>
+
+    <h2>验收结果</h2>
+    <ul>
+      <li>37/37 项单元与对抗测试通过。</li>
+      <li>16/16 类语义篡改按指定原因被拒绝。</li>
+      <li>2/2 类源文件篡改被拒绝。</li>
+      <li>17/17 个交付文件哈希核验通过。</li>
+      <li>Python 3.9、3.12 和 3.14 生成的验收结果与四份分析结果逐字节一致。</li>
+      <li>独立质检重新运行完整门禁，结论为 PASS。</li>
+    </ul>
+
+    <h2>Force 的比较边界</h2>
+    <p>同一平台内，measurement identity、单位、坐标系和来源一致时允许比较。HumanoidArena 与 SIMPLE 的 force 定义不同，跨平台结果明确返回 <code>not_comparable</code>，没有通过补零或归一化制造共同指标。</p>
+
+    <h2>可检查证据</h2>
+    <p class="links"><a href="trajectory-interface-acceptance.json">机器验收结果</a> · <a href="trajectory-interface-independent-qa.html">独立质检</a></p>
+
+    <p class="boundary">这项交付证明跨平台记录与评测基础设施可用。它没有选定最终 benchmark，也没有证明 Controller 效果或完成 Policy 训练。</p>
+  </main>
+</body>
+</html>
