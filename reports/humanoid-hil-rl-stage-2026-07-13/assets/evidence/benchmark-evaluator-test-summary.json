@@ -1,39 +1,63 @@
 {
-  "scope": "Synthetic evaluator-semantics QA for two provisional task designs",
-  "summary": {
-    "passed": 16,
-    "total": 16
+  "schema_version": "candidate-evaluator-test-summary-v2",
+  "scope": "Unit and counterexample tests for the BendPick and OpenFaucet strict evaluators and evidence binding.",
+  "execution": {
+    "passed": 36,
+    "failed": 0,
+    "total": 36,
+    "result": "OK"
   },
-  "separate_outputs": [
-    "task_completion",
-    "contact_safety",
-    "stationary_stability",
-    "termination_reason"
-  ],
-  "fixtures": [
-    {"id": "bendpick_true_positive", "expected": "pass", "result": "passed"},
-    {"id": "bendpick_no_contact", "expected": "reject", "result": "passed"},
-    {"id": "bendpick_transient_lift", "expected": "reject", "result": "passed"},
-    {"id": "bendpick_unstable_hold", "expected": "reject", "result": "passed"},
-    {"id": "bendpick_torso_collision", "expected": "reject", "result": "passed"},
-    {"id": "bendpick_hand_and_knee_collision", "expected": "reject", "result": "passed"},
-    {"id": "bendpick_table_supported_lift", "expected": "reject", "result": "passed"},
-    {"id": "bendpick_complete_with_force_violation", "expected": "separate_completion_and_safety", "result": "passed"},
-    {"id": "bendpick_complete_with_stationary_violation", "expected": "separate_completion_and_stationary", "result": "passed"},
-    {"id": "openfaucet_true_positive", "expected": "pass", "result": "passed"},
-    {"id": "openfaucet_torso_opening", "expected": "reject", "result": "passed"},
-    {"id": "openfaucet_transient_rotation", "expected": "reject", "result": "passed"},
-    {"id": "openfaucet_below_rotation_threshold", "expected": "reject", "result": "passed"},
-    {"id": "openfaucet_initially_open_without_motion", "expected": "reject", "result": "passed"},
-    {"id": "target_binding_match", "expected": "accept", "result": "passed"},
-    {"id": "wrong_environment_binding", "expected": "reject", "result": "passed"}
+  "groups": {
+    "bendpick": 20,
+    "openfaucet": 14,
+    "identity_binding": 2
+  },
+  "explicit_rejection_or_mismatch_tests": 25,
+  "tests": [
+    "bendpick.valid_stable_hand_lift",
+    "bendpick.rejects_wrong_body_collision",
+    "bendpick.rejects_transient_lift",
+    "bendpick.rejects_unstable_hold",
+    "bendpick.accepts_later_stable_hold_after_early_instability",
+    "bendpick.paired_evaluation_ignores_success_before_branch",
+    "bendpick.paired_evaluation_accepts_success_after_branch",
+    "bendpick.rejects_out_of_range_evaluation_start",
+    "bendpick.rejects_lift_without_hand_contact",
+    "bendpick.safety_does_not_overwrite_task_completion",
+    "bendpick.rejects_hand_plus_leg_collision",
+    "bendpick.rejects_external_support",
+    "bendpick.rejects_unknown_external_support_fail_closed",
+    "bendpick.rejects_sparse_fake_hold",
+    "bendpick.rejects_terminated_hold",
+    "bendpick.rejects_monotonic_motion_within_span_limit",
+    "bendpick.rejects_non_finite_root_state",
+    "bendpick.stationary_violation_is_reported_separately",
+    "bendpick.reset_reference_without_controller_command_is_not_navigation_gap",
+    "bendpick.rollout_record_without_controller_command_is_navigation_gap",
+    "openfaucet.valid_stable_hand_rotation",
+    "openfaucet.rejects_body_opening",
+    "openfaucet.rejects_transient_rotation",
+    "openfaucet.rejects_below_threshold",
+    "openfaucet.rejects_initially_open_without_motion",
+    "openfaucet.rejects_legacy_synthetic_target_name",
+    "openfaucet.rejects_wrong_articulated_link",
+    "openfaucet.rejects_link_zero_with_wrong_collision_geom",
+    "openfaucet.rejects_negative_rotation",
+    "openfaucet.rejects_torso_open_then_hand_hold",
+    "openfaucet.rejects_hand_contact_only_after_rotation",
+    "openfaucet.rejects_prebranch_rotation_credit",
+    "openfaucet.allows_release_after_valid_actuation",
+    "openfaucet.rejects_torso_support_during_hold",
+    "identity_binding.matching_binding_passes",
+    "identity_binding.environment_mismatch_fails"
   ],
   "claim_boundary": {
-    "supported": "The evaluator implementation handles the listed synthetic true and false positives as specified.",
+    "supported": "The evaluator implementation handles the listed positive cases, failure counterexamples, branch timing, stationary separation, and evidence binding as specified.",
     "not_supported": [
-      "real OpenFaucet trajectory validation",
-      "repeated scientific validation of either task candidate",
-      "final benchmark selection"
+      "final task selection",
+      "learned-policy natural-failure validation",
+      "candidate promotion",
+      "dataset generation or policy training"
     ]
   }
 }

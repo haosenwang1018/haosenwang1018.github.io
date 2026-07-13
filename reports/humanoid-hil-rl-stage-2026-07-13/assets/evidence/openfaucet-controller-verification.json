@@ -1,0 +1,71 @@
+{
+  "schema_version": "openfaucet-public-verification-v1",
+  "source_verification_sha256": "f53f3b8f0e340103291fa4ced0427d4f3557c928e5695b53fd409c5e3c6c644c",
+  "scope": "Four frozen seed-0 joint-PD/IK trajectories from one OpenFaucet task state.",
+  "summary": {
+    "evaluated_runs": 4,
+    "strict_evaluator_passes": 0,
+    "all_runs_bound_to_frozen_evidence": true
+  },
+  "strict_thresholds": {
+    "minimum_positive_joint_delta_rad": 0.7,
+    "minimum_hold_duration_s": 0.5,
+    "minimum_distinct_allowed_hand_bodies": 2,
+    "minimum_allowed_contact_progress_fraction": 0.8,
+    "root_xy_max_m": 0.1,
+    "foot_xy_max_m": 0.08
+  },
+  "runs": [
+    {
+      "role": "single_contact_open_loop",
+      "maximum_positive_joint_delta_rad": 0.07996426836626805,
+      "threshold_crossed": false,
+      "strict_evaluator_pass": false,
+      "root_xy_max_m": 0.027988994922100937,
+      "foot_xy_max_m": 0.00706427911078675
+    },
+    {
+      "role": "single_contact_feedback",
+      "maximum_positive_joint_delta_rad": 0.08914559613704481,
+      "threshold_crossed": false,
+      "strict_evaluator_pass": false,
+      "root_xy_max_m": 0.027988994922100937,
+      "foot_xy_max_m": 0.00706427911078675
+    },
+    {
+      "role": "two_contact_feedback",
+      "maximum_positive_joint_delta_rad": 0.0008465092890636572,
+      "threshold_crossed": false,
+      "strict_evaluator_pass": false,
+      "root_xy_max_m": 0.027988994922100937,
+      "foot_xy_max_m": 0.00706427911078675
+    },
+    {
+      "role": "fast_wrist_threshold_crossing",
+      "maximum_positive_joint_delta_rad": 1.1104620487318897,
+      "threshold_crossed": true,
+      "allowed_contact_progress_fraction": 0.0010176530739409721,
+      "first_crossing_hold": {
+        "qualifies": false,
+        "angle_span_rad": 0.4010188468127295,
+        "angle_net_change_rad": 0.39011018837816247,
+        "angle_abs_trend_rad_per_s": 0.5387768080331354
+      },
+      "strict_evaluator_pass": false,
+      "root_xy_max_m": 0.19726869102492825,
+      "foot_xy_max_m": 0.010031203282452755
+    }
+  ],
+  "supported_conclusion": "All four frozen trajectories fail the strict evaluator. The first three miss the angle threshold; the fast-wrist trajectory crosses the threshold but fails causal contact attribution, the first-crossing hold, and the root envelope.",
+  "not_supported": [
+    "OpenFaucet is infeasible as a task.",
+    "The joint-PD/IK family is infeasible.",
+    "MCC, admittance, force control, or a learned policy has been evaluated.",
+    "The final task has been selected.",
+    "Dataset generation or policy training is authorized."
+  ],
+  "unrecorded_fields": {
+    "navigation_command": "unknown",
+    "termination_and_truncation_flags": "unknown"
+  }
+}

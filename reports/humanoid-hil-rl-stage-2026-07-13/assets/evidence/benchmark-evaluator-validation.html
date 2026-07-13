@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
   <meta name="referrer" content="no-referrer">
-  <meta name="description" content="BendPick 与 OpenFaucet evaluator 的判据和 16 项合成对抗测试。">
+  <meta name="description" content="BendPick 与 OpenFaucet evaluator 的判据和 36 项自动测试。">
   <link rel="icon" href="data:,">
   <title>Evaluator 对抗测试 · Humanoid HIL-RL</title>
   <style>
@@ -125,30 +125,30 @@
 
     <h2>OpenFaucet 判据</h2>
     <ul>
-      <li>从每次 reset 的初始关节角开始计算，相对转角至少达到 0.7 rad，并连续保持至少 0.5 s。</li>
-      <li>右手至少有两个允许接触部位触碰 handle，机器人其他身体部位不得形成禁用接触。</li>
-      <li>保持窗口内回弹幅度不超过 0.2 rad。</li>
+      <li>从每次 reset 的初始关节角开始计算，相对转角至少达到 0.7 rad；保持窗口从首次越过阈值开始，持续至少 0.5 s。</li>
+      <li>首次越阈前，至少两个允许的右手接触部位解释 80% 的正向角度进展；机器人其他身体部位不得形成禁用接触。</li>
+      <li>保持窗口内角度跨度不超过 0.2 rad，净变化不超过 0.05 rad，绝对角速度不超过 0.1 rad/s。</li>
       <li>初始已经打开但没有新动作的状态不能计为成功。</li>
     </ul>
 
-    <h2>16 项对抗测试</h2>
+    <h2>36 项 evaluator 测试</h2>
     <div class="table-wrap">
       <table>
         <thead>
           <tr><th>类别</th><th>数量</th><th>覆盖内容</th></tr>
         </thead>
         <tbody>
-          <tr><td>BendPick</td><td>9</td><td>合成成功样例、无接触、瞬时抬升、保持不稳、躯干或膝盖碰撞、桌面托举，以及任务完成与安全或 stationary 违规的分离记录。</td></tr>
-          <tr><td>OpenFaucet</td><td>5</td><td>合成成功样例、躯干推开、瞬时转动、转角不足、初始已打开但没有新动作。</td></tr>
+          <tr><td>BendPick</td><td>20</td><td>稳定举升正例、无接触、瞬时抬升、保持不稳、外部支撑、错误身体接触、稀疏假保持、分支时序、非有限状态，以及任务完成与安全或 stationary 违规的分离记录。</td></tr>
+          <tr><td>OpenFaucet</td><td>14</td><td>稳定转动正例、躯干推开、瞬时转动、转角不足、初始已打开、错误 articulated link、错误 collision geom、负向转动、分支前归因、接触滞后和保持期间躯干支撑。</td></tr>
           <tr><td>对象绑定</td><td>2</td><td>正确环境与目标绑定，以及错误环境绑定拒绝。</td></tr>
         </tbody>
       </table>
     </div>
 
-    <p class="result"><strong>结果：16/16 通过。</strong>列出的合成假成功都被拒绝或被拆分为任务完成与安全、稳定性违规；正确构造的成功案例得到通过。</p>
+    <p class="result"><strong>结果：36/36 通过。</strong>其中 25 项是显式拒绝或对象不匹配测试；其余测试覆盖正确正例、分支时序、保持语义和任务完成与安全、stationary 违规的分离记录。</p>
     <p class="result"><a href="benchmark-evaluator-test-summary.json">查看机器可读测试结果</a></p>
 
-    <p class="boundary">这些测试验证 evaluator 的代码语义与已列出的反例。它们尚未代替真实 OpenFaucet 轨迹、重复候选实验或最终 benchmark 的科学验证。</p>
+    <p class="boundary">这些测试验证 evaluator 的代码语义与已列出的正例、反例和对象绑定。真实轨迹结果见 <a href="openfaucet-controller-audit.html">OpenFaucet 质检</a> 与 <a href="bendpick-upper-body-rescue-report.html">BendPick 配对实验</a>；最终任务选择和 learned Policy 自然失败仍需后续验证。</p>
   </main>
 </body>
 </html>

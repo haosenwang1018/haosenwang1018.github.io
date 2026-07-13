@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="BendPick 三组状态锁定上肢纠正实验的设置、结果、证据和结论边界。">
+  <link rel="icon" href="data:,">
+  <title>BendPick 上肢纠正实验</title>
+  <style>
+    :root {
+      --bg: #fdfbf7;
+      --ink: #1a1a1a;
+      --muted: #6b6b66;
+      --link: #587483;
+      --line: #d9d6cf;
+      --max: 700px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Songti SC", STSong, "Noto Serif CJK SC", "Source Han Serif SC", Georgia, serif;
+      font-size: 18px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    main { width: 100%; max-width: var(--max); margin: 0 auto; padding: 56px 32px 96px; }
+    .back { display: inline-block; margin-bottom: 34px; color: var(--muted); font-size: 14px; }
+    h1 { margin: 0; font-size: 28px; font-weight: 400; line-height: 1.45; }
+    .lead { margin: 18px 0 0; color: #333; }
+    h2 { margin: 48px 0 20px; font-size: 23px; font-weight: 400; line-height: 1.5; }
+    p { margin: 0; }
+    p + p { margin-top: 14px; }
+    ul { margin: 0; padding-left: 1.35em; }
+    li { padding-left: 0.25em; }
+    li + li { margin-top: 12px; }
+    .table-wrap { margin-top: 8px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 16px; line-height: 1.55; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { font-weight: 600; }
+    .links { color: var(--muted); font-size: 15px; line-height: 1.9; }
+    .boundary { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 16px; }
+    @media (max-width: 620px) {
+      body { font-size: 17px; }
+      main { padding: 42px 24px 72px; }
+      h1 { font-size: 26px; }
+      h2 { margin-top: 42px; font-size: 22px; }
+      table { min-width: 560px; font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="../../index.html">← 返回阶段进展</a>
+
+    <h1>BendPick 上肢纠正实验</h1>
+    <p class="lead">三组配对轨迹从各自相同的序列化状态出发，只改变预先指定的右肩目标，检查上肢纠正能否改变任务结果。</p>
+
+    <h2>实验设置</h2>
+    <ul>
+      <li>两条配对分支在第 120 步前保持相同。</li>
+      <li>误差分支从第 120 步起给右肩 pitch 目标增加 0.30 rad。</li>
+      <li>纠正分支恢复原来的上肢目标；其余动作、locomotion command、环境、最大时长和 evaluator 保持固定。</li>
+      <li>root 平面位移上限为 10 cm，任一 foot 平面位移上限为 8 cm。</li>
+      <li>本页的 0/3 → 3/3 使用原任务的瞬时抬升终止：目标物相对初始状态抬升至少 9 cm，无需稳定保持。</li>
+      <li>公开 strict evaluator 另要求至少抬升 10 cm 且连续保持 0.5 s；本实验没有验证该判据。</li>
+    </ul>
+
+    <h2>结果</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>状态</th><th>误差分支原任务结果</th><th>纠正分支原任务结果</th><th>抬升差</th><th>root 最坏值</th><th>foot 最坏值</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>State 1</td><td>失败</td><td>成功</td><td>7.89 cm</td><td>6.06 cm</td><td>4.12 cm</td></tr>
+          <tr><td>State 2</td><td>失败</td><td>成功</td><td>9.59 cm</td><td>6.06 cm</td><td>5.94 cm</td></tr>
+          <tr><td>State 3</td><td>失败</td><td>成功</td><td>8.66 cm</td><td>6.06 cm</td><td>7.97 cm</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>按原任务的瞬时抬升终止，误差分支为 0/3，纠正分支为 3/3，平均抬升差为 8.71 cm。六条轨迹均满足本轮 root 与 foot 范围。</p>
+
+    <h2>可复核性</h2>
+    <p>验证器检查相同 reset-state、相同源轨迹、相同分支前积分状态、纠正分支原动作回放、误差只出现在预先指定的右肩目标、locomotion command 不变，以及每组的任务结果和 stationary 范围。三组共 45/45 项配对检查通过。</p>
+    <p class="links"><a href="upper-body-rescue-verification.json">查看机器结果</a> · <a href="../media/rescue-state1-fail.mp4">State 1 失败</a> · <a href="../media/rescue-state1-corrected.mp4">State 1 纠正</a> · <a href="../media/rescue-state2-fail.mp4">State 2 失败</a> · <a href="../media/rescue-state2-corrected.mp4">State 2 纠正</a> · <a href="../media/rescue-state3-fail.mp4">State 3 失败</a> · <a href="../media/rescue-state3-corrected.mp4">State 3 纠正</a></p>
+
+    <p class="boundary">结论只覆盖三个人为引入上肢误差的状态，以及原任务的瞬时抬升终止。至少抬升 10 cm 且连续保持 0.5 s 的 strict stable-lift 判据、learned Base Policy 的自然失败频率、MCC／力控／触觉效果、最终任务选择和学习后的改进仍需分别验证。</p>
+  </main>
+</body>
+</html>

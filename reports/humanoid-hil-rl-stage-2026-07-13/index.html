@@ -145,13 +145,13 @@
           <div class="outputs">
             <div class="output-row"><strong>总览：</strong><a href="assets/evidence/benchmark-selection-overview.html">Benchmark 选型进展</a></div>
             <div class="output-row"><strong>依据：</strong><a href="assets/evidence/task-selection-criteria.html">任务选择标准</a> · <a href="assets/evidence/benchmark-candidate-evidence.html">三个候选的证据卡</a></div>
-            <div class="output-row"><strong>新增证据：</strong><a href="assets/evidence/benchmark-candidate-diagnostics.html">候选定型与实测反证</a> · <a href="assets/evidence/benchmark-evaluator-validation.html">Evaluator 对抗测试</a></div>
+            <div class="output-row"><strong>新增证据：</strong><a href="assets/evidence/benchmark-candidate-diagnostics.html">候选定型与实测反证</a> · <a href="assets/evidence/benchmark-evaluator-validation.html">Evaluator 36 项测试</a></div>
           </div>
         </li>
 
         <li>
-          <h3>2. 实际运行了 BendPick 和 BendPickAndPlace</h3>
-          <p>BendPick 动作链将目标物抬高，但 0.5 s 稳定举升判据没有通过。BendPickAndPlace 没有完成放置。原版 BendPick 的移动范围过大，因此还不能直接作为当前任务。</p>
+          <h3>2. 完成了早期 scripted 任务运行</h3>
+          <p>BendPick 动作链将目标物抬高，但没有通过 0.5 s 稳定举升判据。BendPickAndPlace 没有完成放置。原版 BendPick 的移动范围过大，因此还不能直接作为当前任务。</p>
           <div class="outputs">
             <div class="output-row"><strong>产出：</strong><a href="assets/media/bendpick-positive.mp4">BendPick 视频</a> · <a href="assets/media/bendpick-positive.jpg">时序图</a></div>
             <div class="output-row"><strong>产出：</strong><a href="assets/media/bendpickplace-attempt.mp4">BendPickAndPlace 视频</a> · <a href="assets/media/bendpickplace-attempt.jpg">时序图</a></div>
@@ -160,13 +160,17 @@
         </li>
 
         <li>
-          <h3>3. 做了三组上肢纠正实验</h3>
-          <p>人为加入右肩误差时，三组实验都失败；恢复原来的上肢动作后，三组都成功，结果从 0/3 变为 3/3。</p>
+          <h3>3. 完成了候选任务的第一轮动态验证</h3>
+          <p>三个 BendPick 配对状态都从同一序列化状态出发。误差分支从第 120 步给右肩 pitch 目标加入 0.30 rad，结果为 0/3；仅恢复原来的上肢目标后，三组均触发原任务的瞬时抬升终止，结果为 3/3。该判据要求目标物相对初始状态抬升至少 9 cm，无需稳定保持；本实验尚未验证 10 cm 且连续保持 0.5 s 的 strict stable-lift 判据。目标物抬升差分别为 7.89、9.59、8.66 cm，六条轨迹都满足 root 与 foot 范围。</p>
+          <p>OpenFaucet 的四条冻结 seed=0 joint-PD/IK 轨迹均未通过严格 evaluator。快速腕部轨迹转动 1.110 rad，但允许的双指接触只获得 0.102% 的正向角度进展归因；首次越过阈值后的保持失败，root 漂移为 19.7 cm。</p>
+          <p>本轮动态硬证据已经完成。BendPick 的结果只覆盖三个人为误差状态和原任务瞬时抬升终止；OpenFaucet 的结果只约束这四条冻结轨迹。正式候选晋级仍未完成，数据生成和训练需要等待两个固定候选配置及 learned Base Policy 的自然失败验证。</p>
           <div class="outputs">
+            <div class="output-row"><strong>BendPick：</strong><a href="assets/evidence/bendpick-upper-body-rescue-report.html">配对效果报告</a> · <a href="assets/evidence/upper-body-rescue-verification.json">机器结果</a></div>
+            <div class="output-row"><strong>OpenFaucet：</strong><a href="assets/evidence/openfaucet-controller-audit.html">人类可读质检</a> · <a href="assets/evidence/openfaucet-controller-verification.json">机器验证</a></div>
+            <div class="output-row"><strong>验证：</strong><a href="assets/evidence/benchmark-evaluator-validation.html">36 项 evaluator 测试</a> · <a href="assets/evidence/dynamic-candidate-independent-review.html">发布前复核</a></div>
             <div class="output-row"><strong>State 1：</strong><a href="assets/media/rescue-state1-fail.mp4">失败视频</a> · <a href="assets/media/rescue-state1-corrected.mp4">纠正视频</a></div>
             <div class="output-row"><strong>State 2：</strong><a href="assets/media/rescue-state2-fail.mp4">失败视频</a> · <a href="assets/media/rescue-state2-corrected.mp4">纠正视频</a></div>
             <div class="output-row"><strong>State 3：</strong><a href="assets/media/rescue-state3-fail.mp4">失败视频</a> · <a href="assets/media/rescue-state3-corrected.mp4">纠正视频</a></div>
-            <div class="output-row"><strong>产出：</strong><a href="assets/evidence/upper-body-rescue-verification.json">三组实验结果</a></div>
           </div>
         </li>
 
@@ -200,7 +204,7 @@
     <section>
       <h2>还没做什么</h2>
       <ul class="open-list">
-        <li>最终任务还没有选定。stationary OpenFaucet 和 G1 Powerlift 还没有完成动态运行。</li>
+        <li>最终任务还没有选定。OpenFaucet 已完成四条受限动态运行，但当前结果不支持进入数据生成或训练；下一轮需要新的 MCC、力控或柔顺控制证据，或更换第二候选。G1 Powerlift 仍未完成动态运行。</li>
         <li>还没有生成自己的仿真数据、训练自己的 Diffusion Policy，也没有在相同条件下比较两个 checkpoint。</li>
         <li>MCC 还没有完成 5 N 力跟踪、live Policy、SONIC 任务接入、estimated wrench、自由基座和真机验证；tactile 与真人 intervention 也还没有验证。</li>
       </ul>
