@@ -1,0 +1,35 @@
+{
+  "paired_seeds": 10,
+  "task_success": {
+    "twist2-only": 10,
+    "twist2+mcc": 10
+  },
+  "median_impulse_reduction_fraction": 0.272254149625661,
+  "bootstrap_95pct_ci_median_impulse_reduction_fraction": [
+    0.2447281720559666,
+    0.29149397682538164
+  ],
+  "all_seed_impulse_reduction": true,
+  "two_sided_sign_test_p_impulse": 0.001953125,
+  "median_contact_f95_reduction_fraction": 0.009714041221982703,
+  "all_seed_contact_f95_nonincrease": true,
+  "two_sided_sign_test_p_f95": 0.001953125,
+  "contact_duration_ratio": {
+    "minimum": 0.6507936507936508,
+    "median": 0.6943656645868784
+  },
+  "latency_ms": {
+    "max_p99": 5.87973234243691,
+    "max_single_step": 46.752944006584585
+  },
+  "safety_stops": 0,
+  "automatic_verdict": {
+    "task_noninferior": true,
+    "force_mechanism_improved": true,
+    "stability_noninferior": true,
+    "mcc_mechanism_active": true,
+    "no_unhandled_safety_stop": true,
+    "latency_pass": true,
+    "pass": true
+  }
+}

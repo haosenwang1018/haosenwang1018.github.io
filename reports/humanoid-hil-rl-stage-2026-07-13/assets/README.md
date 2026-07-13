@@ -8,6 +8,8 @@ report.
 
 - `media/*.mp4`: H.264 rollout recordings exported from the simulator.
 - `media/*.jpg`: locally generated contact sheets and video poster frames.
+- `media/mcc-paired-contact-impulse.png`: paired contact-impulse comparison across ten conditions.
+- `media/mcc-median-force-trace.png`: median force trace for the paired comparison.
 
 ## Evidence
 
@@ -15,6 +17,13 @@ report.
 - `evidence/bendpick-stationary-evaluation.json`: stationary-envelope evaluation.
 - `evidence/trajectory-interface-acceptance.json`: cross-platform trajectory-interface checks.
 - `evidence/mcc-component-smoke-result.json`: MCC component smoke-test summary.
+- `evidence/mcc-hard-effect-report.html`: fixed-base TWIST2-only / TWIST2+MCC hard-effect report.
+- `evidence/mcc-independent-qa.html`: independent result and claim-boundary audit.
+- `evidence/mcc-aggregate-metrics.json`: aggregate results for ten paired conditions.
+- `evidence/mcc-paired-metrics.csv`: per-condition paired metrics.
+- `evidence/mcc-machine-qc-summary.json`: hash, pairing, trajectory and numeric-field checks.
+- `evidence/mcc-video-qc.json`: readable-video integrity checks.
+- `evidence/mcc-adapter-test-result.json`: seven automated adapter checks.
 
 These are author-generated research artifacts. They are published here only as
 evidence for this report and do not constitute a reusable benchmark release or
