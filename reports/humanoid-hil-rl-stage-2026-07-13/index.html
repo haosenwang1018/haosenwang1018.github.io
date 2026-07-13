@@ -5,30 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
   <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Humanoid HIL-RL 阶段进展：已经完成的工作、对应产出和尚未完成的工作。">
   <link rel="icon" href="data:,">
-  <meta name="description" content="Humanoid HIL-RL 阶段研究报告：候选任务、上肢纠正实验、记录接口、Controller 验证与下一步。">
-  <title>Humanoid HIL-RL · 阶段研究报告</title>
+  <title>Humanoid HIL-RL · 阶段进展</title>
   <style>
     :root {
       --bg: #fcfcfa;
-      --paper: #ffffff;
       --ink: #111111;
-      --muted: #666660;
-      --quiet: #70706a;
-      --line: #e3e3de;
-      --line-dark: #b9b9b2;
-      --soft: #f4f4f0;
-      --accent: #465c51;
-      --max: 1080px;
-      --article: 760px;
+      --muted: #62625c;
+      --line: #deded8;
+      --max: 760px;
     }
 
     * { box-sizing: border-box; }
-
-    html {
-      scroll-behavior: smooth;
-      scroll-padding-top: 28px;
-    }
 
     body {
       margin: 0;
@@ -47,1067 +36,202 @@
       text-underline-offset: 0.2em;
     }
 
-    a:hover { opacity: 0.58; }
+    a:hover { opacity: 0.62; }
 
-    button, summary { font: inherit; }
-
-    .reading-progress {
-      position: fixed;
-      inset: 0 auto auto 0;
-      z-index: 20;
-      width: 0;
-      height: 2px;
-      background: var(--ink);
-    }
-
-    .masthead {
-      display: flex;
-      justify-content: space-between;
-      gap: 24px;
+    .topline {
       width: min(calc(100% - 40px), var(--max));
       margin: 0 auto;
-      padding: 28px 0 24px;
+      padding: 28px 0 22px;
       border-bottom: 1px solid var(--line);
       color: var(--muted);
       font-size: 12px;
       font-weight: 650;
-      letter-spacing: 0.09em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
-    .layout {
-      display: grid;
-      grid-template-columns: 180px minmax(0, var(--article));
-      gap: 72px;
+    main {
       width: min(calc(100% - 40px), var(--max));
       margin: 0 auto;
       padding: 68px 0 112px;
     }
 
-    .toc {
-      position: sticky;
-      top: 28px;
-      align-self: start;
-      color: var(--quiet);
-      font-size: 12px;
-      line-height: 1.45;
+    header {
+      padding-bottom: 44px;
+      border-bottom: 1px solid var(--line);
     }
 
-    .toc-title {
-      margin: 0 0 14px;
-      color: var(--ink);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-
-    .toc a {
-      display: block;
-      padding: 6px 0;
-      text-decoration: none;
-      transition: color 150ms ease;
-    }
-
-    .toc a[aria-current="true"] {
-      color: var(--ink);
-    }
-
-    .toc-actions {
-      margin-top: 26px;
-      padding-top: 18px;
-      border-top: 1px solid var(--line);
-    }
-
-    .plain-button {
-      padding: 0 0 3px;
-      border: 0;
-      border-bottom: 1px solid var(--line-dark);
-      background: transparent;
+    .kicker {
       color: var(--muted);
-      cursor: pointer;
       font-size: 12px;
-    }
-
-    article { min-width: 0; }
-
-    .hero {
-      padding-bottom: 48px;
-      border-bottom: 1px solid var(--line-dark);
-    }
-
-    .eyebrow,
-    .section-label,
-    .status {
-      color: var(--quiet);
-      font-size: 11px;
       font-weight: 700;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
     h1 {
-      max-width: 720px;
-      margin: 16px 0 18px;
-      font-size: clamp(32px, 5vw, 42px);
-      font-weight: 720;
+      margin: 15px 0 18px;
+      font-size: clamp(31px, 5vw, 42px);
       line-height: 1.12;
       letter-spacing: -0.018em;
     }
 
-    .dek {
-      max-width: 690px;
+    .intro {
+      max-width: 680px;
       margin: 0;
-      color: #41413d;
+      color: #3f3f3a;
       font-size: 19px;
       line-height: 1.65;
     }
 
     .meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px 20px;
-      margin-top: 30px;
-      color: var(--quiet);
+      margin-top: 26px;
+      color: var(--muted);
       font-size: 13px;
     }
 
-    section {
-      padding-top: 64px;
-    }
+    section { padding-top: 58px; }
 
     h2 {
-      margin: 9px 0 20px;
+      margin: 0 0 18px;
       font-size: 25px;
       line-height: 1.28;
-      letter-spacing: -0.01em;
+    }
+
+    .work-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border-top: 1px solid var(--line);
+    }
+
+    .work-list > li {
+      padding: 25px 0 27px;
+      border-bottom: 1px solid var(--line);
     }
 
     h3 {
-      margin: 0;
+      margin: 0 0 8px;
       font-size: 19px;
-      line-height: 1.4;
+      line-height: 1.42;
     }
 
-    p { margin: 0 0 18px; }
+    p { margin: 0; }
 
-    ul, ol {
-      margin: 0 0 24px 22px;
-      padding: 0;
-    }
-
-    li { margin-bottom: 10px; }
-
-    .boundary {
-      margin: 30px 0 0;
-      padding: 19px 0 0 18px;
-      border-top: 1px solid var(--line);
-      border-left: 2px solid var(--ink);
-      color: #353532;
+    .outputs {
+      margin-top: 12px;
+      color: var(--muted);
       font-size: 15px;
+      line-height: 1.8;
     }
 
-    .boundary strong { color: var(--ink); }
+    .outputs strong { color: var(--ink); }
 
-    .snapshot {
-      margin-top: 30px;
-      border-top: 1px solid var(--line-dark);
+    .output-row + .output-row { margin-top: 3px; }
+
+    .open-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border-top: 1px solid var(--line);
     }
 
-    .snapshot-row {
-      display: grid;
-      grid-template-columns: 120px 1fr;
-      gap: 24px;
+    .open-list li {
       padding: 19px 0;
       border-bottom: 1px solid var(--line);
     }
 
-    .snapshot-row .status { padding-top: 5px; }
-
-    .snapshot-row p { margin: 0; }
-
-    .candidate {
-      padding: 30px 0 34px;
-      border-top: 1px solid var(--line);
-    }
-
-    .candidate:last-child { border-bottom: 1px solid var(--line); }
-
-    .candidate-head {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 24px;
-      margin-bottom: 18px;
-    }
-
-    .candidate-grid {
-      display: grid;
-      grid-template-columns: 112px 1fr;
-      gap: 10px 22px;
-      margin: 0;
-      font-size: 15px;
-      line-height: 1.7;
-    }
-
-    .candidate-grid dt { color: var(--quiet); }
-    .candidate-grid dd { margin: 0; }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      margin: 30px 0 32px;
-      border-top: 1px solid var(--line-dark);
-      border-bottom: 1px solid var(--line-dark);
-    }
-
-    .stat {
-      padding: 22px 18px 20px 0;
-    }
-
-    .stat + .stat {
-      padding-left: 18px;
-      border-left: 1px solid var(--line);
-    }
-
-    .stat-value {
-      display: block;
-      font-size: 29px;
-      font-weight: 700;
-      line-height: 1.15;
-      letter-spacing: -0.02em;
-    }
-
-    .stat-label {
-      display: block;
-      margin-top: 7px;
-      color: var(--quiet);
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .formula-panel {
-      overflow-x: auto;
-      margin: 30px 0;
-      padding: 24px 18px;
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-      background: var(--paper);
-      text-align: center;
-    }
-
-    math {
-      font-family: "STIX Two Math", "Times New Roman", serif;
-      font-size: 1.03em;
-    }
-
-    .result-table-wrap {
-      overflow-x: auto;
-      margin: 28px 0;
-      border-top: 1px solid var(--line-dark);
-      border-bottom: 1px solid var(--line-dark);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-      line-height: 1.55;
-    }
-
-    th, td {
-      padding: 13px 12px;
-      border-bottom: 1px solid var(--line);
-      text-align: left;
-      vertical-align: top;
-      white-space: nowrap;
-    }
-
-    th {
-      color: var(--quiet);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    tbody tr:last-child td { border-bottom: 0; }
-
-    .media-pair {
-      margin: 36px 0 48px;
-    }
-
-    .media-pair-head {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 20px;
-      margin-bottom: 14px;
-    }
-
-    .media-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
-    }
-
-    figure { margin: 0; }
-
-    video, figure img {
-      display: block;
-      width: 100%;
-      height: auto;
-      border: 1px solid var(--line);
-      background: #101419;
-    }
-
-    figure img {
-      cursor: zoom-in;
-    }
-
-    [data-lightbox]:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 3px;
-    }
-
-    figcaption {
-      margin-top: 9px;
-      color: var(--quiet);
-      font-size: 12px;
-      line-height: 1.55;
-    }
-
-    .figure-label {
-      color: var(--ink);
-      font-weight: 650;
-    }
-
-    details {
-      margin: 24px 0;
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-    }
-
-    details + details { margin-top: -25px; }
-
-    summary {
-      padding: 15px 0;
-      cursor: pointer;
-      color: #2c2c29;
-      font-size: 14px;
-      font-weight: 650;
-      list-style-position: inside;
-    }
-
-    .details-body {
-      padding: 2px 0 18px 20px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .details-body ul { margin-bottom: 0; }
-
-    .two-column {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 34px;
-      margin-top: 26px;
-    }
-
-    .two-column h3 { margin-bottom: 12px; }
-
-    .two-column ul {
-      margin-left: 19px;
-      font-size: 15px;
-    }
-
-    .test-case {
-      margin-top: 38px;
-      padding-top: 30px;
-      border-top: 1px solid var(--line);
-    }
-
-    .test-case h3 { margin-bottom: 12px; }
-
-    .test-case .media-grid { margin-top: 20px; }
-
-    .evidence-list {
-      border-top: 1px solid var(--line-dark);
-    }
-
-    .evidence-row {
-      display: grid;
-      grid-template-columns: 150px 90px 1fr;
-      gap: 18px;
-      padding: 18px 0;
-      border-bottom: 1px solid var(--line);
-      font-size: 14px;
-      line-height: 1.65;
-    }
-
-    .evidence-row > :first-child { font-weight: 650; }
-
-    .flow {
-      margin: 30px 0;
-      padding: 24px 18px;
-      border-top: 1px solid var(--line-dark);
-      border-bottom: 1px solid var(--line-dark);
-      background: var(--paper);
-      text-align: center;
-    }
-
-    .flow math { font-size: 0.98em; }
-
-    .next-actions {
-      counter-reset: action;
-      margin: 0;
-      list-style: none;
-    }
-
-    .next-actions li {
-      counter-increment: action;
-      display: grid;
-      grid-template-columns: 32px 1fr;
-      gap: 10px;
-      padding: 16px 0;
-      border-top: 1px solid var(--line);
-    }
-
-    .next-actions li::before {
-      content: counter(action, decimal-leading-zero);
-      color: var(--quiet);
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      padding-top: 4px;
-    }
-
-    .source-links {
-      margin-top: 42px;
-      padding-top: 26px;
-      border-top: 1px solid var(--line-dark);
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .source-links h3 { color: var(--ink); }
-
     footer {
-      margin-top: 68px;
-      padding-top: 24px;
-      border-top: 1px solid var(--line-dark);
-      color: var(--quiet);
+      margin-top: 64px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
       font-size: 12px;
-      line-height: 1.6;
-    }
-
-    dialog {
-      width: min(96vw, 1440px);
-      max-width: none;
-      padding: 0;
-      border: 0;
-      background: transparent;
-    }
-
-    dialog::backdrop { background: rgba(0, 0, 0, 0.86); }
-
-    .lightbox-inner { position: relative; }
-
-    .lightbox-inner img {
-      display: block;
-      width: 100%;
-      max-height: 90vh;
-      object-fit: contain;
-      background: #000;
-    }
-
-    .lightbox-close {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      width: 36px;
-      height: 36px;
-      border: 1px solid rgba(255,255,255,.35);
-      border-radius: 50%;
-      background: rgba(0,0,0,.55);
-      color: #fff;
-      cursor: pointer;
-      font-size: 20px;
-      line-height: 1;
-    }
-
-    @media (max-width: 900px) {
-      .layout {
-        display: block;
-        width: min(calc(100% - 40px), var(--article));
-        padding-top: 48px;
-      }
-
-      .toc {
-        position: static;
-        display: flex;
-        gap: 18px;
-        overflow-x: auto;
-        margin: 0 0 48px;
-        padding: 0 0 14px;
-        border-bottom: 1px solid var(--line);
-        white-space: nowrap;
-      }
-
-      .toc-title, .toc-actions { display: none; }
-      .toc a { flex: 0 0 auto; }
     }
 
     @media (max-width: 620px) {
       body { font-size: 16px; }
-      .masthead { padding-top: 22px; }
-      .masthead span:last-child { display: none; }
-      .layout { width: min(calc(100% - 32px), var(--article)); padding-bottom: 72px; }
-      .hero { padding-bottom: 38px; }
-      section { padding-top: 54px; }
-      h1 { font-size: 31px; }
+      .topline, main { width: min(calc(100% - 32px), var(--max)); }
+      main { padding-top: 48px; padding-bottom: 72px; }
+      header { padding-bottom: 36px; }
+      .intro { font-size: 17px; }
+      section { padding-top: 48px; }
       h2 { font-size: 23px; }
-      .dek { font-size: 17px; }
-      .snapshot-row { grid-template-columns: 1fr; gap: 7px; }
-      .candidate-head { display: block; }
-      .candidate-head .status { display: block; margin-top: 7px; }
-      .candidate-grid { grid-template-columns: 1fr; gap: 3px; }
-      .candidate-grid dd { margin-bottom: 11px; }
-      .stats { grid-template-columns: 1fr; }
-      .stat, .stat + .stat { padding: 17px 0; border-left: 0; border-top: 1px solid var(--line); }
-      .stat:first-child { border-top: 0; }
-      .media-grid, .two-column { grid-template-columns: 1fr; }
-      .evidence-row { grid-template-columns: 1fr; gap: 5px; }
-      th, td { padding: 11px 9px; }
-      .formula-panel, .flow { margin-left: -8px; margin-right: -8px; padding-left: 12px; padding-right: 12px; }
     }
 
     @media print {
-      .reading-progress, .toc, .plain-button, dialog { display: none; }
-      .masthead { width: 100%; }
-      .layout { display: block; width: 100%; padding: 34px 0; }
       body { background: #fff; font-size: 12pt; }
+      .topline, main { width: 100%; }
+      main { padding: 34px 0; }
       a { text-decoration: none; }
-      section, figure, .candidate, .test-case { break-inside: avoid; }
-      video { display: none; }
-      details > summary { display: none; }
-      details > .details-body { display: block; }
+      .work-list > li, .open-list li { break-inside: avoid; }
     }
   </style>
 </head>
 <body>
-  <div class="reading-progress" aria-hidden="true"></div>
+  <div class="topline">Humanoid HIL-RL</div>
 
-  <header class="masthead">
-    <span>Humanoid HIL-RL</span>
-    <span>Stage evidence · 2026.07.13</span>
-  </header>
+  <main>
+    <header>
+      <div class="kicker">Project progress</div>
+      <h1>Humanoid HIL-RL 阶段进展</h1>
+      <p class="intro">这里记录目前已经做完的工作、对应产出，以及还没有完成的事情。</p>
+      <div class="meta">Sense Wang · 2026.07.13</div>
+    </header>
 
-  <div class="layout">
-    <nav class="toc" aria-label="报告目录">
-      <div class="toc-title">Contents</div>
-      <a href="#status">目前确定到哪里</a>
-      <a href="#candidates">三个候选任务</a>
-      <a href="#rescue">上肢纠正实验</a>
-      <a href="#task-tests">任务初测</a>
-      <a href="#infrastructure">记录与 Controller</a>
-      <a href="#open">尚未完成</a>
-      <a href="#next">下一步</a>
-      <a href="#evidence">证据索引</a>
-      <div class="toc-actions">
-        <button class="plain-button" type="button" data-print>打印 / 存为 PDF</button>
-      </div>
-    </nav>
+    <section>
+      <h2>已经做了什么</h2>
+      <ol class="work-list">
+        <li>
+          <h3>1. 重新筛选了任务</h3>
+          <p>目前保留 BendPick、stationary OpenFaucet 和 G1 Powerlift 三个候选。P&amp;PBox 不再作为默认方案，最终任务还没有确定。</p>
+        </li>
 
-    <main>
-      <article>
-        <header class="hero">
-          <div class="eyebrow">Research stage report</div>
-          <h1>从任务选择到可纠正失败</h1>
-          <p class="dek">本报告汇总截至 2026 年 7 月 13 日的任务设计、动态实验、判断证据和系统接口验证。每项结果同时写明它能够支持的判断，以及当前证据仍然覆盖不到的范围。</p>
-          <div class="meta">
-            <span>Sense Wang</span>
-            <span>Humanoid HIL-RL</span>
-            <span>2026.07.13</span>
+        <li>
+          <h3>2. 实际运行了 BendPick 和 BendPickAndPlace</h3>
+          <p>BendPick 完成了举升。BendPickAndPlace 没有完成放置。原版 BendPick 的移动范围过大，因此还不能直接作为当前任务。</p>
+          <div class="outputs">
+            <div class="output-row"><strong>产出：</strong><a href="assets/media/bendpick-positive.mp4">BendPick 视频</a> · <a href="assets/media/bendpick-positive.jpg">时序图</a></div>
+            <div class="output-row"><strong>产出：</strong><a href="assets/media/bendpickplace-attempt.mp4">BendPickAndPlace 视频</a> · <a href="assets/media/bendpickplace-attempt.jpg">时序图</a></div>
+            <div class="output-row"><strong>产出：</strong><a href="assets/media/bendpick-stationary-trace.mp4">BendPick 移动记录</a> · <a href="assets/evidence/bendpick-stationary-evaluation.json">结果数据</a></div>
           </div>
-          <div class="boundary">
-            <strong>证据边界：</strong>最终 benchmark 尚未确定。三项任务仍处于候选阶段；上肢纠正结果属于人为误差下的 repairability pilot；Recorder 与 MCC 目前只完成各自的接口或组件验证。
+        </li>
+
+        <li>
+          <h3>3. 做了三组上肢纠正实验</h3>
+          <p>人为加入右肩误差时，三组实验都失败；恢复原来的上肢动作后，三组都成功，结果从 0/3 变为 3/3。</p>
+          <div class="outputs">
+            <div class="output-row"><strong>State 1：</strong><a href="assets/media/rescue-state1-fail.mp4">失败视频</a> · <a href="assets/media/rescue-state1-corrected.mp4">纠正视频</a></div>
+            <div class="output-row"><strong>State 2：</strong><a href="assets/media/rescue-state2-fail.mp4">失败视频</a> · <a href="assets/media/rescue-state2-corrected.mp4">纠正视频</a></div>
+            <div class="output-row"><strong>State 3：</strong><a href="assets/media/rescue-state3-fail.mp4">失败视频</a> · <a href="assets/media/rescue-state3-corrected.mp4">纠正视频</a></div>
+            <div class="output-row"><strong>产出：</strong><a href="assets/evidence/upper-body-rescue-verification.json">三组实验结果</a></div>
           </div>
-        </header>
+        </li>
 
-        <section id="status" data-section>
-          <div class="section-label">01 / Status</div>
-          <h2>目前确定到哪里</h2>
-          <p>现阶段已经形成四项可检查的结果。它们分别回答“考察什么任务”“失败能否只靠上肢修复”“实验数据能否统一记录”和“Controller 核心能否运行”。</p>
+        <li>
+          <h3>4. 统一了实验运行记录</h3>
+          <p>同一种记录格式已经能够读取 SIMPLE 和 HumanoidArena 的成功、失败和超时运行，后续更换任务时可以继续使用。</p>
+          <div class="outputs"><strong>产出：</strong><a href="assets/evidence/trajectory-interface-acceptance.json">运行记录结果</a></div>
+        </li>
 
-          <div class="snapshot">
-            <div class="snapshot-row">
-              <div class="status">待决策</div>
-              <p>最终任务尚未选定。当前保留 <strong>SIMPLE × BendPickMP</strong>、<strong>SIMPLE × stationary OpenFaucet</strong> 和 <strong>HumanoidBench × G1 Powerlift</strong> 三个继续验证的组合。</p>
-            </div>
-            <div class="snapshot-row">
-              <div class="status">已验证</div>
-              <p>三个序列化 BendPick 状态中，固定右肩误差使结果全部失败；恢复原始上肢目标后全部成功：<strong>0/3 → 3/3</strong>，平均多举升 <strong>8.71 cm</strong>。</p>
-            </div>
-            <div class="snapshot-row">
-              <div class="status">已验证</div>
-              <p>同一 trajectory schema 已读取 SIMPLE 与 HumanoidArena 的成功和失败轨迹，并统一保存 Policy、Controller、机器人状态、接触和终止结果。</p>
-            </div>
-            <div class="snapshot-row">
-              <div class="status">组件级</div>
-              <p>MCC G1 核心在 zero-wrench smoke 中完成两次各 100 iteration 的运行；任务级接入、力估计准确性和安全性仍未验证。</p>
-            </div>
-          </div>
-        </section>
+        <li>
+          <h3>5. 跑通了 MCC Controller 的核心部分</h3>
+          <p>Controller 核心能够启动并输出有效结果。目前完成的是基础运行，还没有接入具体任务。</p>
+          <div class="outputs"><strong>产出：</strong><a href="assets/evidence/mcc-component-smoke-result.json">基础运行结果</a></div>
+        </li>
+      </ol>
+    </section>
 
-        <section id="candidates" data-section>
-          <div class="section-label">02 / Candidate tasks</div>
-          <h2>三个候选任务</h2>
-          <p>比较单位同时包含平台、具体任务、数据与 Policy、Controller 插入位置和评测协议。当前排序只表达工程证据的完整程度，不能代替动态验证。</p>
+    <section>
+      <h2>还没做什么</h2>
+      <ul class="open-list">
+        <li>最终任务还没有选定。stationary OpenFaucet 和 G1 Powerlift 还没有完成动态运行。</li>
+        <li>还没有生成自己的仿真数据、训练自己的 Diffusion Policy，也没有在相同条件下比较两个 checkpoint。</li>
+        <li>MCC 还没有完成力标定和任务接入；force / tactile、真人 intervention 和真机安全也还没有验证。</li>
+      </ul>
+    </section>
 
-          <article class="candidate">
-            <div class="candidate-head">
-              <h3>SIMPLE × BendPickMP</h3>
-              <span class="status">继续考察</span>
-            </div>
-            <dl class="candidate-grid">
-              <dt>保留依据</dt>
-              <dd>自动 motion planning、LeRobot 数据、训练与评测链最完整；已有举升运行和上肢纠正配对实验。</dd>
-              <dt>当前反证</dt>
-              <dd>一次完整 exactification trace 的 root 位移为 34.2 cm，两脚最大位移为 19.1 cm 与 50.9 cm，超过暂定 stationary 范围。</dd>
-              <dt>仍需证明</dt>
-              <dd>下肢参与的不可替代性、稳定抓持 evaluator、force/contact 的增量作用，以及真实 learned-policy failure 的上肢可纠正性。</dd>
-              <dt>退出条件</dt>
-              <dd>冻结下肢后任务表现不变，或正式 evaluator 无法排除碰撞抬升、瞬时抬升等投机结果。</dd>
-            </dl>
-          </article>
-
-          <article class="candidate">
-            <div class="candidate-head">
-              <h3>SIMPLE × stationary OpenFaucet</h3>
-              <span class="status">继续考察</span>
-            </div>
-            <dl class="candidate-grid">
-              <dt>保留依据</dt>
-              <dd>articulated contact 能直接检验持续接触、滑移、力和 compliance；官方 task、数据入口与 evaluator 路径存在。</dd>
-              <dt>当前缺口</dt>
-              <dd>原任务含前移指令，尚无有效 stationary rollout；官方分解也没有给出可信的 faucet 转动过程。</dd>
-              <dt>仍需证明</dt>
-              <dd>近身改造后能够完成、下肢姿态确有贡献、手部接触决定成功，并可在同一配置下重新生成数据。</dd>
-              <dt>退出条件</dt>
-              <dd>足位受限后仍需持续 stepping，或任务退化为不需要全身姿态参与的桌面上肢操作。</dd>
-            </dl>
-          </article>
-
-          <article class="candidate">
-            <div class="candidate-head">
-              <h3>HumanoidBench × G1 Powerlift</h3>
-              <span class="status">继续考察</span>
-            </div>
-            <dl class="candidate-grid">
-              <dt>保留依据</dt>
-              <dd>地面负载、蹲伏和全身平衡符合 stationary whole-body interaction；任务不包含远距离导航目标。</dd>
-              <dt>当前缺口</dt>
-              <dd>尚未运行 G1 Powerlift；现有 reward 没有严格要求双手抓持，也缺少可靠二值 evaluator 与 DP 数据路线。</dd>
-              <dt>仍需证明</dt>
-              <dd>双手接触决定结果、成功 teacher trajectory 可获得、task-space Controller 能与原全身 torque 路线分层。</dd>
-              <dt>退出条件</dt>
-              <dd>无法建立可靠抓持成功判据，或 Controller 改造成本高于该任务带来的科研辨识力。</dd>
-            </dl>
-          </article>
-
-          <div class="boundary"><strong>当前决策：</strong>三者都是继续考察对象。正式动态验证最多接收两个候选；进入数据生成与训练前仍需一次可撤销的阶段选择。</div>
-        </section>
-
-        <section id="rescue" data-section>
-          <div class="section-label">03 / Upper-body repairability</div>
-          <h2>三组上肢纠正实验</h2>
-          <p>实验从三个不同的 BendPick 序列化状态开始。每组都运行两个分支。两个分支在 step 119 之前完全相同；从 step 120 开始，失败分支只在右肩 pitch target 上增加 0.30 rad，纠正分支继续执行原始上肢目标。</p>
-
-          <div class="formula-panel" aria-label="上肢纠正实验的两个分支">
-            <math display="block">
-              <mtable columnalign="left" rowspacing="0.8em">
-                <mtr>
-                  <mtd><mtext>失败分支：</mtext></mtd>
-                  <mtd>
-                    <msubsup><mi>a</mi><mrow><mi>t</mi><mo>≥</mo><mn>120</mn></mrow><mtext>right shoulder pitch</mtext></msubsup>
-                    <mo>←</mo><msub><mi>a</mi><mi>t</mi></msub><mo>+</mo><mn>0.30</mn><mtext> rad</mtext>
-                  </mtd>
-                </mtr>
-                <mtr>
-                  <mtd><mtext>纠正分支：</mtext></mtd>
-                  <mtd>
-                    <msubsup><mi>a</mi><mrow><mi>t</mi><mo>≥</mo><mn>120</mn></mrow><mtext>upper body</mtext></msubsup>
-                    <mo>←</mo><msubsup><mi>a</mi><mi>t</mi><mtext>original</mtext></msubsup>
-                  </mtd>
-                </mtr>
-              </mtable>
-            </math>
-          </div>
-
-          <p>两分支固定 reset state、原始 trajectory、下肢与 locomotion command、环境、evaluator 和 horizon。主动差异只出现在预注册的右肩动作字段。</p>
-
-          <div class="stats" aria-label="上肢纠正实验汇总">
-            <div class="stat">
-              <span class="stat-value">0/3 → 3/3</span>
-              <span class="stat-label">失败分支到纠正分支</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">+8.71 cm</span>
-              <span class="stat-label">目标物平均举升增量</span>
-            </div>
-            <div class="stat">
-              <span class="stat-value">3 / 3</span>
-              <span class="stat-label">配对状态均通过联合隔离与验收检查</span>
-            </div>
-          </div>
-
-          <div class="result-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>状态</th>
-                  <th>人为失败举升</th>
-                  <th>纠正后举升</th>
-                  <th>结果</th>
-                  <th>root 最大位移</th>
-                  <th>足部最大位移</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>State 1</td><td>1.81 cm</td><td>9.70 cm</td><td>失败 → 成功</td><td>6.06 cm</td><td>4.12 cm</td></tr>
-                <tr><td>State 2</td><td>0.51 cm</td><td>10.10 cm</td><td>失败 → 成功</td><td>6.06 cm</td><td>5.94 cm</td></tr>
-                <tr><td>State 3</td><td>1.67 cm</td><td>10.33 cm</td><td>失败 → 成功</td><td>6.06 cm</td><td>7.97 cm</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="media-pair">
-            <div class="media-pair-head"><h3>State 1</h3><span class="status">同一 reset · 两个分支</span></div>
-            <div class="media-grid">
-              <figure>
-                <video controls preload="metadata" poster="assets/media/rescue-state1-fail-poster.jpg"><source src="assets/media/rescue-state1-fail.mp4" type="video/mp4"></video>
-                <figcaption><span class="figure-label">人为失败：</span>step 120 后右肩 pitch target 加 0.30 rad；最大举升 1.81 cm。</figcaption>
-              </figure>
-              <figure>
-                <video controls preload="metadata" poster="assets/media/rescue-state1-corrected-poster.jpg"><source src="assets/media/rescue-state1-corrected.mp4" type="video/mp4"></video>
-                <figcaption><span class="figure-label">上肢纠正：</span>恢复原始上肢目标；最大举升 9.70 cm。</figcaption>
-              </figure>
-            </div>
-          </div>
-
-          <div class="media-pair">
-            <div class="media-pair-head"><h3>State 2</h3><span class="status">同一 reset · 两个分支</span></div>
-            <div class="media-grid">
-              <figure>
-                <video controls preload="metadata" poster="assets/media/rescue-state2-fail-poster.jpg"><source src="assets/media/rescue-state2-fail.mp4" type="video/mp4"></video>
-                <figcaption><span class="figure-label">人为失败：</span>固定右肩误差；最大举升 0.51 cm。</figcaption>
-              </figure>
-              <figure>
-                <video controls preload="metadata" poster="assets/media/rescue-state2-corrected-poster.jpg"><source src="assets/media/rescue-state2-corrected.mp4" type="video/mp4"></video>
-                <figcaption><span class="figure-label">上肢纠正：</span>其余动作保持不变；最大举升 10.10 cm。</figcaption>
-              </figure>
-            </div>
-          </div>
-
-          <div class="media-pair">
-            <div class="media-pair-head"><h3>State 3</h3><span class="status">同一 reset · 两个分支</span></div>
-            <div class="media-grid">
-              <figure>
-                <video controls preload="metadata" poster="assets/media/rescue-state3-fail-poster.jpg"><source src="assets/media/rescue-state3-fail.mp4" type="video/mp4"></video>
-                <figcaption><span class="figure-label">人为失败：</span>固定右肩误差；最大举升 1.67 cm。</figcaption>
-              </figure>
-              <figure>
-                <video controls preload="metadata" poster="assets/media/rescue-state3-corrected-poster.jpg"><source src="assets/media/rescue-state3-corrected.mp4" type="video/mp4"></video>
-                <figcaption><span class="figure-label">上肢纠正：</span>其余动作保持不变；最大举升 10.33 cm。</figcaption>
-              </figure>
-            </div>
-          </div>
-
-          <details>
-            <summary>查看六条 contact sheet</summary>
-            <div class="details-body">
-              <div class="media-grid">
-                <figure><img src="assets/media/rescue-state1-fail.jpg" alt="State 1 人为失败 contact sheet" data-lightbox><figcaption>State 1 · 人为失败</figcaption></figure>
-                <figure><img src="assets/media/rescue-state1-corrected.jpg" alt="State 1 上肢纠正 contact sheet" data-lightbox><figcaption>State 1 · 上肢纠正</figcaption></figure>
-                <figure><img src="assets/media/rescue-state2-fail.jpg" alt="State 2 人为失败 contact sheet" data-lightbox><figcaption>State 2 · 人为失败</figcaption></figure>
-                <figure><img src="assets/media/rescue-state2-corrected.jpg" alt="State 2 上肢纠正 contact sheet" data-lightbox><figcaption>State 2 · 上肢纠正</figcaption></figure>
-                <figure><img src="assets/media/rescue-state3-fail.jpg" alt="State 3 人为失败 contact sheet" data-lightbox><figcaption>State 3 · 人为失败</figcaption></figure>
-                <figure><img src="assets/media/rescue-state3-corrected.jpg" alt="State 3 上肢纠正 contact sheet" data-lightbox><figcaption>State 3 · 上肢纠正</figcaption></figure>
-              </div>
-            </div>
-          </details>
-
-          <div class="two-column">
-            <div>
-              <h3>这组实验支持</h3>
-              <ul>
-                <li>固定右肩误差会在三个状态中阻止目标物举升。</li>
-                <li>只恢复原始上肢目标即可把三个结果改为成功。</li>
-                <li>六条轨迹均处于预注册的 root/foot stationary 范围内。</li>
-              </ul>
-            </div>
-            <div>
-              <h3>这组实验尚未覆盖</h3>
-              <ul>
-                <li>自然 learned-policy failure 的频率。</li>
-                <li>MCC、force、tactile 或真人 intervention 的效果。</li>
-                <li>训练提升、正式 A5 放行或最终 benchmark 选择。</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        <section id="task-tests" data-section>
-          <div class="section-label">04 / Task qualification</div>
-          <h2>动态任务初测收窄了什么</h2>
-
-          <div class="test-case">
-            <h3>BendPick：脚本能够完成举升</h3>
-            <p>MotionPlannerAgent 能够生成完整举升过程。这证明任务与脚本执行链可运行，为后续 evaluator、stationary 和上肢纠正实验提供了可复用状态。它没有训练 Diffusion Policy，也没有证明候选满足全部门槛。</p>
-            <div class="media-grid">
-              <figure>
-                <video controls preload="metadata" poster="assets/media/bendpick-positive-poster.jpg"><source src="assets/media/bendpick-positive.mp4" type="video/mp4"></video>
-                <figcaption>Scripted MotionPlannerAgent · BendPick 完整举升。</figcaption>
-              </figure>
-              <figure>
-                <img src="assets/media/bendpick-positive.jpg" alt="BendPick 完整举升 contact sheet" data-lightbox>
-                <figcaption>点击放大完整时序 contact sheet。</figcaption>
-              </figure>
-            </div>
-          </div>
-
-          <div class="test-case">
-            <h3>BendPickAndPlace：当前 placement 路线未通过</h3>
-            <p>完整执行分支能够进入操作过程，但放置阶段出现漂移或失稳，最后没有完成 placement。这个结果降低了它作为近期主任务的优先级。</p>
-            <div class="media-grid">
-              <figure>
-                <video controls preload="metadata" poster="assets/media/bendpickplace-attempt-poster.jpg"><source src="assets/media/bendpickplace-attempt.mp4" type="video/mp4"></video>
-                <figcaption>完整尝试分支；目录中的 positive 只表示完整执行，不代表任务成功。</figcaption>
-              </figure>
-              <figure>
-                <img src="assets/media/bendpickplace-attempt.jpg" alt="BendPickAndPlace 完整尝试 contact sheet" data-lightbox>
-                <figcaption>操作过程及最终未完成 placement 的时序证据。</figcaption>
-              </figure>
-            </div>
-          </div>
-
-          <div class="test-case">
-            <h3>BendPick exactification：stationary 约束暴露失败</h3>
-            <p>一条完整 pre-A5 trace 达到了举升过程，但 root 与足部位移越过暂定范围：root 34.2 cm，左脚 19.1 cm，右脚 50.9 cm。该证据要求继续改任务与 evaluator，当前不能把 BendPick 直接写成 stationary benchmark。</p>
-            <div class="media-grid">
-              <figure>
-                <video controls preload="metadata" poster="assets/media/bendpick-stationary-trace-poster.jpg"><source src="assets/media/bendpick-stationary-trace.mp4" type="video/mp4"></video>
-                <figcaption>Pre-A5 exactification trace；正式 A5 结论仍需配对与复现。</figcaption>
-              </figure>
-              <figure>
-                <img src="assets/media/bendpick-stationary-trace.jpg" alt="BendPick exactification contact sheet" data-lightbox>
-                <figcaption>机器人在完整脚本中的 root/foot 位移可直接观察。</figcaption>
-              </figure>
-            </div>
-          </div>
-        </section>
-
-        <section id="infrastructure" data-section>
-          <div class="section-label">05 / Interfaces</div>
-          <h2>记录接口与 Controller 到了哪一层</h2>
-
-          <div class="test-case">
-            <h3>跨平台 trajectory interface</h3>
-            <p>同一 schema 已处理 SIMPLE 与 HumanoidArena 的成功、失败和 timeout 轨迹。公共记录包含原始 observation、Policy action、Controller input/output、robot/root/foot state、contact、success 与 termination。</p>
-            <div class="result-table-wrap">
-              <table>
-                <thead><tr><th>平台</th><th>验证样本</th><th>统一分析</th><th>当前边界</th></tr></thead>
-                <tbody>
-                  <tr><td>SIMPLE</td><td>成功 + 失败</td><td>通过</td><td>只证明 recorder / adapter / analyzer</td></tr>
-                  <tr><td>HumanoidArena</td><td>成功 + timeout</td><td>通过</td><td>不证明平台或任务适配</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p class="boundary">这一结果消除了“每换一个候选就重写整套分析器”的工程障碍。它没有评价任务、Policy 或 Controller 的质量。</p>
-          </div>
-
-          <div class="test-case">
-            <h3>MCC zero-wrench component smoke</h3>
-            <p>固定版本的 MCC G1 core 可在无界面环境实例化。双掌 2 × 54 command path 返回有限的 wrench 与 motor target；29 个 actuator 中识别出 14 个受控上肢 actuator。</p>
-            <div class="stats" aria-label="MCC 组件验证汇总">
-              <div class="stat"><span class="stat-value">2 × 100</span><span class="stat-label">两次复现 iteration</span></div>
-              <div class="stat"><span class="stat-value">14 / 29</span><span class="stat-label">上肢 / 全身 actuator</span></div>
-              <div class="stat"><span class="stat-value">0.75 ms</span><span class="stat-label">两次运行中较高的 p95；暂定 deadline 20 ms</span></div>
-            </div>
-            <div class="two-column">
-              <div>
-                <h3>已经验证</h3>
-                <ul>
-                  <li>核心可实例化，输出 shape 与有限值检查通过。</li>
-                  <li>双掌 command 与上肢 actuator mapping 可读取。</li>
-                  <li>单机组件计算时间低于暂定 20 ms。</li>
-                </ul>
-              </div>
-              <div>
-                <h3>仍需验证</h3>
-                <ul>
-                  <li>SONIC/TWIST2 或任务控制栈接入。</li>
-                  <li>已知位移下的预测力与 ground-truth wrench 一致性。</li>
-                  <li>任务成功率、峰值力、滑移和真机安全。</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="open" data-section>
-          <div class="section-label">06 / Open work</div>
-          <h2>尚未完成的工作</h2>
-          <ul>
-            <li>最终 task / benchmark 尚未选定。</li>
-            <li>stationary OpenFaucet 尚无完整有效 trajectory；G1 Powerlift 尚未运行。</li>
-            <li>尚未生成自己的 sim dataset，也尚未训练自己的 Diffusion Policy。</li>
-            <li>官方仓库 checkpoint 与同学训练 checkpoint 尚未在同一协议下比较。</li>
-            <li>Controller 的力学正确性 microbenchmark 尚未运行。</li>
-            <li>MCC 尚未接入具体任务做 paired rollout。</li>
-            <li>DexScrew 当前只提供 force/tactile-history 方法假设，尚无本项目实验。</li>
-          </ul>
-          <div class="boundary">三次 episode、单条 trace 或零负载组件运行都只能作为工程 smoke。正式成功率和因果结论需要冻结版本、相同序列化状态、配对分支以及由 pilot 方差决定的样本量。</div>
-        </section>
-
-        <section id="next" data-section>
-          <div class="section-label">07 / Next</div>
-          <h2>下一步与依赖关系</h2>
-
-          <div class="flow" aria-label="近期线程依赖关系">
-            <math display="block">
-              <mtable rowspacing="1em" columnalign="center">
-                <mtr>
-                  <mtd><mtext>候选精确化</mtext></mtd><mtd><mo>→</mo></mtd><mtd><mtext>两个动态候选</mtext></mtd><mtd><mo>→</mo></mtd><mtd><mtext>阶段性选择</mtext></mtd><mtd><mo>→</mo></mtd><mtd><mtext>自建数据与 Base Policy</mtext></mtd>
-                </mtr>
-                <mtr>
-                  <mtd><mtext>Policy checkpoint 对比</mtext></mtd><mtd><mo>∥</mo></mtd><mtd><mtext>Controller 力标定</mtext></mtd><mtd><mo>∥</mo></mtd><mtd><mtext>公共记录接口</mtext></mtd><mtd></mtd><mtd></mtd>
-                </mtr>
-                <mtr>
-                  <mtd><mtext>任务确定</mtext></mtd><mtd><mo>∧</mo></mtd><mtd><mtext>Controller 标定通过</mtext></mtd><mtd><mo>→</mo></mtd><mtd><mtext>任务级 MCC 配对实验</mtext></mtd><mtd></mtd><mtd></mtd>
-                </mtr>
-              </mtable>
-            </math>
-          </div>
-
-          <ol class="next-actions">
-            <li><div><strong>运行 stationary OpenFaucet。</strong>产出首条 reset → rollout → termination 的完整 trajectory，并验证足位、手部接触和 faucet angle evaluator。</div></li>
-            <li><div><strong>修正 BendPick 的 stationary 与 stable-hold 判据。</strong> evaluator 需要排除碰撞抬升、瞬时抬升和明显 stepping。</div></li>
-            <li><div><strong>从三个候选中放行两个动态候选。</strong>只使用代码与运行证据；任何硬门槛 FAIL 直接退出。</div></li>
-            <li><div><strong>比较两个 Policy checkpoint。</strong>在相同任务、序列化初始状态、Controller、horizon 和 evaluator 下比较官方仓库模型与同学训练模型。</div></li>
-            <li><div><strong>做 Controller 力标定。</strong>给定已知手部位移与速度，用刚度参数计算预测力，并与 simulator ground-truth wrench 做误差、方向和动态响应比较。</div></li>
-          </ol>
-        </section>
-
-        <section id="evidence" data-section>
-          <div class="section-label">08 / Evidence</div>
-          <h2>可点击证据索引</h2>
-          <p>下面的 JSON 是从原始工作区筛选出的最小机器证据。链接使用相对路径，报告移动或压缩后仍可打开。</p>
-
-          <div class="evidence-list">
-            <div class="evidence-row">
-              <div>上肢纠正 verifier</div>
-              <div class="status">已验证</div>
-              <div><a href="assets/evidence/upper-body-rescue-verification.json">打开 JSON</a> · 三个配对状态、主动差异、stationary 限制与逐对联合检查结果。</div>
-            </div>
-            <div class="evidence-row">
-              <div>BendPick exactification</div>
-              <div class="status">诊断 trace</div>
-              <div><a href="assets/evidence/bendpick-stationary-evaluation.json">打开 JSON</a> · root/foot 位移、任务判据与 pre-A5 边界。</div>
-            </div>
-            <div class="evidence-row">
-              <div>跨平台记录接口</div>
-              <div class="status">已验证</div>
-              <div><a href="assets/evidence/trajectory-interface-acceptance.json">打开 JSON</a> · SIMPLE 与 HumanoidArena 四条轨迹的统一验收。</div>
-            </div>
-            <div class="evidence-row">
-              <div>MCC component smoke</div>
-              <div class="status">组件级</div>
-              <div><a href="assets/evidence/mcc-component-smoke-result.json">打开 JSON</a> · shape、actuator mapping、有限值与延迟。</div>
-            </div>
-          </div>
-
-          <div class="source-links">
-            <h3>候选任务的一手来源</h3>
-            <ul>
-              <li><a href="https://github.com/physical-superintelligence-lab/SIMPLE/blob/d010f0f537af97a0376168d00e7e27e159226b07/src/simple/tasks/g1_wholebody_bend_pick_mp.py" target="_blank" rel="noreferrer">SIMPLE · BendPickMP 固定提交任务代码</a></li>
-              <li><a href="https://github.com/physical-superintelligence-lab/SIMPLE/blob/d010f0f537af97a0376168d00e7e27e159226b07/src/simple/tasks/g1_wholebody_open_faucet_teleop.py" target="_blank" rel="noreferrer">SIMPLE · OpenFaucet 固定提交任务代码</a></li>
-              <li><a href="https://github.com/carlosferrazza/humanoid-bench/blob/cb1189039151c8aadaaa987b442da54383c87fab/humanoid_bench/envs/powerlift.py" target="_blank" rel="noreferrer">HumanoidBench · Powerlift 固定提交任务代码</a></li>
-              <li><a href="https://github.com/real-stanford/minimalist_compliance_control/tree/2e8c81680a3b97a653d5749deaf5ce1616a9843e" target="_blank" rel="noreferrer">Minimalist Compliance Control · 固定提交</a></li>
-            </ul>
-          </div>
-        </section>
-
-        <footer>
-          <p>Prepared as a stage evidence report. Candidate status remains reversible. File generation and component execution do not imply project-owner acceptance.</p>
-        </footer>
-      </article>
-    </main>
-  </div>
-
-  <dialog id="lightbox" aria-label="图片预览">
-    <div class="lightbox-inner">
-      <button class="lightbox-close" type="button" aria-label="关闭">×</button>
-      <img alt="">
-    </div>
-  </dialog>
-
-  <script>
-    const progress = document.querySelector('.reading-progress');
-    const updateProgress = () => {
-      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-      const ratio = scrollable > 0 ? window.scrollY / scrollable : 0;
-      progress.style.width = `${Math.min(1, Math.max(0, ratio)) * 100}%`;
-    };
-    addEventListener('scroll', updateProgress, { passive: true });
-    updateProgress();
-
-    const tocLinks = [...document.querySelectorAll('.toc a')];
-    const sections = [...document.querySelectorAll('[data-section]')];
-    const observer = new IntersectionObserver((entries) => {
-      const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-      if (!visible) return;
-      tocLinks.forEach(link => link.setAttribute('aria-current', String(link.getAttribute('href') === `#${visible.target.id}`)));
-    }, { rootMargin: '-12% 0px -72% 0px', threshold: [0, 0.15, 0.6] });
-    sections.forEach(section => observer.observe(section));
-
-    document.querySelector('[data-print]').addEventListener('click', () => window.print());
-    addEventListener('beforeprint', () => {
-      document.querySelectorAll('details:not([open])').forEach(details => {
-        details.dataset.openedForPrint = 'true';
-        details.open = true;
-      });
-    });
-    addEventListener('afterprint', () => {
-      document.querySelectorAll('details[data-opened-for-print]').forEach(details => {
-        details.open = false;
-        delete details.dataset.openedForPrint;
-      });
-    });
-
-    const lightbox = document.querySelector('#lightbox');
-    const lightboxImage = lightbox.querySelector('img');
-    document.querySelectorAll('[data-lightbox]').forEach(image => {
-      image.tabIndex = 0;
-      image.setAttribute('role', 'button');
-      image.setAttribute('aria-label', `打开大图：${image.alt}`);
-      const openLightbox = () => {
-        lightboxImage.src = image.currentSrc || image.src;
-        lightboxImage.alt = image.alt;
-        lightbox.showModal();
-      };
-      image.addEventListener('click', openLightbox);
-      image.addEventListener('keydown', event => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        openLightbox();
-      });
-    });
-    lightbox.querySelector('.lightbox-close').addEventListener('click', () => lightbox.close());
-    lightbox.addEventListener('click', event => {
-      if (event.target === lightbox) lightbox.close();
-    });
-  </script>
+    <footer>Updated 2026.07.13</footer>
+  </main>
 </body>
 </html>
