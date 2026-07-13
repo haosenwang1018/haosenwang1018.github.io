@@ -1,0 +1,61 @@
+{
+  "date": "2026-07-13",
+  "scope": "Headless zero-wrench component smoke only; no task, Base Policy, SONIC/TWIST2, hardware, or safety supervisor.",
+  "official_commit": "2e8c81680a3b97a653d5749deaf5ce1616a9843e",
+  "environment": {
+    "platform": "MacBook macOS arm64",
+    "python": "3.13.7",
+    "mujoco": "3.10.0",
+    "numpy": "2.5.1",
+    "iterations": 100
+  },
+  "result": {
+    "sites": [
+      "left_palm",
+      "right_palm"
+    ],
+    "command_shape": [
+      2,
+      54
+    ],
+    "motor_target_shape": [
+      29
+    ],
+    "arm_indices_count": 14,
+    "finite": true,
+    "wrench_norms": {
+      "left_palm": 2.589789716012092e-08,
+      "right_palm": 2.589789716012092e-08
+    },
+    "latency_ms": {
+      "p50": 0.39287500112550333,
+      "p95": 0.5220461578574032,
+      "p99": 0.7670308362867334,
+      "max": 3.022332995897159
+    }
+  },
+  "reproduction_run": {
+    "iterations": 100,
+    "same_shapes_arm_count_and_finite_checks": true,
+    "latency_ms": {
+      "p50": 0.41725000482983887,
+      "p95": 0.7493413519114256,
+      "p99": 1.2309662482584829,
+      "max": 1.2771250039804727
+    }
+  },
+  "interpretation": {
+    "proves": [
+      "The pinned MCC G1 core instantiates headlessly.",
+      "The two-site 54-field command path returns finite wrench and motor-target state.",
+      "The pinned configuration identifies 14 controlled arm actuators inside a 29-actuator body model.",
+      "This single-machine component run met the provisional 20 ms compute deadline."
+    ],
+    "does_not_prove": [
+      "SONIC/TWIST2 integration",
+      "task success or contact-force improvement",
+      "estimated-wrench accuracy under dynamic contact",
+      "hardware safety or sim-to-real validity"
+    ]
+  }
+}

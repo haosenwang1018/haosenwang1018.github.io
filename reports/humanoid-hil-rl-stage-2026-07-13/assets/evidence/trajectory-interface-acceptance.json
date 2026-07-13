@@ -1,0 +1,359 @@
+{
+  "acceptance_schema_version": "b3.full.acceptance.v1",
+  "boundary": {
+    "does_not_claim_B1_accepted": true,
+    "does_not_select_benchmark": true,
+    "does_not_train_policy": true,
+    "does_not_unblock_C1_before_user_acceptance": true
+  },
+  "capture_contracts": {
+    "ha-success": {
+      "actual": {
+        "reason": "success",
+        "steps": 857,
+        "success": true
+      },
+      "code_commit": "f034332cc9b3d933ecb5f41c1d386e94c8a8253e",
+      "control_hz": 50.0,
+      "controller": {
+        "decoder_sha256": "c7241a123eaa36b5d64bad19540efde93cac1ad443bd4572fd12ca99898118ed",
+        "encoder_sha256": "013ab0287236aa2721e13f1e936d699db982302d0de0bfcdae76d5c3245362d3",
+        "id": "SONIC encoder+decoder"
+      },
+      "logs": {
+        "capture.log": "e88106cf166b33821387858d604712eef64109d49c2e7ebada7bfd2b843f48cd",
+        "policy-server.log": "cae4a123519f38e4b8db4196dd49d107617f5035ea700fe673446a2300c95b74"
+      },
+      "max_steps": 1000,
+      "policy": {
+        "id": "diffusion_sonic_ppbox_0529",
+        "sha256": "dd8ef67ab42249a849dc290894bae029b3b7e8309972ad29b180c8c2c76ac6ef"
+      },
+      "purpose": "cross-platform recorder validation only; not benchmark selection",
+      "recorder_sha256": "c379e3e106d79f7e2d4203a62e18208275cac2335ccdff570b0f29fffc6fef0e",
+      "repeat": 0,
+      "runner_original_sha256": "2c39e4eaa9024bc19020903c5cb58249f8a9a1c5048cbf29873b50db2b7047ea",
+      "runner_patched_sha256": "d0499ae5f530de78d42e20fa91a3e7e1d91180ab5d0993e85bea4852b43f4fef",
+      "runner_restored_and_verified": true,
+      "schema_version": "b3.humanoidarena.capture-contract.v1",
+      "seed": 0,
+      "task": "Isaac-Move-PickPlace-Box-G129-Dex3-Wholedoby"
+    },
+    "ha-timeout": {
+      "actual": {
+        "reason": "timeout",
+        "steps": 10,
+        "success": false
+      },
+      "code_commit": "f034332cc9b3d933ecb5f41c1d386e94c8a8253e",
+      "control_hz": 50.0,
+      "controller": {
+        "decoder_sha256": "c7241a123eaa36b5d64bad19540efde93cac1ad443bd4572fd12ca99898118ed",
+        "encoder_sha256": "013ab0287236aa2721e13f1e936d699db982302d0de0bfcdae76d5c3245362d3",
+        "id": "SONIC encoder+decoder"
+      },
+      "logs": {
+        "capture.log": "c772e04cfe9ba6143ce865c163b5b4a7ca376a57cfa021ebc455f366d16a6f96",
+        "policy-server.log": "24147af635c18918386c3c271e88c9b2e5a33fa304ca3f6f05e75694bec17ea4"
+      },
+      "max_steps": 10,
+      "policy": {
+        "id": "diffusion_sonic_ppbox_0529",
+        "sha256": "dd8ef67ab42249a849dc290894bae029b3b7e8309972ad29b180c8c2c76ac6ef"
+      },
+      "purpose": "cross-platform recorder validation only; not benchmark selection",
+      "recorder_sha256": "c379e3e106d79f7e2d4203a62e18208275cac2335ccdff570b0f29fffc6fef0e",
+      "repeat": 0,
+      "runner_original_sha256": "2c39e4eaa9024bc19020903c5cb58249f8a9a1c5048cbf29873b50db2b7047ea",
+      "runner_patched_sha256": "d0499ae5f530de78d42e20fa91a3e7e1d91180ab5d0993e85bea4852b43f4fef",
+      "runner_restored_and_verified": true,
+      "schema_version": "b3.humanoidarena.capture-contract.v1",
+      "seed": 1,
+      "task": "Isaac-Move-PickPlace-Box-G129-Dex3-Wholedoby"
+    }
+  },
+  "code_hashes": {
+    "b3_interface.py": "941cfc28c101d009b540d25abc1ffc52edb4a4d2223d65733bb023261b3dd183",
+    "humanoidarena_b3_recorder.py": "cc75cd4d203f1e86d8e7f36a85ef69bacd2804f9dfaf7a0d8cd76865e21f6313",
+    "patch_humanoidarena_runner.py": "2ccb193ac8d085bc1878e6c6ed85e486b4fad4c5f87443413bafb5d020f4a611",
+    "requirements-lock.txt": "5d894a430cf8ed3ecae9e7601cadc25ab90b9fddaf7f27e1aa0d6cfc5159a433",
+    "run_full_acceptance.py": "0ed8aee6e084934a44878a800944fdcdf7da894b6e5ad95ecb0b241ef1817163"
+  },
+  "episodes": {
+    "ha-success": {
+      "analysis": {
+        "analysis_schema_version": "b3.analysis.v1",
+        "contact_force": {
+          "availability": "available",
+          "peak_n": 1139.9053955078125,
+          "rms_n": 44.797381804761756,
+          "samples": 47135
+        },
+        "controller_input": {
+          "availability": "available",
+          "max_l2": 3.0157265570034957,
+          "mean_l2": 1.9349895049803656,
+          "samples": 857
+        },
+        "controller_output": {
+          "availability": "available",
+          "max_l2": 3.0157265570034957,
+          "mean_l2": 1.9349895049803656,
+          "samples": 857
+        },
+        "duration_s": 17.11999961733818,
+        "episode_id": "ha-success",
+        "foot_displacement": {
+          "left": {
+            "availability": "available",
+            "meters": 1.7871125652530742
+          },
+          "right": {
+            "availability": "available",
+            "meters": 1.7658876926593088
+          }
+        },
+        "intervention": {
+          "availability": "not_applicable",
+          "reason": [
+            "autonomous baseline rollout contains no human intervention channel"
+          ]
+        },
+        "platform": "HumanoidArena",
+        "policy_action": {
+          "availability": "available",
+          "max_l2": 2.9577332755849626,
+          "mean_l2": 2.2523714756119113,
+          "samples": 857
+        },
+        "root_displacement": {
+          "availability": "available",
+          "meters": 1.7170657271356298
+        },
+        "signal_failures": {
+          "contact_force_nonavailable_steps": 0,
+          "intervention_nonavailable_steps": 857
+        },
+        "steps": 857,
+        "success": true,
+        "termination_reason": "success"
+      },
+      "canonical_sha256": "0c9b5a5e7084b3e6a7aadd464d553b247373580f074a68ce39c71d3d7fbffd82",
+      "mapping_audit": "PASS",
+      "platform": "HumanoidArena",
+      "source_sha256": "6b2780fe7ab6fece9948fe13699580c78ad3524ee87a53043d984f7a2cad281a",
+      "step_count": 857
+    },
+    "ha-timeout": {
+      "analysis": {
+        "analysis_schema_version": "b3.analysis.v1",
+        "contact_force": {
+          "availability": "available",
+          "peak_n": 286.43170166015625,
+          "rms_n": 39.20482817931632,
+          "samples": 550
+        },
+        "controller_input": {
+          "availability": "available",
+          "max_l2": 1.7286716759456053,
+          "mean_l2": 1.4703864028268114,
+          "samples": 10
+        },
+        "controller_output": {
+          "availability": "available",
+          "max_l2": 1.7286716759456053,
+          "mean_l2": 1.4703864028268114,
+          "samples": 10
+        },
+        "duration_s": 0.17999999597668648,
+        "episode_id": "ha-timeout",
+        "foot_displacement": {
+          "left": {
+            "availability": "available",
+            "meters": 0.019683917616543842
+          },
+          "right": {
+            "availability": "available",
+            "meters": 0.022896583512088006
+          }
+        },
+        "intervention": {
+          "availability": "not_applicable",
+          "reason": [
+            "autonomous baseline rollout contains no human intervention channel"
+          ]
+        },
+        "platform": "HumanoidArena",
+        "policy_action": {
+          "availability": "available",
+          "max_l2": 2.1240327060007465,
+          "mean_l2": 2.0718080068891362,
+          "samples": 10
+        },
+        "root_displacement": {
+          "availability": "available",
+          "meters": 0.034833306815072004
+        },
+        "signal_failures": {
+          "contact_force_nonavailable_steps": 0,
+          "intervention_nonavailable_steps": 10
+        },
+        "steps": 10,
+        "success": false,
+        "termination_reason": "timeout"
+      },
+      "canonical_sha256": "841a859c97490f30e45d68a5949b83a46a6a48e461c011437cd802802c7ded44",
+      "mapping_audit": "PASS",
+      "platform": "HumanoidArena",
+      "source_sha256": "9f8cc257e1c0cd30dc2633c1e1997acbe8c46e35acfa567ac0c1e488b03136cd",
+      "step_count": 10
+    },
+    "simple-failure": {
+      "analysis": {
+        "analysis_schema_version": "b3.analysis.v1",
+        "contact_force": {
+          "availability": "available",
+          "peak_n": 168.61242827073195,
+          "rms_n": 41.08638112502079,
+          "samples": 1823
+        },
+        "controller_input": {
+          "availability": "available",
+          "max_l2": 0.33541019662496846,
+          "mean_l2": 0.24270509831248424,
+          "samples": 120
+        },
+        "controller_output": {
+          "availability": "available",
+          "max_l2": 70.62215766099995,
+          "mean_l2": 32.967275738979964,
+          "samples": 120
+        },
+        "duration_s": 2.3799999999999573,
+        "episode_id": "simple-failure",
+        "foot_displacement": {
+          "left": {
+            "availability": "available",
+            "meters": 0.03215732302664515
+          },
+          "right": {
+            "availability": "available",
+            "meters": 0.02859829185813027
+          }
+        },
+        "intervention": {
+          "availability": "not_applicable",
+          "reason": [
+            "autonomous scripted task-fit probe contains no human intervention channel"
+          ]
+        },
+        "platform": "SIMPLE",
+        "policy_action": {
+          "availability": "available",
+          "max_l2": 0.4242640687119285,
+          "mean_l2": 0.28713203435596424,
+          "samples": 120
+        },
+        "root_displacement": {
+          "availability": "available",
+          "meters": 0.19758585907467138
+        },
+        "signal_failures": {
+          "contact_force_nonavailable_steps": 0,
+          "intervention_nonavailable_steps": 120
+        },
+        "steps": 120,
+        "success": false,
+        "termination_reason": "intentional_stop_after_phase_1"
+      },
+      "canonical_sha256": "07cecda3ccd435d53bb0e5d46565316b75da9cd3c72867c2c417e52b2f438bd3",
+      "mapping_audit": "PASS",
+      "platform": "SIMPLE",
+      "source_sha256": "735a2e40504aadc3c1acb0feddd5e05b02643ba5f7d57d2a1e213ade3c7a2188",
+      "step_count": 120
+    },
+    "simple-success": {
+      "analysis": {
+        "analysis_schema_version": "b3.analysis.v1",
+        "contact_force": {
+          "availability": "available",
+          "peak_n": 278.0703728424838,
+          "rms_n": 45.46401081295224,
+          "samples": 3268
+        },
+        "controller_input": {
+          "availability": "available",
+          "max_l2": 0.33541019662496846,
+          "mean_l2": 0.2764948070432028,
+          "samples": 214
+        },
+        "controller_output": {
+          "availability": "available",
+          "max_l2": 89.35441843288913,
+          "mean_l2": 39.88912118731666,
+          "samples": 214
+        },
+        "duration_s": 4.25999999999975,
+        "episode_id": "simple-success",
+        "foot_displacement": {
+          "left": {
+            "availability": "available",
+            "meters": 0.022633205291199797
+          },
+          "right": {
+            "availability": "available",
+            "meters": 0.040484430058391196
+          }
+        },
+        "intervention": {
+          "availability": "not_applicable",
+          "reason": [
+            "autonomous scripted task-fit probe contains no human intervention channel"
+          ]
+        },
+        "platform": "SIMPLE",
+        "policy_action": {
+          "availability": "available",
+          "max_l2": 2.1880277566524944,
+          "mean_l2": 0.6498890540858542,
+          "samples": 214
+        },
+        "root_displacement": {
+          "availability": "available",
+          "meters": 0.0970924064125193
+        },
+        "signal_failures": {
+          "contact_force_nonavailable_steps": 0,
+          "intervention_nonavailable_steps": 214
+        },
+        "steps": 214,
+        "success": true,
+        "termination_reason": "task_success"
+      },
+      "canonical_sha256": "a140c95451985477887a75b90d6ab018ddbd5421426ea89c458a4610dcdad3b4",
+      "mapping_audit": "PASS",
+      "platform": "SIMPLE",
+      "source_sha256": "a76cadfc6315e254137eb63228ea246e2f7592c8940ba231968ae3da9b86361c",
+      "step_count": 214
+    }
+  },
+  "gates": {
+    "capture_logs_and_hashes": "PASS",
+    "deterministic_second_conversion": "PASS",
+    "fail_closed_validator_and_cli": "PASS",
+    "humanoidarena_real_success_and_timeout": "PASS",
+    "linux_privacy_scan": "PASS",
+    "old_summary_rejected": "PASS",
+    "same_platform_independent_analyzer": "PASS",
+    "simple_real_success_and_failure": "PASS",
+    "three_step_raw_mapping_per_episode": "PASS",
+    "unit_adversarial_tests": "PASS",
+    "versioned_machine_readable_schema": "PASS"
+  },
+  "negative_evidence": {
+    "old_humanoidarena_summary": "MISSING_STEP_TRAJECTORY: HumanoidArena episode summary/video is not a per-control-step trajectory"
+  },
+  "reproduce_command": "python3 -I scripts/run_full_acceptance.py --out-dir <new-empty-path>",
+  "scope": "B3 executable cross-platform trajectory mechanics; Controller field semantics remain provisional until B1 is accepted or revised",
+  "status": "READY_FOR_INDEPENDENT_ACCEPTANCE"
+}
