@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Humanoid HIL-RL 任务选择的七项标准与证据规则。">
+  <link rel="icon" href="data:,">
+  <title>任务选择标准 · Humanoid HIL-RL</title>
+  <style>
+    :root {
+      --bg: #fdfbf7;
+      --ink: #1a1a1a;
+      --muted: #6b6b66;
+      --link: #587483;
+      --line: #d9d6cf;
+      --max: 700px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Songti SC", STSong, "Noto Serif CJK SC", "Source Han Serif SC", Georgia, serif;
+      font-size: 18px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    a {
+      color: var(--link);
+      text-decoration: none;
+    }
+
+    a:hover { text-decoration: underline; }
+
+    main {
+      width: 100%;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 56px 32px 96px;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 34px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 400;
+      line-height: 1.45;
+    }
+
+    .lead {
+      margin: 18px 0 0;
+      color: #333;
+    }
+
+    math {
+      margin: 28px 0;
+      font-size: 20px;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    h2 {
+      margin: 48px 0 22px;
+      font-size: 23px;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    ol, ul {
+      margin: 0;
+      padding-left: 1.35em;
+    }
+
+    li { padding-left: 0.25em; }
+    li + li { margin-top: 16px; }
+
+    strong { font-weight: 600; }
+
+    .boundary {
+      margin-top: 44px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    @media (max-width: 620px) {
+      body { font-size: 17px; }
+      main { padding: 42px 24px 72px; }
+      h1 { font-size: 26px; }
+      h2 { margin-top: 42px; font-size: 22px; }
+      math { font-size: 17px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="../../index.html">← 返回阶段进展</a>
+
+    <h1>任务选择标准</h1>
+    <p class="lead">筛选对象由一套可以完整运行和比较的实验组合定义；单独的平台名称不足以构成候选。</p>
+
+    <math display="block" aria-label="平台乘以具体任务乘以数据与 Policy 乘以 Controller 插入位置乘以评测协议">
+      <mtable columnalign="left" rowspacing="0.45em">
+        <mtr>
+          <mtd><mrow><mtext>平台</mtext><mo>×</mo><mtext>具体任务</mtext><mo>×</mo><mtext>数据与 Policy</mtext></mrow></mtd>
+        </mtr>
+        <mtr>
+          <mtd><mrow><mo>×</mo><mtext>Controller 插入位置</mtext><mo>×</mo><mtext>评测协议</mtext></mrow></mtd>
+        </mtr>
+      </mtable>
+    </math>
+
+    <h2>七项标准</h2>
+    <ol>
+      <li><strong>上肢决定主要成败。</strong>成功判据必须测到真实任务完成；只改变关键上肢动作时，结果应发生可重复变化。</li>
+      <li><strong>下肢有可测贡献。</strong>任务不靠持续行走推进；蹲伏、姿态或平衡相对固定姿态应带来可验证的任务、接触或稳定收益。</li>
+      <li><strong>force / compliance 有独立价值。</strong>改变刚度、顺应设置或接触条件时，任务或接触指标应出现可重复差异。</li>
+      <li><strong>存在上肢纠正窗口。</strong>重要、非罕见的失败能够在不可逆之前被发现，并能通过允许的上肢 pose、force 或 residual channel 挽回。</li>
+      <li><strong>HIL 增量可以识别。</strong>Base、Controller、初始条件和评测保持一致；使用 intervention 数据更新 Policy 后，在没有持续在线 assistance 的评估中仍能测到收益。</li>
+      <li><strong>实验闭环可复现。</strong>具体任务能够完成 reset、数据生成、训练、rollout、记录和自动评测，并保存版本、配置与 seed。</li>
+      <li><strong>Controller 与机器人兼容。</strong>Policy action、Controller 输入输出、单位、坐标系、频率、插入层、下肢控制权和 wrench 来源都能明确写出并运行。</li>
+    </ol>
+
+    <h2>如何判断</h2>
+    <ul>
+      <li>每项只标记 <strong>PASS、FAIL 或 UNKNOWN</strong>。</li>
+      <li>任一已确认的硬性 FAIL 都会淘汰该具体组合；安装方便、已有 checkpoint 或平台知名度不能抵消失败。</li>
+      <li>UNKNOWN 必须转化成代码检查、接口 trace、配对实验或明确咨询，不能当作通过。</li>
+      <li>静态代码可以发现结构性问题，但不能单独证明下肢、force 或上肢纠正的因果价值。</li>
+      <li>任务、Policy、Controller 插入位置或 evaluator 发生实质变化后，需要按新组合重新判断。</li>
+    </ul>
+
+    <p class="boundary">这套标准只决定一个候选是否具备继续验证的资格，不直接指定最终 benchmark。</p>
+  </main>
+</body>
+</html>

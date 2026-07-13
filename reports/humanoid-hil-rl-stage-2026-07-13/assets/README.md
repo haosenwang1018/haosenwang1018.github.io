@@ -13,6 +13,8 @@ report.
 
 ## Evidence
 
+- `evidence/task-selection-criteria.html`: public-safe task-selection criteria.
+- `evidence/benchmark-candidate-evidence.html`: current evidence and counterevidence for the three retained task directions.
 - `evidence/upper-body-rescue-verification.json`: paired upper-body correction checks.
 - `evidence/bendpick-stationary-evaluation.json`: stationary-envelope evaluation.
 - `evidence/trajectory-interface-acceptance.json`: cross-platform trajectory-interface checks.

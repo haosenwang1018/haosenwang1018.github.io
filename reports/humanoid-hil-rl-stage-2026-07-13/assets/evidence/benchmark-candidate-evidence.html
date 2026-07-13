@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="BendPick、stationary OpenFaucet 与 G1 Powerlift 的当前证据、反证与待验证项。">
+  <link rel="icon" href="data:,">
+  <title>三个候选的证据卡 · Humanoid HIL-RL</title>
+  <style>
+    :root {
+      --bg: #fdfbf7;
+      --ink: #1a1a1a;
+      --muted: #6b6b66;
+      --link: #587483;
+      --line: #d9d6cf;
+      --max: 700px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Songti SC", STSong, "Noto Serif CJK SC", "Source Han Serif SC", Georgia, serif;
+      font-size: 18px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    a {
+      color: var(--link);
+      text-decoration: none;
+    }
+
+    a:hover { text-decoration: underline; }
+
+    main {
+      width: 100%;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 56px 32px 96px;
+    }
+
+    .back {
+      display: inline-block;
+      margin-bottom: 34px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 400;
+      line-height: 1.45;
+    }
+
+    .lead {
+      margin: 18px 0 0;
+      color: #333;
+    }
+
+    article {
+      margin-top: 48px;
+      padding-top: 42px;
+      border-top: 1px solid var(--line);
+    }
+
+    h2 {
+      margin: 0 0 24px;
+      font-size: 23px;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    h3 {
+      margin: 24px 0 6px;
+      font-size: 17px;
+      font-weight: 600;
+      line-height: 1.6;
+    }
+
+    p { margin: 0; }
+
+    .sources {
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.8;
+    }
+
+    .boundary {
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    @media (max-width: 620px) {
+      body { font-size: 17px; }
+      main { padding: 42px 24px 72px; }
+      h1 { font-size: 26px; }
+      article { margin-top: 42px; padding-top: 36px; }
+      h2 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="../../index.html">← 返回阶段进展</a>
+
+    <h1>三个候选的证据卡</h1>
+    <p class="lead">BendPick、stationary OpenFaucet 和 G1 Powerlift 目前仍是待验证设计。没有一个候选通过全部七项标准，也没有进入正式动态验证。</p>
+
+    <article>
+      <h2>1. BendPick</h2>
+
+      <h3>为什么保留</h3>
+      <p>目标物靠近机器人，官方任务包含降低身体、右手抓取和恢复高度；数据生成、LeRobot、Diffusion Policy 训练和自动评测路线较完整。</p>
+
+      <h3>已经得到的证据</h3>
+      <p>官方动作链在本次运行中将目标物抬高，但 0.5 s 稳定举升判据没有通过。三组同状态分支实验中，人为加入右肩误差时均失败，恢复原上肢动作后均成功。这证明固定上肢修正能逆转这三个由右肩误差构造的失败状态；没有证明自然失败频率、实时检测窗口或正式准入通过。</p>
+
+      <h3>反证与缺口</h3>
+      <p>完整动作链的一次测量中，root 最大水平位移为 0.342 m，左右脚最大水平位移为 0.191 m 和 0.509 m，并且 0.5 s 稳定举升判据没有通过。因此“代码里没有 WalkSpec”不能证明任务满足 stationary 要求。下肢因果贡献、force / compliance 价值和候选级 Controller 接口仍未验证。</p>
+
+      <h3>下一步需要证明</h3>
+      <p>实现并冻结 stationary 配置和有效 evaluator，再用配对实验验证下肢贡献、force / compliance 效果和 Controller 接入。</p>
+
+      <p class="sources"><a href="https://arxiv.org/abs/2606.08278">论文</a> · <a href="https://github.com/physical-superintelligence-lab/SIMPLE/blob/d010f0f537af97a0376168d00e7e27e159226b07/src/simple/tasks/g1_wholebody_bend_pick_mp.py">固定版本任务代码</a> · <a href="https://huggingface.co/datasets/USC-PSI-Lab/psi-data/tree/main/simple">官方数据</a> · <a href="https://huggingface.co/USC-PSI-Lab/psi-model/tree/main/psi0/simple-checkpoints">官方 checkpoint</a> · <a href="../media/bendpick-stationary-trace.mp4">本次移动视频</a> · <a href="../media/rescue-state1-fail.mp4">误差分支示例</a> · <a href="../media/rescue-state1-corrected.mp4">恢复分支示例</a></p>
+    </article>
+
+    <article>
+      <h2>2. stationary OpenFaucet</h2>
+
+      <h3>为什么保留</h3>
+      <p>转动 articulated faucet 需要持续接触，更容易检验顺应控制、接触质量和 force 信息的实际作用。</p>
+
+      <h3>已经得到的证据</h3>
+      <p>官方任务代码包含 faucet joint-angle evaluator，也有 teleoperation 数据与官方 Ψ₀ checkpoint 路线，可以作为工程起点。</p>
+
+      <h3>反证与缺口</h3>
+      <p>原任务指令包含向前移动。更重要的是，现有自动动作分解抓取普通物体，而 evaluator 读取另一个 faucet articulated joint；因此原版不能直接作为正确对象的 stationary 数据生成器。目前还没有实现 stationary overlay，也没有完成 reset 到 rollout 的动态运行。</p>
+
+      <h3>下一步需要证明</h3>
+      <p>实现近身、限足和正确 handle 操作的任务版本，重新采集数据，并验证上肢纠正、下肢姿态贡献和 force / compliance 的配对效果。</p>
+
+      <p class="sources"><a href="https://github.com/physical-superintelligence-lab/SIMPLE/blob/d010f0f537af97a0376168d00e7e27e159226b07/src/simple/tasks/g1_wholebody_open_faucet_teleop.py">固定版本任务代码</a> · <a href="https://github.com/physical-superintelligence-lab/SIMPLE/blob/d010f0f537af97a0376168d00e7e27e159226b07/README.md">官方评测说明</a> · <a href="https://huggingface.co/datasets/USC-PSI-Lab/psi-data/tree/main/simple">官方数据</a> · <a href="https://huggingface.co/USC-PSI-Lab/psi-model/tree/main/psi0/simple-checkpoints">官方 Ψ₀ checkpoint</a></p>
+    </article>
+
+    <article>
+      <h2>3. G1 Powerlift</h2>
+
+      <h3>为什么保留</h3>
+      <p>杠铃位于机器人前方，任务不需要远距离导航；举升动作同时涉及双手接触、蹲伏、姿态和负载平衡，并提供一个独立于 SIMPLE 的实现路径。</p>
+
+      <h3>已经得到的证据</h3>
+      <p>官方仓库提供 G1 任务、MuJoCo 资产和多种 RL 训练入口，证明该平台具备基础训练条件。</p>
+
+      <h3>反证与缺口</h3>
+      <p>现有 reward 关注站立、躯干、控制代价和杠铃高度，没有要求双手有效接触或稳定保持；仓库也没有明确的二值成功判据。当前没有对应的 Diffusion Policy 数据路线、公共记录闭环或 task-space Controller 接口。</p>
+
+      <h3>下一步需要证明</h3>
+      <p>先建立 contact-aware evaluator 和可重复成功轨迹，再判断数据生成与 Controller 改造成本是否值得继续投入。</p>
+
+      <p class="sources"><a href="https://arxiv.org/abs/2403.10506">论文</a> · <a href="https://github.com/carlosferrazza/humanoid-bench/blob/cb1189039151c8aadaaa987b442da54383c87fab/humanoid_bench/envs/powerlift.py">固定版本任务代码</a> · <a href="https://github.com/carlosferrazza/humanoid-bench/blob/cb1189039151c8aadaaa987b442da54383c87fab/humanoid_bench/assets/tasks/powerlift.xml">任务资产</a> · <a href="https://github.com/carlosferrazza/humanoid-bench/blob/cb1189039151c8aadaaa987b442da54383c87fab/README.md">官方训练入口</a></p>
+    </article>
+
+    <p class="boundary">这些证据把搜索范围缩小到三个可继续检验的方向，也记录了每个方向当前最强的反证。它们没有证明任何候选已经是最终 benchmark。</p>
+  </main>
+</body>
+</html>
