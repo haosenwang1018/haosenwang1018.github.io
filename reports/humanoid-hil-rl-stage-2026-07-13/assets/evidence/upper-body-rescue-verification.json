@@ -1,0 +1,76 @@
+{
+  "schema_version": "pre-a5-upper-body-rescue-pilot-verification-v1",
+  "scope": "induced-error repairability pilot; not A5 gate validation",
+  "active_difference": {
+    "joint": "right_shoulder_pitch_joint",
+    "baseline_bias_rad": 0.3,
+    "oracle_bias_rad": 0.0,
+    "branch_step": 120
+  },
+  "stationary_limits_m": {
+    "root_xy": 0.1,
+    "foot_xy": 0.08
+  },
+  "pairs": [
+    {
+      "pair": "state-1",
+      "baseline_success": false,
+      "oracle_success": true,
+      "baseline_lift_m": 0.018070974571045978,
+      "oracle_lift_m": 0.09696017278239327,
+      "lift_difference_m": 0.0788891982113473,
+      "baseline_root_xy_max_m": 0.06057186407852152,
+      "oracle_root_xy_max_m": 0.06057186407852152,
+      "baseline_foot_xy_max_m": 0.04122270878826486,
+      "oracle_foot_xy_max_m": 0.04001318836403499,
+      "all_isolation_and_acceptance_checks_pass": true
+    },
+    {
+      "pair": "state-2",
+      "baseline_success": false,
+      "oracle_success": true,
+      "baseline_lift_m": 0.0050946032714255796,
+      "oracle_lift_m": 0.10098236360287785,
+      "lift_difference_m": 0.09588776033145227,
+      "baseline_root_xy_max_m": 0.06057186015927477,
+      "oracle_root_xy_max_m": 0.06057186015927477,
+      "baseline_foot_xy_max_m": 0.05940880648713359,
+      "oracle_foot_xy_max_m": 0.054208463204038285,
+      "all_isolation_and_acceptance_checks_pass": true
+    },
+    {
+      "pair": "state-3",
+      "baseline_success": false,
+      "oracle_success": true,
+      "baseline_lift_m": 0.016709865966030357,
+      "oracle_lift_m": 0.10331130457608168,
+      "lift_difference_m": 0.08660143861005132,
+      "baseline_root_xy_max_m": 0.060571860159274855,
+      "oracle_root_xy_max_m": 0.060571860159274855,
+      "baseline_foot_xy_max_m": 0.07973394643670224,
+      "oracle_foot_xy_max_m": 0.04667634738555096,
+      "all_isolation_and_acceptance_checks_pass": true
+    }
+  ],
+  "aggregate": {
+    "pairs": 3,
+    "baseline_successes": 0,
+    "oracle_successes": 3,
+    "rescued_pairs": 3,
+    "paired_success_difference": 1.0,
+    "mean_target_lift_difference_m": 0.08712613238428363,
+    "pairs_passing_all_checks": 3,
+    "all_checks_pass": true
+  },
+  "claim_boundary": {
+    "supported": "A fixed right-upper-body target correction reverses the induced failure in all three tested serialized BendPick states while both branches remain inside the preregistered root/foot stationary envelope.",
+    "not_supported": [
+      "natural Base Policy failure frequency",
+      "MCC or compliance-controller effectiveness",
+      "force/tactile causality",
+      "human intervention effectiveness",
+      "learning improvement",
+      "formal A5 or benchmark promotion"
+    ]
+  }
+}
