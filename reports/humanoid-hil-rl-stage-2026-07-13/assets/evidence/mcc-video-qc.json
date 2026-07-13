@@ -1,43 +1,32 @@
 {
-  "scope": "Independent file-level and human-readability check after retrieval to the MacBook; the videos are visualization-only derivatives of frozen qpos/qvel trajectories.",
-  "rerender_script": {
-    "path": "../../code/rerender_twist2_formal.py",
-    "sha256": "69894dd52b77408564731b2677390e30378bf7898e1e1920f1bedc9b3e3ccd1b"
-  },
-  "reproduction_command": "reproduction-command.json",
+  "artifact": "readable-video quality check",
   "videos": [
     {
       "mode": "twist2-only",
-      "path": "seed-10/twist2-only/rollout-readable.mp4",
+      "public_file": "mcc-twist2-only-seed10.mp4",
       "sha256": "4c3f8ecf76c9ad22c73c4af2a349af9180e5e0a1412d84be4758d4022cbaf51f",
       "codec": "h264",
       "width": 640,
       "height": 480,
       "fps": 100,
       "duration_s": 12.0,
-      "decoded_frames": 1200,
-      "unique_frame_hashes": 1200
+      "decoded_frames": 1200
     },
     {
       "mode": "twist2+mcc",
-      "path": "seed-10/twist2+mcc/rollout-readable.mp4",
+      "public_file": "mcc-twist2-plus-mcc-seed10.mp4",
       "sha256": "4f80503d59b48adfebd2066bdf564bdcab37029474eab42ddf9916084aed2d31",
       "codec": "h264",
       "width": 640,
       "height": 480,
       "fps": 100,
       "duration_s": 12.0,
-      "decoded_frames": 1200,
-      "unique_frame_hashes": 1200
+      "decoded_frames": 1200
     }
   ],
   "visual_check": {
     "status": "PASS",
-    "checked_media_pts_s": 10.07,
-    "checked_sim_time_s": 10.08,
-    "time_alignment": "frame 0 contains sim_time_s=0.01, so media PTS is 0.01 s behind the displayed simulation time",
-    "observed": "Both branches visibly show the upper body, right arm, palm marker and translucent panel edge; the overlay shows the same 38.11 N contact event while MCC alpha is 0.000 versus 0.050.",
-    "boundary": "This fixes human readability only. It does not create new numeric evidence and does not replace the trajectory audit."
-  },
-  "frame_hash_boundary": "The changing time/force overlay contributes to every decoded frame hash. The 1200 unique hashes prove decodability and non-identical complete bitmaps, not by themselves underlying robot motion; motion evidence remains in the numeric trajectory and human video inspection."
+    "observed": "Both videos show the upper body, right arm, palm marker and panel edge; the overlay exposes the same contact event with different MCC activation values.",
+    "boundary": "The videos support human inspection only. Numeric conclusions come from the paired trajectories and aggregate analysis."
+  }
 }

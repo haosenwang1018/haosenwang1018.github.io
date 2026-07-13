@@ -1,59 +1,31 @@
 {
-  "schema_version": "pre-a5-evaluation-v1",
-  "design_revision_id": "A3-DESIGN-BENDPICK-001-R1",
-  "identity_status": "DESIGN_ID_NOT_CANDIDATE_ID",
-  "run_binding": {
-    "checks": {
-      "design_revision_id": true,
-      "identity_status": true,
-      "platform_commit": true,
-      "environment": true,
-      "candidate_spec_sha256": true
-    },
-    "pass": true
-  },
-  "task": {
-    "start_step": 215,
-    "end_step": 241,
-    "all_task_condition": true,
-    "allowed_contact_fraction": 1.0,
-    "has_disallowed_robot_contact": false,
-    "qualifies": false,
+  "artifact": "BendPick stationary diagnostic",
+  "task_result": {
+    "evaluation_window_steps": [215, 241],
     "height_span_m": 0.12599504521781565,
-    "type": "bendpick_stable_lift",
-    "initial_height_m": 0.113148967225965,
-    "maximum_lift_m": 0.4519321437634648,
-    "minimum_lift_m": 0.1,
-    "task_success": false
+    "minimum_required_lift_m": 0.1,
+    "stable_lift_success": false
   },
-  "contact_safety": {
-    "allowed_hand_target_normal_force_max_n": 58.56943748820695,
-    "allowed_hand_target_normal_force_limit_n": null,
-    "safety_violation": null,
-    "does_not_override_task_success": true
+  "contact_result": {
+    "allowed_hand_target_contact_fraction": 1.0,
+    "disallowed_robot_contact_detected": false,
+    "maximum_allowed_hand_target_normal_force_n": 58.56943748820695
   },
-  "stationary": {
+  "stationary_result": {
     "root_xy_max_m": 0.3423930292165193,
     "root_xy_limit_m": 0.1,
-    "foot_xy_max_by_body_m": {
-      "left_ankle_roll_link": 0.1911369399231575,
-      "right_ankle_roll_link": 0.5088721829372089
-    },
+    "left_foot_xy_max_m": 0.1911369399231575,
+    "right_foot_xy_max_m": 0.5088721829372089,
     "foot_xy_limit_m": 0.08,
-    "missing_foot_bodies": [],
-    "navigation_trace_complete": true,
     "navigation_command_abs_max": 0.0,
-    "root_envelope_pass": false,
-    "foot_envelope_pass": false,
-    "navigation_zero_pass": true,
     "stationary_envelope_pass": false
   },
-  "a2_gate_decision": "UNKNOWN",
-  "decision_reason": "This is a pre-A5 exactification smoke. A final gate decision requires a non-empty A4 manifest and replicated counterfactual evidence.",
-  "artifact_binding": {
-    "spec_sha256": "a6a10dc28558c63a8dd0d8eda3d4471fd88c57955fd2bcc1a4b37e4522cbc5c5",
-    "trajectory_sha256": "42506c1792b0b65de60a4d57ef81a29c7cad25f78c3805324dcdbc18c691353d",
-    "run_config_sha256": "058d2b97183c22649521b0728966691fb36a00b6d8e05729cd096c6d6320c174",
-    "evaluator_sha256": "e5b4240a721db4f2b716ee47158ab9c09dd87b10cd7255ee94d0610b35dedf15"
+  "interpretation": {
+    "supported": "The stock BendPick action chain raised the object but failed the 0.5 s stable-lift check and exceeded the preregistered root and foot displacement limits.",
+    "not_supported": [
+      "final benchmark selection",
+      "a general claim that BendPick cannot be adapted into a stationary task",
+      "lower-body causal contribution"
+    ]
   }
 }

@@ -141,11 +141,13 @@
         <li>
           <h3>1. 重新筛选了任务</h3>
           <p>目前保留 BendPick、stationary OpenFaucet 和 G1 Powerlift 三个候选。P&amp;PBox 不再作为默认方案，最终任务还没有确定。</p>
+          <p>筛选同时检查上肢主导、下肢的可测贡献、stationary 约束、上肢纠正窗口、force / compliance 的价值、完整实验闭环和 Controller 兼容性。</p>
+          <div class="outputs"><strong>产出：</strong><a href="assets/evidence/task-selection-criteria.html">任务选择标准</a> · <a href="assets/evidence/benchmark-candidate-evidence.html">三个候选的证据卡</a></div>
         </li>
 
         <li>
           <h3>2. 实际运行了 BendPick 和 BendPickAndPlace</h3>
-          <p>BendPick 完成了举升。BendPickAndPlace 没有完成放置。原版 BendPick 的移动范围过大，因此还不能直接作为当前任务。</p>
+          <p>BendPick 动作链将目标物抬高，但 0.5 s 稳定举升判据没有通过。BendPickAndPlace 没有完成放置。原版 BendPick 的移动范围过大，因此还不能直接作为当前任务。</p>
           <div class="outputs">
             <div class="output-row"><strong>产出：</strong><a href="assets/media/bendpick-positive.mp4">BendPick 视频</a> · <a href="assets/media/bendpick-positive.jpg">时序图</a></div>
             <div class="output-row"><strong>产出：</strong><a href="assets/media/bendpickplace-attempt.mp4">BendPickAndPlace 视频</a> · <a href="assets/media/bendpickplace-attempt.jpg">时序图</a></div>
@@ -166,7 +168,7 @@
 
         <li>
           <h3>4. 统一了实验运行记录</h3>
-          <p>同一种记录格式已经能够读取 SIMPLE 和 HumanoidArena 的成功、失败和超时运行，后续更换任务时可以继续使用。</p>
+          <p>同一种记录格式已经能够读取 SIMPLE 和 HumanoidArena 的成功、超时和主动停止运行，后续更换任务时可以继续使用。</p>
           <div class="outputs"><strong>产出：</strong><a href="assets/evidence/trajectory-interface-acceptance.json">运行记录结果</a></div>
         </li>
 
