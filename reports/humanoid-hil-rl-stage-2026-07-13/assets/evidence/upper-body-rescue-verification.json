@@ -10,11 +10,21 @@
     "root_xy": 0.1,
     "foot_xy": 0.08
   },
+  "stock_task_termination_criterion": {
+    "type": "instantaneous_target_lift",
+    "minimum_lift_m": 0.09,
+    "stable_hold_required": false
+  },
+  "strict_stable_lift_criterion": {
+    "minimum_lift_m": 0.1,
+    "minimum_hold_s": 0.5,
+    "evaluated": false
+  },
   "pairs": [
     {
       "pair": "state-1",
-      "error_branch_success": false,
-      "corrected_branch_success": true,
+      "error_branch_stock_task_success": false,
+      "corrected_branch_stock_task_success": true,
       "error_branch_lift_m": 0.018070974571045978,
       "corrected_branch_lift_m": 0.09696017278239327,
       "lift_difference_m": 0.0788891982113473,
@@ -22,8 +32,8 @@
     },
     {
       "pair": "state-2",
-      "error_branch_success": false,
-      "corrected_branch_success": true,
+      "error_branch_stock_task_success": false,
+      "corrected_branch_stock_task_success": true,
       "error_branch_lift_m": 0.0050946032714255796,
       "corrected_branch_lift_m": 0.10098236360287785,
       "lift_difference_m": 0.09588776033145227,
@@ -31,8 +41,8 @@
     },
     {
       "pair": "state-3",
-      "error_branch_success": false,
-      "corrected_branch_success": true,
+      "error_branch_stock_task_success": false,
+      "corrected_branch_stock_task_success": true,
       "error_branch_lift_m": 0.016709865966030357,
       "corrected_branch_lift_m": 0.10331130457608168,
       "lift_difference_m": 0.08660143861005132,
@@ -41,19 +51,20 @@
   ],
   "aggregate": {
     "pairs": 3,
-    "error_branch_successes": 0,
-    "corrected_branch_successes": 3,
+    "error_branch_stock_task_successes": 0,
+    "corrected_branch_stock_task_successes": 3,
     "pairs_passing_all_checks": 3,
     "mean_target_lift_difference_m": 0.08712613238428363
   },
   "interpretation": {
-    "supported": "Removing a fixed right-shoulder target error reversed the outcome in all three tested serialized states while both branches remained inside the stated root and foot limits.",
+    "supported": "Removing a fixed right-shoulder target error reversed the stock task instantaneous-lift termination outcome in all three tested serialized states while both branches remained inside the stated root and foot limits.",
     "not_supported": [
       "frequency of natural policy failures",
       "a real-time failure-detection window",
       "human intervention effectiveness",
       "learning improvement",
-      "final benchmark selection"
+      "final benchmark selection",
+      "strict stable-lift evaluator pass"
     ]
   }
 }

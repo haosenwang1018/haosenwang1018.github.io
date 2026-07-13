@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="BendPick 与 OpenFaucet 动态候选验证的独立发布复核。">
+  <link rel="icon" href="data:,">
+  <title>候选任务动态验证 · 发布复核</title>
+  <style>
+    :root {
+      --bg: #fdfbf7;
+      --ink: #1a1a1a;
+      --muted: #6b6b66;
+      --link: #587483;
+      --line: #d9d6cf;
+      --max: 700px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Songti SC", STSong, "Noto Serif CJK SC", "Source Han Serif SC", Georgia, serif;
+      font-size: 18px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    main { width: 100%; max-width: var(--max); margin: 0 auto; padding: 56px 32px 96px; }
+    .back { display: inline-block; margin-bottom: 34px; color: var(--muted); font-size: 14px; }
+    h1 { margin: 0; font-size: 28px; font-weight: 400; line-height: 1.45; }
+    .lead { margin: 18px 0 0; color: #333; }
+    h2 { margin: 48px 0 20px; font-size: 23px; font-weight: 400; line-height: 1.5; }
+    p { margin: 0; }
+    p + p { margin-top: 14px; }
+    ul { margin: 0; padding-left: 1.35em; }
+    li { padding-left: 0.25em; }
+    li + li { margin-top: 12px; }
+    .links { color: var(--muted); font-size: 15px; line-height: 1.9; }
+    .boundary { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 16px; }
+    @media (max-width: 620px) {
+      body { font-size: 17px; }
+      main { padding: 42px 24px 72px; }
+      h1 { font-size: 26px; }
+      h2 { margin-top: 42px; font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="../../index.html">← 返回阶段进展</a>
+
+    <h1>候选任务动态验证 · 发布复核</h1>
+    <p class="lead">复核重新检查两组原始机器结果、公开报告中的数值、evaluator 测试和结论边界。没有发现会阻止本次阶段性发布的问题。</p>
+
+    <h2>重新执行与比对</h2>
+    <ul>
+      <li>重新运行 36 项 evaluator 测试：20 项 BendPick、14 项 OpenFaucet、2 项对象绑定，结果为 36/36 通过。</li>
+      <li>BendPick 机器结果与公开表格一致：按原任务瞬时抬升终止为 0/3 → 3/3，抬升差为 7.89、9.59、8.66 cm，root 与 foot 均在本轮范围内。strict stable-lift 判据未验证。</li>
+      <li>OpenFaucet 机器结果与公开表格一致：四条轨迹 0/4；快速腕部轨迹转动 1.110 rad，接触归因为 0.102%，保持和 root 范围失败。</li>
+      <li>公开文件移除了本地路径、主机名、项目方私密身份和内部执行编号；页面中的证据链接均使用相对路径。</li>
+    </ul>
+
+    <h2>结论审查</h2>
+    <p>复核支持“第一轮动态验证形成了正向与反向硬证据”。BendPick 的正向结果限定在三个人为误差状态和原任务瞬时抬升终止，不能外推为 strict stable-lift 通过；OpenFaucet 的反向结果限定在四条冻结 joint-PD/IK 轨迹。</p>
+    <p>复核没有把这组证据扩展成最终任务选择、learned Base Policy 自然失败、MCC／力控效果、数据生成许可或训练许可。</p>
+
+    <h2>机器结果</h2>
+    <p class="links"><a href="benchmark-evaluator-test-summary.json">36 项 evaluator 测试</a> · <a href="upper-body-rescue-verification.json">BendPick 机器结果</a> · <a href="openfaucet-controller-verification.json">OpenFaucet 机器结果</a></p>
+
+    <p class="boundary">本页是证据一致性与发布边界复核。最终候选晋级仍需两个固定候选配置和 learned Base Policy 的自然失败验证。</p>
+  </main>
+</body>
+</html>

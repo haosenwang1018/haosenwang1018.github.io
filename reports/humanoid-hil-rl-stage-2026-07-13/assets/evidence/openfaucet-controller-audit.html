@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="OpenFaucet 四条冻结 joint-PD/IK 轨迹的严格 evaluator 结果与结论边界。">
+  <link rel="icon" href="data:,">
+  <title>OpenFaucet 控制参数化质检</title>
+  <style>
+    :root {
+      --bg: #fdfbf7;
+      --ink: #1a1a1a;
+      --muted: #6b6b66;
+      --link: #587483;
+      --line: #d9d6cf;
+      --max: 700px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Songti SC", STSong, "Noto Serif CJK SC", "Source Han Serif SC", Georgia, serif;
+      font-size: 18px;
+      line-height: 1.75;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    main { width: 100%; max-width: var(--max); margin: 0 auto; padding: 56px 32px 96px; }
+    .back { display: inline-block; margin-bottom: 34px; color: var(--muted); font-size: 14px; }
+    h1 { margin: 0; font-size: 28px; font-weight: 400; line-height: 1.45; }
+    .lead { margin: 18px 0 0; color: #333; }
+    h2 { margin: 48px 0 20px; font-size: 23px; font-weight: 400; line-height: 1.5; }
+    p { margin: 0; }
+    p + p { margin-top: 14px; }
+    ul { margin: 0; padding-left: 1.35em; }
+    li { padding-left: 0.25em; }
+    li + li { margin-top: 12px; }
+    .table-wrap { margin-top: 8px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 16px; line-height: 1.55; }
+    th, td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { font-weight: 600; }
+    .links { color: var(--muted); font-size: 15px; line-height: 1.9; }
+    .boundary { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 16px; }
+    @media (max-width: 620px) {
+      body { font-size: 17px; }
+      main { padding: 42px 24px 72px; }
+      h1 { font-size: 26px; }
+      h2 { margin-top: 42px; font-size: 22px; }
+      table { min-width: 650px; font-size: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="../../index.html">← 返回阶段进展</a>
+
+    <h1>OpenFaucet 控制参数化质检</h1>
+    <p class="lead">四条冻结的 seed=0 joint-PD/IK 轨迹使用同一个任务状态。严格 evaluator 同时检查转角、因果接触归因、首次过阈后的保持，以及 root 与 foot 范围。</p>
+
+    <h2>判据</h2>
+    <ul>
+      <li>handle 正向转动至少 0.7 rad，并从首次越过阈值起保持至少 0.5 s。</li>
+      <li>至少两个允许的右手接触部位解释 80% 的正向角度进展。</li>
+      <li>root 平面位移不超过 10 cm，任一 foot 平面位移不超过 8 cm。</li>
+      <li>越阈后的 0.5 s 窗口同时检查角度跨度、净回退和角速度。</li>
+    </ul>
+
+    <h2>结果</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>运行</th><th>最大正向转角</th><th>严格结果</th><th>root / foot</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>单接触点，open loop</td><td>0.080 rad</td><td>未达到 0.7 rad</td><td>2.8 / 0.7 cm</td></tr>
+          <tr><td>单接触点，feedback</td><td>0.089 rad</td><td>未达到 0.7 rad</td><td>2.8 / 0.7 cm</td></tr>
+          <tr><td>双接触点，feedback</td><td>0.00085 rad</td><td>未达到 0.7 rad</td><td>2.8 / 0.7 cm</td></tr>
+          <tr><td>快速腕部</td><td>1.110 rad</td><td>接触归因、保持和 root 范围失败</td><td>19.7 / 1.0 cm</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>四条轨迹的严格结果为 0/4。快速腕部轨迹越过角度阈值，但允许的双指接触只获得 0.102% 的正向角度进展归因。首次越阈后的保持窗口中，角度跨度为 0.401 rad、净变化为 0.390 rad、绝对角速度为 0.539 rad/s，三项均未通过。</p>
+
+    <h2>项目判断</h2>
+    <p>当前四条执行路径缺少支持数据生成或训练的任务效果。下一轮 OpenFaucet 实验需要引入新的 MCC、力控或柔顺控制证据；另一条可行路径是改用第二候选。</p>
+
+    <h2>证据</h2>
+    <p class="links"><a href="openfaucet-controller-verification.json">查看机器验证结果</a> · <a href="benchmark-evaluator-validation.html">查看 evaluator 测试</a></p>
+
+    <p class="boundary">结论只约束这四条冻结轨迹。完整 stationary gate 仍有未记录字段；OpenFaucet、joint-PD/IK 家族、MCC、admittance、force control 和 learned Policy 的可行性仍需新的实验判断。</p>
+  </main>
+</body>
+</html>
