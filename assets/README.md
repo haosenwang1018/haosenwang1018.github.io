@@ -240,6 +240,20 @@
 - License/status: MIT License, Copyright 2010-2023 Three.js Authors
 - Local processing: vendored so the homepage 3D Moon does not depend on a runtime CDN request
 
+## `orbit-controls.js`
+
+- Source: Three.js `0.160.0` OrbitControls module
+- Original URL: https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js
+- License/status: MIT License, Copyright 2010-2023 Three.js Authors
+- Local processing: vendored and changed only to import the site's local `three.module.js`
+
+## `works/g1-connector/index.html` embedded CAD meshes
+
+- Source: the project owner's current Hardware CAD package, the locally generated G1 bridge, and Wuji Technology's public G1 docking adapter
+- Wuji reference: https://github.com/wuji-technology/wuji-description/blob/main/hand/attachment/unitree-g1-attachment/unitree-g1-docking-adapter.stl
+- License/status: site owner authorized public browser display on 2026-07-21; the Wuji source is MIT licensed; the internal project geometry is published under the site owner's authorization
+- Local processing: reduced triangle meshes are embedded directly in the page; the original ZIP, STEP, and STL files are not published
+
 ## `will-lunar-surface.jpg`
 
 - Source: NASA Apollo 11 image `AS11-44-6667`
