@@ -1,0 +1,50 @@
+{
+  "experiment": "2A official-data DP training",
+  "task": "G1WholebodyBendPickMP-v0",
+  "policy_family": "Psi0 Diffusion Policy",
+  "source": {
+    "psi0_commit": "437a2827ed3869f46d7bb289d4997bddfe5302dc",
+    "official_entrypoint_sha256": "d54cb9bd93d3377041cf660c264b42c4576b15902acd3e30889bb557a5a809a8"
+  },
+  "data": {
+    "kind": "official SIMPLE/Psi0 training data",
+    "episodes": 100,
+    "frames": 15509,
+    "archive_sha256": "217e7dc7af75135980d519eb88accc60921cd9a28238515d143639a9dbb651be",
+    "normalization": "meta/stats_psi0.json",
+    "state_dim": 36,
+    "action_dim": 36,
+    "action_chunk_size": 16
+  },
+  "training": {
+    "seed": 2026,
+    "precision": "bf16",
+    "gpu_count": 1,
+    "per_device_batch": 32,
+    "gradient_accumulation_steps": 4,
+    "effective_global_batch": 128,
+    "optimizer_steps": 40000,
+    "learning_rate": 0.0001,
+    "scheduler": "cosine",
+    "warmup_steps": 1000,
+    "validation_every_steps": 500,
+    "validation_batches": 20,
+    "checkpoint_every_steps": 5000
+  },
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 4090",
+    "gpu_memory_mib": 24564,
+    "torch": "2.8.0+cu128",
+    "python": "3.10.20"
+  },
+  "adaptation": {
+    "classification": "ADAPTED FROM OFFICIAL",
+    "reason": "One GPU replaces the official four-GPU run.",
+    "change": "Keep per-device batch 32 and use four-way gradient accumulation to preserve effective global batch 128.",
+    "trainer_patch": "Return accelerator.sync_gradients so outer optimizer-step accounting advances only on synchronized accumulation steps."
+  },
+  "evaluation": {
+    "simple_official_rollout_completed": false,
+    "checkpoint_selection_by_rollout": false
+  }
+}

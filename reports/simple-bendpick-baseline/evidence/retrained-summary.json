@@ -1,0 +1,146 @@
+{
+  "schema": "bendpick-dp-official-retrained-summary-v1",
+  "levels": {
+    "level-0": {
+      "episodes": 10,
+      "successes": 9,
+      "official_published_checkpoint_reference": 10,
+      "results": [
+        {
+          "episode": 0,
+          "success": true
+        },
+        {
+          "episode": 1,
+          "success": true
+        },
+        {
+          "episode": 2,
+          "success": true
+        },
+        {
+          "episode": 3,
+          "success": true
+        },
+        {
+          "episode": 4,
+          "success": true
+        },
+        {
+          "episode": 5,
+          "success": true
+        },
+        {
+          "episode": 6,
+          "success": false
+        },
+        {
+          "episode": 7,
+          "success": true
+        },
+        {
+          "episode": 8,
+          "success": true
+        },
+        {
+          "episode": 9,
+          "success": true
+        }
+      ]
+    },
+    "level-1": {
+      "episodes": 10,
+      "successes": 9,
+      "official_published_checkpoint_reference": 8,
+      "results": [
+        {
+          "episode": 0,
+          "success": true
+        },
+        {
+          "episode": 1,
+          "success": true
+        },
+        {
+          "episode": 2,
+          "success": true
+        },
+        {
+          "episode": 3,
+          "success": true
+        },
+        {
+          "episode": 4,
+          "success": true
+        },
+        {
+          "episode": 5,
+          "success": true
+        },
+        {
+          "episode": 6,
+          "success": false
+        },
+        {
+          "episode": 7,
+          "success": true
+        },
+        {
+          "episode": 8,
+          "success": true
+        },
+        {
+          "episode": 9,
+          "success": true
+        }
+      ]
+    },
+    "level-2": {
+      "episodes": 10,
+      "successes": 9,
+      "official_published_checkpoint_reference": 6,
+      "results": [
+        {
+          "episode": 0,
+          "success": true
+        },
+        {
+          "episode": 1,
+          "success": true
+        },
+        {
+          "episode": 2,
+          "success": true
+        },
+        {
+          "episode": 3,
+          "success": true
+        },
+        {
+          "episode": 4,
+          "success": true
+        },
+        {
+          "episode": 5,
+          "success": true
+        },
+        {
+          "episode": 6,
+          "success": true
+        },
+        {
+          "episode": 7,
+          "success": false
+        },
+        {
+          "episode": 8,
+          "success": true
+        },
+        {
+          "episode": 9,
+          "success": true
+        }
+      ]
+    }
+  }
+}

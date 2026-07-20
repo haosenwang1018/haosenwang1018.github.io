@@ -1,0 +1,32 @@
+run_id=2607174090v1
+
+Scheduled checkpoints:
+ckpt_5000
+ckpt_10000
+ckpt_15000
+ckpt_20000
+ckpt_25000
+ckpt_30000
+ckpt_35000
+ckpt_40000
+
+Framework final-save artifact:
+ckpt_39999
+
+ckpt_40000/model.safetensors
+bytes=337238328
+sha256=7312dd7c1a3a963448b0070fe11495bdf94dba949073b807c34c631c283ca4dd
+readability=safetensors-safe-open-pass
+tensor_count=208
+parameter_elements=84303460
+
+ckpt_40000/ema_net.pth
+bytes=337302879
+sha256=88933cae41f0048d3747d795253b6c39986dd812a7f94bea5c359453133c049b
+
+ckpt_40000/optimizer.bin
+bytes=674602251
+sha256=f64a98c8a56195a2e60c680afb000c31d87787be0cb21f7da687e1b6dca0a3e0
+
+The model checkpoint was opened read-only on the 4090 host on 2026-07-19.
+Hash and readability evidence do not establish rollout quality.

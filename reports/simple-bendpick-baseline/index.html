@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SIMPLE BendPick 官方策略评测，以及独立训练 Diffusion Policy 的同协议复现结果。">
+  <title>SIMPLE BendPick Baseline</title>
+  <style>
+    :root {
+      --ink: #202124;
+      --muted: #666b73;
+      --soft: #8d9299;
+      --line: #e4e6e8;
+      --wash: #f6f7f8;
+      --blue: #345f86;
+      --blue-soft: #eaf1f6;
+      --orange: #c86e43;
+      --paper: #fff;
+      --content: 960px;
+      --text: 760px;
+      --radius: 14px;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; background: var(--paper); color: var(--ink); }
+    body {
+      margin: 0;
+      font-family: "Noto Sans", "Avenir Next", Avenir, "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 17px;
+      line-height: 1.7;
+      text-rendering: optimizeLegibility;
+    }
+    a { color: var(--blue); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    img, video { max-width: 100%; }
+    .page { padding: 74px 20px 82px; }
+    .content { width: min(100%, var(--content)); margin-inline: auto; }
+    header { text-align: center; }
+    .eyebrow {
+      margin: 0 0 16px;
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 { margin-top: 0; letter-spacing: -.025em; }
+    h1 {
+      margin-bottom: 18px;
+      font-size: clamp(42px, 7vw, 66px);
+      font-weight: 600;
+      line-height: 1.03;
+    }
+    .subtitle {
+      max-width: 780px;
+      margin: 0 auto;
+      color: #474b50;
+      font-size: clamp(19px, 2.6vw, 24px);
+      line-height: 1.5;
+    }
+    .project-line { margin: 15px 0 0; color: var(--muted); font-size: 14px; }
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 26px;
+    }
+    .nav-links a {
+      min-width: 104px;
+      padding: 8px 17px;
+      border-radius: 999px;
+      background: #34383d;
+      color: white;
+      font-size: 14px;
+      text-decoration: none;
+      transition: transform .15s ease, background .15s ease;
+    }
+    .nav-links a:hover { transform: translateY(-1px); background: #1f2225; }
+    .hero { margin-top: 42px; }
+    video {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: 0;
+      border-radius: var(--radius);
+      background: #111;
+      object-fit: cover;
+    }
+    figure { margin: 0; }
+    figcaption { margin-top: 10px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .hero figcaption { text-align: center; }
+    section { margin-top: 88px; scroll-margin-top: 24px; }
+    h2 { margin-bottom: 14px; text-align: center; font-size: clamp(28px, 4vw, 36px); font-weight: 600; line-height: 1.2; }
+    h3 { margin-bottom: 8px; font-size: 20px; font-weight: 600; line-height: 1.35; }
+    .section-intro { max-width: 760px; margin: 0 auto 32px; color: var(--muted); text-align: center; }
+    .highlights {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin-top: 42px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .highlight { padding: 23px 24px; text-align: center; }
+    .highlight + .highlight { border-left: 1px solid var(--line); }
+    .highlight b { display: block; font-size: 33px; font-weight: 600; letter-spacing: -.04em; line-height: 1.15; }
+    .highlight span { display: block; margin-top: 5px; color: var(--muted); font-size: 13px; }
+    .protocol-frame {
+      overflow: hidden;
+      margin-top: 34px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+    .protocol-caption {
+      padding: 11px 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--wash);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .protocol-caption.levels { border-top: 1px solid var(--line); }
+    .protocol-fixed {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--line);
+    }
+    .protocol-fact { min-height: 112px; padding: 20px; background: var(--paper); }
+    .protocol-fact b { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 650; }
+    .protocol-fact span { display: block; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .level-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--line);
+    }
+    .level-card { min-height: 214px; padding: 24px; background: var(--paper); }
+    .level-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      color: var(--blue);
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+    }
+    .level-label::before {
+      content: "";
+      width: 24px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--blue);
+    }
+    .level-card:nth-child(2) .level-label { color: #695c91; }
+    .level-card:nth-child(2) .level-label::before { background: #695c91; }
+    .level-card:nth-child(3) .level-label { color: var(--orange); }
+    .level-card:nth-child(3) .level-label::before { background: var(--orange); }
+    .level-card h3 { margin-bottom: 10px; font-size: 21px; }
+    .level-card p { margin: 0; color: #4e5359; font-size: 14px; line-height: 1.65; }
+    .level-build {
+      display: block;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .protocol-note {
+      max-width: 820px;
+      margin: 22px auto 0;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+    }
+    .result-table { margin-top: 24px; border-top: 1.5px solid #9da2a7; }
+    .result-row {
+      display: grid;
+      grid-template-columns: 1.35fr .8fr .9fr .55fr;
+      gap: 16px;
+      align-items: center;
+      padding: 14px 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    .result-row.head { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .result-row strong { font-weight: 650; }
+    .delta { color: var(--muted); }
+    .result-summary { margin: 18px 0 0; color: #45494e; text-align: center; }
+    .rollout-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .rollout-card {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--paper);
+    }
+    .rollout-card video { border-radius: 0; }
+    .rollout-copy { padding: 14px 16px 16px; }
+    .rollout-copy b { display: block; font-size: 15px; font-weight: 600; }
+    .rollout-copy span { color: var(--muted); font-size: 13px; }
+    .result-subtitle { margin: 42px 0 18px; text-align: center; font-size: 21px; }
+    .evaluation-result {
+      margin-top: 38px;
+      padding: 22px 24px;
+      border: 1px solid #cfdde7;
+      border-radius: var(--radius);
+      background: var(--blue-soft);
+      color: #3d4b57;
+      text-align: center;
+    }
+    .evaluation-result h3 { margin-bottom: 7px; }
+    .evaluation-result p { margin: 0; font-size: 15px; }
+    .retrained-rollout { max-width: 720px; margin: 28px auto 0; }
+    .training-facts {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin-bottom: 28px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .training-fact { padding: 18px; text-align: center; }
+    .training-fact + .training-fact { border-left: 1px solid var(--line); }
+    .training-fact b { display: block; font-size: 28px; font-weight: 600; letter-spacing: -.035em; }
+    .training-fact span { color: var(--muted); font-size: 12px; }
+    .chart-frame { padding: 20px 20px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: #fbfbfb; }
+    .chart-frame svg { display: block; width: 100%; height: auto; overflow: visible; }
+    .chart-grid { stroke: #dfe2e4; stroke-width: 1; }
+    .chart-axis { fill: var(--muted); font: 12px "Avenir Next", Avenir, sans-serif; }
+    .chart-train { fill: none; stroke: var(--orange); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+    .chart-val { fill: none; stroke: var(--blue); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .chart-dot { fill: var(--blue); }
+    .chart-legend { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px 24px; margin-top: 10px; color: var(--muted); font-size: 13px; }
+    .legend-swatch { display: inline-block; width: 20px; height: 3px; margin: 0 7px 3px 0; vertical-align: middle; }
+    .legend-swatch.train { background: var(--orange); }
+    .legend-swatch.val { background: var(--blue); }
+    .chart-note { margin: 12px auto 0; max-width: 720px; color: var(--muted); font-size: 13px; text-align: center; }
+    .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+    .setup-panel { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); }
+    .setup-panel h3 { margin: 0; padding: 18px 20px; border-bottom: 1px solid var(--line); background: var(--wash); }
+    .setup { margin: 0; padding: 0 20px; }
+    .setup-row { display: grid; grid-template-columns: 118px 1fr; gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+    .setup-row:last-child { border-bottom: 0; }
+    .setup dt { color: var(--muted); font-size: 14px; }
+    .setup dd { margin: 0; font-size: 14px; }
+    code { font: .84em/1.5 "SFMono-Regular", Consolas, monospace; }
+    .resource-panel {
+      margin-top: 30px;
+      padding: 36px clamp(22px, 5vw, 50px);
+      border-radius: var(--radius);
+      background: #262b30;
+      color: white;
+      text-align: center;
+    }
+    .resource-panel b { display: block; font-size: 18px; }
+    .resource-panel p { max-width: 690px; margin: 6px auto 0; color: #d3d6d8; font-size: 14px; }
+    .resources {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px 22px;
+      margin-top: 28px;
+      font-size: 14px;
+    }
+    .resource-panel .resources a { color: #9fc7e3; }
+    footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--soft); text-align: center; font-size: 12px; }
+    @media (max-width: 820px) {
+      .setup-grid { grid-template-columns: 1fr; }
+      .protocol-fixed { grid-template-columns: 1fr 1fr; }
+      .level-grid { grid-template-columns: 1fr; }
+      .level-card { min-height: auto; }
+      .rollout-grid { grid-template-columns: 1fr 1fr; }
+      .rollout-card:last-child { grid-column: 1 / -1; width: calc(50% - 9px); justify-self: center; }
+    }
+    @media (max-width: 620px) {
+      .page { padding: 44px 14px 60px; }
+      section { margin-top: 66px; }
+      .hero { margin-top: 34px; }
+      .nav-links a { min-width: auto; padding-inline: 14px; }
+      .highlights, .training-facts { grid-template-columns: 1fr; }
+      .protocol-fixed { grid-template-columns: 1fr; }
+      .protocol-fact { min-height: auto; }
+      .highlight + .highlight, .training-fact + .training-fact { border-top: 1px solid var(--line); border-left: 0; }
+      .rollout-grid { grid-template-columns: 1fr; }
+      .rollout-card:last-child { grid-column: auto; width: 100%; }
+      .result-row { grid-template-columns: 1.1fr .7fr .8fr .42fr; gap: 6px; padding-inline: 0; font-size: 13px; }
+      .result-row.head { font-size: 9px; }
+      .setup-row { grid-template-columns: 1fr; gap: 2px; }
+      .chart-frame { padding: 10px 8px 8px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="content">
+      <p class="eyebrow">Humanoid Loco-Manipulation · Results Release</p>
+      <h1>SIMPLE BendPick Baseline</h1>
+      <p class="subtitle">SIMPLE BendPick 的官方 Diffusion Policy 评测，以及独立训练 Policy 的同协议复现。</p>
+      <p class="project-line">G1WholebodyBendPickMP-v0 · SIMPLE / Psi0 · July 2026</p>
+      <nav class="nav-links" aria-label="页面导航">
+        <a href="#protocol">Benchmark</a>
+        <a href="#results">Official DP</a>
+        <a href="#training">Independent DP</a>
+        <a href="#setup">Details</a>
+      </nav>
+    </header>
+
+    <figure class="hero content">
+      <video controls autoplay muted loop playsinline preload="metadata" poster="assets/level-2-success-episode-5.jpg">
+        <source src="assets/level-2-success-episode-5.mp4" type="video/mp4">
+      </video>
+      <figcaption>Official DP checkpoint · Level 2 spatial-pose split · Episode 5 · successful rollout</figcaption>
+    </figure>
+
+    <div class="highlights content" aria-label="关键结果">
+      <div class="highlight"><b>23 / 30</b><span>released official DP · this run</span></div>
+      <div class="highlight"><b>27 / 30</b><span>independently retrained DP · this run</span></div>
+      <div class="highlight"><b>9 · 9 · 9</b><span>retrained DP · Level 0 · 1 · 2</span></div>
+    </div>
+
+    <section class="content" id="protocol" aria-labelledby="protocol-title">
+      <h2 id="protocol-title">SIMPLE BendPick Benchmark</h2>
+      <p class="section-intro">SIMPLE（Simulation-Based Policy Learning and Evaluation）是 humanoid loco-manipulation 仿真 benchmark。本页结果共享同一 BendPick Task、evaluation set、evaluator 与成功判据；如后续结果改变其中任何条件，将在对应结果标题下单独说明。</p>
+
+      <div class="protocol-frame">
+        <div class="protocol-caption">Shared across experiments</div>
+        <div class="protocol-fixed">
+          <div class="protocol-fact"><b>Task</b><span><code>G1WholebodyBendPickMP-v0</code><br>弯腰并抬起目标物</span></div>
+          <div class="protocol-fact"><b>Evaluation set</b><span>3 OOD levels × 10 fixed episodes<br>30 trials in total</span></div>
+          <div class="protocol-fact"><b>Success</b><span>目标物相对初始高度<br>抬升至少 9 cm</span></div>
+          <div class="protocol-fact"><b>Termination</b><span>success，或达到 400 control steps<br>50 Hz 下最多约 8 秒</span></div>
+        </div>
+
+        <div class="protocol-caption levels">Progressive OOD difficulty</div>
+        <div class="level-grid">
+          <article class="level-card">
+            <span class="level-label">Level 0</span>
+            <h3>Appearance &amp; Clutter</h3>
+            <p>随机化桌面材质，以及干扰物的类别和初始位置，测试策略在外观变化与视觉杂波下识别并抓取目标物的能力。</p>
+            <span class="level-build">Base OOD split · appearance and clutter</span>
+          </article>
+          <article class="level-card">
+            <span class="level-label">Level 1</span>
+            <h3>Extreme Lighting</h3>
+            <p>保留 Level 0 的材质与干扰物变化，并进一步加入更极端的光照条件，测试视觉表征对 illumination shift 的鲁棒性。</p>
+            <span class="level-build">Level 0 + lighting variation</span>
+          </article>
+          <article class="level-card">
+            <span class="level-label">Level 2</span>
+            <h3>Target-Position Shift</h3>
+            <p>保留 Level 1 的全部变化，并进一步扰动目标物的初始位置，测试策略对目标几何布局变化的泛化能力。</p>
+            <span class="level-build">Level 1 + target-position perturbation</span>
+          </article>
+        </div>
+      </div>
+      <p class="protocol-note"><code>MP</code> 表示示范数据由 Motion Planning 生成；OOD 表示相对训练环境的分布外变化。一个 episode 是一次从 reset 到终止的评测试验，rollout 是 Policy 在该 episode 中产生的完整轨迹；本页每个视频只展示一条 rollout。</p>
+    </section>
+
+    <section class="content" id="results" aria-labelledby="results-title">
+      <h2 id="results-title">Official DP under Progressive OOD Shift</h2>
+      <p class="section-intro">被评测 Policy 是 SIMPLE/Psi0 release 中的官方 Diffusion Policy checkpoint <code>ckpt_40000</code>，不是 Ψ0 VLA。Level 0 与 Level 1 对齐 SIMPLE 公布结果，Level 2 少通过 1 个 episode。</p>
+      <h3 class="result-subtitle">Published Baseline Comparison</h3>
+      <div class="result-table">
+        <div class="result-row head"><span>OOD split</span><span>This run</span><span>SIMPLE DP ref.</span><span>Delta</span></div>
+        <div class="result-row"><span>Level 0</span><strong>10 / 10</strong><span>10 / 10</span><span class="delta">0</span></div>
+        <div class="result-row"><span>Level 1</span><strong>8 / 10</strong><span>8 / 10</span><span class="delta">0</span></div>
+        <div class="result-row"><span>Level 2</span><strong>5 / 10</strong><span>6 / 10</span><span class="delta">−1</span></div>
+      </div>
+      <p class="result-summary">Total: <strong>23 / 30</strong> successful episodes.</p>
+      <h3 class="result-subtitle" id="rollouts-title">Behavior across OOD Levels</h3>
+      <div class="rollout-grid">
+        <figure class="rollout-card">
+          <video controls playsinline preload="metadata" poster="assets/level-0-success-episode-0.jpg">
+            <source src="assets/level-0-success-episode-0.mp4" type="video/mp4">
+          </video>
+          <figcaption class="rollout-copy"><b>Level 0 · Success</b><span>Episode 0 · complete rollout</span></figcaption>
+        </figure>
+        <figure class="rollout-card">
+          <video controls playsinline preload="metadata" poster="assets/level-1-failure-episode-2.jpg">
+            <source src="assets/level-1-failure-episode-2.mp4" type="video/mp4">
+          </video>
+          <figcaption class="rollout-copy"><b>Level 1 · Failure</b><span>Episode 2 · complete rollout</span></figcaption>
+        </figure>
+        <figure class="rollout-card">
+          <video controls playsinline preload="metadata" poster="assets/level-2-failure-episode-9.jpg">
+            <source src="assets/level-2-failure-episode-9.mp4" type="video/mp4">
+          </video>
+          <figcaption class="rollout-copy"><b>Level 2 · Failure</b><span>Episode 9 · complete rollout</span></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="content" id="training" aria-labelledby="training-title">
+      <h2 id="training-title">Independent DP Training on Official Data</h2>
+      <p class="section-intro">使用 Psi0 官方 BendPick 数据与训练入口独立训练 Diffusion Policy，并在与官方 checkpoint 完全相同的 Task、evaluation set、evaluator 和 30-episode protocol 下评测。</p>
+      <h3 class="result-subtitle">Loss Convergence over 40K Updates</h3>
+      <div class="training-facts">
+        <div class="training-fact"><b>100</b><span>official episodes</span></div>
+        <div class="training-fact"><b>15,509</b><span>training frames</span></div>
+        <div class="training-fact"><b>40,000</b><span>optimizer steps</span></div>
+      </div>
+      <div class="chart-frame">
+        <svg id="loss-chart" viewBox="0 0 900 420" role="img" aria-labelledby="loss-chart-title loss-chart-desc">
+          <title id="loss-chart-title">Training and validation loss</title>
+          <desc id="loss-chart-desc">Train and validation losses across 40,000 optimizer steps.</desc>
+          <g id="loss-grid"></g>
+          <path id="loss-train" class="chart-train"></path>
+          <path id="loss-val" class="chart-val"></path>
+          <g id="loss-val-dots"></g>
+        </svg>
+        <div class="chart-legend" aria-hidden="true">
+          <span><i class="legend-swatch train"></i>train loss · 500-step mean</span>
+          <span><i class="legend-swatch val"></i>validation behavior-cloning loss</span>
+        </div>
+      </div>
+      <p class="chart-note">Final 100-step train-loss mean: 0.0008968 · final validation behavior-cloning loss: 0.0009096.</p>
+
+      <h3 class="result-subtitle">Same-Protocol Rollout Result</h3>
+      <div class="result-table">
+        <div class="result-row head"><span>OOD split</span><span>Retrained DP</span><span>Official ckpt. run</span><span>SIMPLE published</span></div>
+        <div class="result-row"><span>Level 0</span><strong>9 / 10</strong><span>10 / 10</span><span>10 / 10</span></div>
+        <div class="result-row"><span>Level 1</span><strong>9 / 10</strong><span>8 / 10</span><span>8 / 10</span></div>
+        <div class="result-row"><span>Level 2</span><strong>9 / 10</strong><span>5 / 10</span><span>6 / 10</span></div>
+        <div class="result-row"><span>Total</span><strong>27 / 30</strong><span>23 / 30</span><span>24 / 30</span></div>
+      </div>
+      <figure class="retrained-rollout">
+        <video controls playsinline preload="metadata" poster="assets/retrained-level-2-success-episode-0.jpg">
+          <source src="assets/retrained-level-2-success-episode-0.mp4" type="video/mp4">
+        </video>
+        <figcaption>Independently retrained DP · Level 2 · Episode 0 · successful rollout</figcaption>
+      </figure>
+      <div class="evaluation-result">
+        <h3>What this result supports</h3>
+        <p>在这一次固定 30-episode 评测中，自训 <code>ckpt_40000</code> 得到 <strong>27/30</strong>，总成功数高于两项官方 checkpoint 参考；由于每个 Level 仅 10 条且 Diffusion Policy 推理含随机性，该结果尚不支持“稳定优于官方 Policy”的结论。</p>
+      </div>
+    </section>
+
+    <section class="content" id="setup" aria-labelledby="setup-title">
+      <h2 id="setup-title">Reproduction Details</h2>
+      <div class="setup-grid">
+        <article class="setup-panel">
+          <h3>Official-Policy Evaluation</h3>
+          <dl class="setup">
+            <div class="setup-row"><dt>Task</dt><dd><code>simple/G1WholebodyBendPickMP-v0</code></dd></div>
+            <div class="setup-row"><dt>Protocol</dt><dd>Level 0/1/2 · 10 episodes each</dd></div>
+            <div class="setup-row"><dt>Evaluator</dt><dd>target lift ≥ 9 cm · success or 400-step limit</dd></div>
+            <div class="setup-row"><dt>Simulator</dt><dd><code>mujoco_isaac</code> · 400-step limit</dd></div>
+            <div class="setup-row"><dt>Versions</dt><dd>SIMPLE <code>edb6ce4</code> · Psi0 <code>437a282</code></dd></div>
+            <div class="setup-row"><dt>Hardware</dt><dd>single 24 GB GPU</dd></div>
+          </dl>
+        </article>
+        <article class="setup-panel">
+          <h3>Independent DP Training &amp; Evaluation</h3>
+          <dl class="setup">
+            <div class="setup-row"><dt>Data</dt><dd>official 100 episodes · 15,509 frames</dd></div>
+            <div class="setup-row"><dt>Batch</dt><dd><code>32 × accumulation 4 = 128</code></dd></div>
+            <div class="setup-row"><dt>Optimization</dt><dd>bf16 · lr <code>1e-4</code> · cosine · 1k warmup</dd></div>
+            <div class="setup-row"><dt>Validation</dt><dd>every 500 steps · 20 batches</dd></div>
+            <div class="setup-row"><dt>Output</dt><dd>every 5k steps · final <code>ckpt_40000</code></dd></div>
+            <div class="setup-row"><dt>Rollout</dt><dd>same 30 episodes · Level 0/1/2 = <code>9/9/9</code></dd></div>
+            <div class="setup-row"><dt>Hardware</dt><dd>single 24 GB GPU</dd></div>
+          </dl>
+        </article>
+      </div>
+      <div class="resource-panel">
+        <b>Resources</b>
+        <p>机器可读的评测结果、训练指标与配置。</p>
+        <div class="resources" aria-label="实验资源">
+          <a href="evidence/summary.json">Official-checkpoint results</a>
+          <a href="evidence/retrained-summary.json">Retrained-DP results</a>
+          <a href="evidence/retrained-manifest.txt">Retrained-DP manifest</a>
+          <a href="evidence/experiment-2a-training-metrics.json">Training metrics</a>
+          <a href="evidence/experiment-2a-run-config.json">Run configuration</a>
+          <a href="evidence/experiment-2a-checkpoint-manifest.txt">Checkpoint manifest</a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="content">SIMPLE BendPick Baseline · Humanoid Loco-Manipulation · July 2026</footer>
+  </main>
+
+  <script type="application/json" id="loss-data">
+    {
+      "train": [[250,0.752349518],[2750,0.028015946],[5250,0.016906924],[7750,0.010771775],[10250,0.008955805],[12750,0.006602715],[15250,0.005889932],[17750,0.004532594],[20250,0.003906474],[22750,0.003100979],[25250,0.002599387],[27750,0.00200434],[30250,0.001582888],[32750,0.001281141],[35250,0.00104774],[37750,0.000929056],[39750,0.000877888]],
+      "validation": [[1,1.198131919],[2501,0.027762754],[5001,0.01460995],[7501,0.01239652],[10001,0.005861913],[12501,0.007839425],[15001,0.003882125],[17501,0.004123659],[20001,0.003026288],[22501,0.003566171],[25001,0.001574456],[27501,0.001723253],[30001,0.001284525],[32501,0.0013027],[35001,0.001294056],[37501,0.000806683],[40000,0.000909591]]
+    }
+  </script>
+  <script>
+    (() => {
+      const data = JSON.parse(document.getElementById("loss-data").textContent);
+      const ns = "http://www.w3.org/2000/svg";
+      const left = 76, right = 872, top = 28, bottom = 356;
+      const yMin = 0.0004, yMax = 1.4;
+      const x = step => left + (step / 40000) * (right - left);
+      const y = value => top + ((Math.log10(yMax) - Math.log10(value)) / (Math.log10(yMax) - Math.log10(yMin))) * (bottom - top);
+      const path = points => points.map((point, index) => `${index ? "L" : "M"}${x(point[0]).toFixed(1)},${y(point[1]).toFixed(1)}`).join(" ");
+      document.getElementById("loss-train").setAttribute("d", path(data.train));
+      document.getElementById("loss-val").setAttribute("d", path(data.validation));
+
+      const grid = document.getElementById("loss-grid");
+      [1, 0.1, 0.01, 0.001].forEach(value => {
+        const line = document.createElementNS(ns, "line");
+        line.setAttribute("x1", left); line.setAttribute("x2", right);
+        line.setAttribute("y1", y(value)); line.setAttribute("y2", y(value));
+        line.setAttribute("class", "chart-grid"); grid.appendChild(line);
+        const label = document.createElementNS(ns, "text");
+        label.setAttribute("x", left - 12); label.setAttribute("y", y(value) + 4);
+        label.setAttribute("text-anchor", "end"); label.setAttribute("class", "chart-axis");
+        label.textContent = value; grid.appendChild(label);
+      });
+      [0, 10000, 20000, 30000, 40000].forEach(step => {
+        const line = document.createElementNS(ns, "line");
+        line.setAttribute("x1", x(step)); line.setAttribute("x2", x(step));
+        line.setAttribute("y1", top); line.setAttribute("y2", bottom);
+        line.setAttribute("class", "chart-grid"); grid.appendChild(line);
+        const label = document.createElementNS(ns, "text");
+        label.setAttribute("x", x(step)); label.setAttribute("y", bottom + 28);
+        label.setAttribute("text-anchor", "middle"); label.setAttribute("class", "chart-axis");
+        label.textContent = step === 0 ? "0" : `${step / 1000}k`; grid.appendChild(label);
+      });
+      const axisLabel = document.createElementNS(ns, "text");
+      axisLabel.setAttribute("x", (left + right) / 2); axisLabel.setAttribute("y", 410);
+      axisLabel.setAttribute("text-anchor", "middle"); axisLabel.setAttribute("class", "chart-axis");
+      axisLabel.textContent = "optimizer step"; grid.appendChild(axisLabel);
+
+      const dots = document.getElementById("loss-val-dots");
+      data.validation.forEach(point => {
+        const dot = document.createElementNS(ns, "circle");
+        dot.setAttribute("cx", x(point[0])); dot.setAttribute("cy", y(point[1]));
+        dot.setAttribute("r", 3.2); dot.setAttribute("class", "chart-dot"); dots.appendChild(dot);
+      });
+    })();
+  </script>
+</body>
+</html>
