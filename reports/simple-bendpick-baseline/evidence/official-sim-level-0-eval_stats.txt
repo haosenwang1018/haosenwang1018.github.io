@@ -1,0 +1,12 @@
+================
+run: simple/G1WholebodyBendPickMP-v0 - dp_g1
+episode_0: True 
+episode_1: True 
+episode_2: True 
+episode_3: True 
+episode_4: True 
+episode_5: True 
+episode_6: False 
+episode_7: True 
+episode_8: True 
+episode_9: True 

@@ -259,6 +259,13 @@
 - License/status: site owner authorized public browser display on 2026-07-21; the Wuji source is MIT licensed; the CR-DAgger code repository is MIT licensed, but no separate license statement was found for the linked Onshape CAD; the internal and Onshape-derived display geometry is published under the site owner's authorization
 - Local processing: browser display meshes are embedded directly in the page; the original ZIP, STEP, and STL files are not published
 
+## `reports/simple-bendpick-baseline/assets/official-sim-level-2-success-episode-0.*`
+
+- Source: self-generated SIMPLE `G1WholebodyBendPickMP-v0` Level 2 rollout from the project's DP-Official+Sim `ckpt_40000` evaluation
+- Reference: `reports/simple-bendpick-baseline/evidence/official-sim-manifest.txt`
+- License/status: project-owned experiment output, authorized for publication on this site
+- Local processing: copied from the verified BigAI evaluation artifact; poster extracted at 1.5 seconds with FFmpeg
+
 ## `will-lunar-surface.jpg`
 
 - Source: NASA Apollo 11 image `AS11-44-6667`

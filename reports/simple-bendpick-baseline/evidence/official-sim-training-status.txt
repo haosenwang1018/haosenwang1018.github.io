@@ -1,0 +1,6 @@
+mode=full-v1
+state=SUCCEEDED
+pid=133392
+started_at=2026-07-20T13:57:18+08:00
+finished_at=2026-07-21T03:32:19+08:00
+exit_code=0
