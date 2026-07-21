@@ -23,6 +23,8 @@
       --family-clamp: #df6bac;
       --family-socket: #8b6fe8;
       --flipbook: #537fa6;
+      --g1-body: #8b8f92;
+      --g1-joint: #f28b32;
     }
 
     html,
@@ -206,7 +208,8 @@
     }
     .assembly-footer[hidden],
     .parts-footer[hidden],
-    .flipbook-footer[hidden] { display: none; }
+    .flipbook-footer[hidden],
+    .g1-footer[hidden] { display: none; }
 
     @media (max-width: 760px) {
       body { overflow: auto; }
@@ -244,6 +247,7 @@
         <button type="button" data-mode="assembly" aria-pressed="true">连接总成</button>
         <button type="button" data-mode="parts" aria-pressed="false">原始 CAD 件</button>
         <button type="button" data-mode="flipbook" aria-pressed="false">CR-DAgger Flip Book</button>
+        <button type="button" data-mode="g1" aria-pressed="false">G1 整机</button>
       </div>
 
       <div class="control-group" id="assembly-controls">
@@ -288,10 +292,24 @@
         </select>
         <button type="button" id="flipbook-reset-view">重置视角</button>
       </div>
+
+      <div class="control-group" id="g1-controls" hidden>
+        <button type="button" id="g1-assemble" aria-pressed="true">装配</button>
+        <button type="button" id="g1-explode" aria-pressed="false">分解</button>
+        <label class="check">
+          <input type="checkbox" id="g1-show-axes">
+          <span>关节轴</span>
+        </label>
+        <label for="g1-part-select" class="sr-only">选择 G1 部件或关节</label>
+        <select id="g1-part-select">
+          <option value="all">整机（正在加载）</option>
+        </select>
+        <button type="button" id="g1-reset-view">重置视角</button>
+      </div>
     </div>
 
     <div class="stage" id="stage">
-      <canvas id="canvas" role="img" aria-label="可拖动、缩放和平移的 G1 连接总成、原始 CAD 零件与 CR-DAgger Flip Book 部件三维视图">浏览器需要支持 WebGL。</canvas>
+      <canvas id="canvas" role="img" aria-label="可拖动、缩放和平移的 G1 连接总成、原始 CAD 零件、CR-DAgger Flip Book 部件与 G1 整机三维视图">浏览器需要支持 WebGL。</canvas>
       <div class="webgl-error" id="webgl-error" hidden>当前浏览器无法启动 3D 视图。</div>
     </div>
 
@@ -328,6 +346,17 @@
         <span class="key"><span class="swatch" style="background: var(--flipbook)"></span>CR-DAgger Onshape 原始部件</span>
       </div>
     </div>
+
+    <div class="footer g1-footer" id="g1-footer" hidden>
+      <div class="footer-line">
+        <span id="g1-detail">宇树 G1 · 29-DOF + Dex3 · 49 个可视部件 · 43 个主动关节</span>
+        <span class="muted" id="g1-status">拖动旋转 · 滚轮缩放 · 点击部件 · 右键平移</span>
+      </div>
+      <div class="legend">
+        <span class="key"><span class="swatch" style="background: var(--g1-body)"></span>Unitree 官方仿真外形</span>
+        <span class="key"><span class="swatch" style="background: var(--g1-joint)"></span>关节位置与旋转轴</span>
+      </div>
+    </div>
   </main>
 
   <script type="module">
@@ -345,14 +374,19 @@
     const assemblyControls = document.getElementById("assembly-controls");
     const partsControls = document.getElementById("parts-controls");
     const flipbookControls = document.getElementById("flipbook-controls");
+    const g1Controls = document.getElementById("g1-controls");
     const assemblyFooter = document.getElementById("assembly-footer");
     const partsFooter = document.getElementById("parts-footer");
     const flipbookFooter = document.getElementById("flipbook-footer");
+    const g1Footer = document.getElementById("g1-footer");
     const assemblyStatus = document.getElementById("assembly-status");
     const partsDetail = document.getElementById("parts-detail");
     const flipbookDetail = document.getElementById("flipbook-detail");
+    const g1Detail = document.getElementById("g1-detail");
+    const g1Status = document.getElementById("g1-status");
     const partSelect = document.getElementById("part-select");
     const flipbookSelect = document.getElementById("flipbook-select");
+    const g1PartSelect = document.getElementById("g1-part-select");
 
     function decodeGeometry(encoded) {
       const binary = atob(encoded);
@@ -375,6 +409,49 @@
       return geometry;
     }
 
+    function decodeG1Model(arrayBuffer) {
+      const bytes = new Uint8Array(arrayBuffer);
+      const view = new DataView(arrayBuffer);
+      if (view.getUint32(0, true) !== 0x46546c67 || view.getUint32(4, true) !== 2) {
+        throw new Error("Invalid G1 GLB");
+      }
+      const jsonLength = view.getUint32(12, true);
+      const jsonStart = 20;
+      const documentData = JSON.parse(new TextDecoder().decode(bytes.subarray(jsonStart, jsonStart + jsonLength)));
+      const binaryHeader = jsonStart + jsonLength;
+      const binaryStart = binaryHeader + 8;
+
+      function readAccessor(accessorIndex) {
+        const accessor = documentData.accessors[accessorIndex];
+        const bufferView = documentData.bufferViews[accessor.bufferView];
+        const byteOffset = binaryStart + (bufferView.byteOffset || 0) + (accessor.byteOffset || 0);
+        const componentCount = accessor.type === "VEC3" ? 3 : 1;
+        const length = accessor.count * componentCount;
+        if (accessor.componentType === 5126) return new Float32Array(arrayBuffer, byteOffset, length).slice();
+        if (accessor.componentType === 5123) return new Uint16Array(arrayBuffer, byteOffset, length).slice();
+        if (accessor.componentType === 5125) return new Uint32Array(arrayBuffer, byteOffset, length).slice();
+        throw new Error(`Unsupported GLB component type ${accessor.componentType}`);
+      }
+
+      const parts = [];
+      const joints = [];
+      documentData.nodes.forEach((node) => {
+        if (node.extras?.kind === "part") {
+          const primitive = documentData.meshes[node.mesh].primitives[0];
+          const geometry = new THREE.BufferGeometry();
+          geometry.setAttribute("position", new THREE.BufferAttribute(readAccessor(primitive.attributes.POSITION), 3));
+          geometry.setIndex(new THREE.BufferAttribute(readAccessor(primitive.indices), 1));
+          geometry.computeVertexNormals();
+          geometry.computeBoundingBox();
+          geometry.computeBoundingSphere();
+          parts.push({ ...node.extras, geometry });
+        } else if (node.extras?.kind === "joint") {
+          joints.push({ ...node.extras, position: node.translation || node.extras.position });
+        }
+      });
+      return { parts, joints };
+    }
+
     let renderer;
     try {
       renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -394,7 +471,7 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.minDistance = 25;
-    controls.maxDistance = 1200;
+    controls.maxDistance = 5000;
 
     scene.add(new THREE.HemisphereLight(0xffffff, 0xd7d7d7, 2.2));
     const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
@@ -478,17 +555,135 @@
       [-90, -78, 0], [-90, 0, 0], [-90, 78, 0], [75, 0, 0]
     ];
 
+    const g1LightMaterial = new THREE.MeshStandardMaterial({
+      color: 0x9da2a5,
+      roughness: 0.58,
+      metalness: 0.12
+    });
+    const g1DarkMaterial = new THREE.MeshStandardMaterial({
+      color: 0x4d5154,
+      roughness: 0.68,
+      metalness: 0.08
+    });
+    const g1SelectedMaterial = new THREE.MeshStandardMaterial({
+      color: 0x2f91ef,
+      roughness: 0.5,
+      metalness: 0.08
+    });
+    const g1JointMaterial = new THREE.MeshStandardMaterial({ color: 0xf28b32, roughness: 0.48 });
+    const g1AxisMaterial = new THREE.LineBasicMaterial({ color: 0xf28b32, transparent: true, opacity: 0.92 });
+    const g1Group = new THREE.Group();
+    const g1AxesGroup = new THREE.Group();
+    g1Group.scale.setScalar(1000);
+    g1Group.add(g1AxesGroup);
+    scene.add(g1Group);
+    const g1Parts = [];
+    const g1Joints = [];
+    let g1Loaded = false;
+    let g1Exploded = false;
+    let g1Selected = null;
+
+    function buildG1Select() {
+      g1PartSelect.replaceChildren(new Option("整机（49 部件 / 43 关节）", "all"));
+      const categoryOrder = ["head", "torso", "waist", "pelvis", "arms", "wrists", "hands", "legs", "feet"];
+      const categoryLabels = {
+        head: "头部",
+        torso: "躯干",
+        waist: "腰部",
+        pelvis: "骨盆",
+        arms: "手臂",
+        wrists: "手腕",
+        hands: "Dex3 手",
+        legs: "腿部",
+        feet: "足部"
+      };
+      categoryOrder.forEach((category) => {
+        const records = g1Parts
+          .filter((record) => record.category === category)
+          .sort((a, b) => a.cn.localeCompare(b.cn, "zh-CN"));
+        if (!records.length) return;
+        const group = document.createElement("optgroup");
+        group.label = categoryLabels[category];
+        records.forEach((record) => group.appendChild(new Option(`${record.cn} · ${record.meshName}`, `part:${record.meshName}`)));
+        g1PartSelect.appendChild(group);
+      });
+      const jointGroup = document.createElement("optgroup");
+      jointGroup.label = "主动关节（43）";
+      g1Joints.forEach((record) => jointGroup.appendChild(new Option(`${record.cn} · ${record.name}`, `joint:${record.name}`)));
+      g1PartSelect.appendChild(jointGroup);
+    }
+
+    function buildG1Model(model) {
+      model.parts.forEach((data) => {
+        const baseMaterial = data.shade === "dark" ? g1DarkMaterial : g1LightMaterial;
+        const mesh = meshWithEdges(data.geometry, baseMaterial, 34);
+        const record = { ...data, id: `part:${data.meshName}`, kind: "part", mesh, baseMaterial };
+        mesh.name = data.meshName;
+        mesh.userData.record = record;
+        g1Parts.push(record);
+        g1Group.add(mesh);
+      });
+
+      const localBox = new THREE.Box3();
+      g1Parts.forEach((record) => localBox.union(record.mesh.geometry.boundingBox));
+      const center = localBox.getCenter(new THREE.Vector3());
+      g1Group.position.set(-center.x * 1000, -localBox.min.y * 1000, -center.z * 1000);
+      g1Parts.forEach((record, index) => {
+        const partCenter = record.mesh.geometry.boundingBox.getCenter(new THREE.Vector3());
+        const direction = partCenter.sub(center);
+        direction.y *= 0.55;
+        if (direction.lengthSq() < 1e-7) direction.set(index % 2 ? 1 : -1, 0.25, index % 3 ? 0.25 : -0.25);
+        const radial = 0.15 + Math.min(0.10, direction.length() * 0.12);
+        record.explodeOffset = direction.normalize().multiplyScalar(radial);
+      });
+
+      model.joints.forEach((data) => {
+        const marker = new THREE.Group();
+        marker.position.set(...data.position);
+        const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.009, 14, 10), g1JointMaterial);
+        const record = { ...data, id: `joint:${data.name}`, kind: "joint", mesh: sphere, marker };
+        sphere.userData.record = record;
+        marker.add(sphere);
+        const axis = new THREE.Vector3(...data.axis).normalize();
+        const axisGeometry = new THREE.BufferGeometry().setFromPoints([
+          axis.clone().multiplyScalar(-0.042),
+          axis.clone().multiplyScalar(0.042)
+        ]);
+        marker.add(new THREE.Line(axisGeometry, g1AxisMaterial));
+        g1AxesGroup.add(marker);
+        g1Joints.push(record);
+      });
+      g1AxesGroup.visible = false;
+      g1Loaded = true;
+      buildG1Select();
+      g1Detail.textContent = "宇树 G1 · 29-DOF + Dex3 · 49 个可视部件 · 43 个主动关节";
+      g1Status.textContent = "拖动旋转 · 滚轮缩放 · 点击部件 · 右键平移";
+      if (activeMode === "g1") fitCurrent();
+    }
+
+    fetch("../../assets/g1/g1-29dof-dex3.glb")
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.arrayBuffer();
+      })
+      .then(decodeG1Model)
+      .then(buildG1Model)
+      .catch((error) => {
+        g1Detail.textContent = "G1 模型加载失败";
+        g1Status.textContent = error.message;
+      });
+
     let activeMode = "assembly";
     let exploded = false;
 
-    function fitBox(box, padding = 1.28) {
+    function fitBox(box, padding = 1.28, viewDirection = null) {
       if (box.isEmpty()) return;
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
       const maxDimension = Math.max(size.x, size.y, size.z, 1);
       const verticalFov = THREE.MathUtils.degToRad(camera.fov);
       const distance = maxDimension / (2 * Math.tan(verticalFov / 2)) * padding;
-      const direction = new THREE.Vector3(0.9, -1.15, 0.8).normalize();
+      const direction = (viewDirection || new THREE.Vector3(0.9, -1.15, 0.8)).clone().normalize();
       camera.position.copy(center).addScaledVector(direction, distance);
       camera.near = Math.max(distance / 1200, 0.05);
       camera.far = Math.max(distance * 12, 1200);
@@ -509,12 +704,19 @@
           if (record.mesh.visible) box.expandByObject(record.mesh);
         });
         fitBox(box, 1.25);
-      } else {
+      } else if (activeMode === "flipbook") {
         const box = new THREE.Box3();
         flipbookRecords.forEach((record) => {
           if (record.mesh.visible) box.expandByObject(record.mesh);
         });
         fitBox(box, 1.28);
+      } else if (activeMode === "g1") {
+        const box = new THREE.Box3();
+        g1Parts.forEach((record) => {
+          if (record.mesh.visible) box.expandByObject(record.mesh);
+        });
+        if (document.getElementById("g1-show-axes").checked) box.expandByObject(g1AxesGroup);
+        fitBox(box, g1Exploded ? 1.3 : 1.18, new THREE.Vector3(1.35, 0.16, 2.15));
       }
     }
 
@@ -572,21 +774,61 @@
       if (activeMode === "flipbook") fitCurrent();
     }
 
+    function setG1Exploded(next) {
+      g1Exploded = next;
+      g1Parts.forEach((record) => {
+        record.mesh.position.copy(record.explodeOffset || new THREE.Vector3()).multiplyScalar(g1Exploded ? 1 : 0);
+      });
+      document.getElementById("g1-assemble").setAttribute("aria-pressed", String(!g1Exploded));
+      document.getElementById("g1-explode").setAttribute("aria-pressed", String(g1Exploded));
+      g1Status.textContent = g1Exploded
+        ? "分解视图 · 点击或下拉选择部件"
+        : "拖动旋转 · 滚轮缩放 · 点击部件 · 右键平移";
+      if (activeMode === "g1" && g1Loaded) fitCurrent();
+    }
+
+    function showG1Selection(id) {
+      if (g1Selected?.kind === "part") g1Selected.mesh.material = g1Selected.baseMaterial;
+      if (g1Selected?.kind === "joint") g1Selected.mesh.scale.setScalar(1);
+      g1Selected = null;
+      if (id === "all") {
+        g1Detail.textContent = "宇树 G1 · 29-DOF + Dex3 · 49 个可视部件 · 43 个主动关节";
+        return;
+      }
+      const record = [...g1Parts, ...g1Joints].find((item) => item.id === id);
+      if (!record) return;
+      g1Selected = record;
+      if (record.kind === "part") {
+        record.mesh.material = g1SelectedMaterial;
+        g1Detail.textContent = `${record.cn} · ${record.meshName} · ${record.parent} → ${record.body} · ${record.joint}`;
+      } else {
+        const axesToggle = document.getElementById("g1-show-axes");
+        axesToggle.checked = true;
+        g1AxesGroup.visible = true;
+        record.mesh.scale.setScalar(1.45);
+        g1Detail.textContent = `${record.cn} · ${record.name} · ${record.parent} → ${record.child} · axis [${record.axis.join(", ")}] · range ${record.range} rad`;
+      }
+    }
+
     function setMode(mode) {
       activeMode = mode;
       const assemblyActive = mode === "assembly";
       const partsActive = mode === "parts";
       const flipbookActive = mode === "flipbook";
+      const g1Active = mode === "g1";
       assemblyGroup.visible = assemblyActive;
       grid.visible = assemblyActive;
       partsGroup.visible = partsActive;
       flipbookGroup.visible = flipbookActive;
+      g1Group.visible = g1Active;
       assemblyControls.hidden = !assemblyActive;
       partsControls.hidden = !partsActive;
       flipbookControls.hidden = !flipbookActive;
+      g1Controls.hidden = !g1Active;
       assemblyFooter.hidden = !assemblyActive;
       partsFooter.hidden = !partsActive;
       flipbookFooter.hidden = !flipbookActive;
+      g1Footer.hidden = !g1Active;
       document.querySelectorAll("[data-mode]").forEach((button) => {
         button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
       });
@@ -608,8 +850,20 @@
     });
     partSelect.addEventListener("change", () => showPartSelection(partSelect.value));
     flipbookSelect.addEventListener("change", () => showFlipbookSelection(flipbookSelect.value));
+    g1PartSelect.addEventListener("change", () => showG1Selection(g1PartSelect.value));
     document.getElementById("reset-view").addEventListener("click", fitCurrent);
     document.getElementById("flipbook-reset-view").addEventListener("click", fitCurrent);
+    document.getElementById("g1-assemble").addEventListener("click", () => setG1Exploded(false));
+    document.getElementById("g1-explode").addEventListener("click", () => setG1Exploded(true));
+    document.getElementById("g1-show-axes").addEventListener("change", (event) => {
+      g1AxesGroup.visible = event.target.checked;
+      if (!event.target.checked && g1Selected?.kind === "joint") {
+        g1PartSelect.value = "all";
+        showG1Selection("all");
+      }
+      if (activeMode === "g1" && g1Loaded) fitCurrent();
+    });
+    document.getElementById("g1-reset-view").addEventListener("click", fitCurrent);
     canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
     const raycaster = new THREE.Raycaster();
@@ -623,13 +877,17 @@
         ? partSelect
         : activeMode === "flipbook"
           ? flipbookSelect
-          : null;
+          : activeMode === "g1"
+            ? g1PartSelect
+            : null;
       const activeRecords = activeMode === "parts"
         ? partRecords
         : activeMode === "flipbook"
           ? flipbookRecords
-          : [];
-      if (!activeSelect || activeSelect.value !== "all" || !pointerStart) return;
+          : activeMode === "g1"
+            ? [...g1Parts, ...(g1AxesGroup.visible ? g1Joints : [])]
+            : [];
+      if (!activeSelect || (activeMode !== "g1" && activeSelect.value !== "all") || !pointerStart) return;
       const moved = Math.hypot(event.clientX - pointerStart[0], event.clientY - pointerStart[1]);
       pointerStart = null;
       if (moved > 4) return;
@@ -642,8 +900,10 @@
         activeSelect.value = hits[0].object.userData.record.id;
         if (activeMode === "parts") {
           showPartSelection(activeSelect.value);
-        } else {
+        } else if (activeMode === "flipbook") {
           showFlipbookSelection(activeSelect.value);
+        } else {
+          showG1Selection(activeSelect.value);
         }
       }
     });
@@ -665,6 +925,8 @@
     setExploded(false);
     showPartSelection("all");
     showFlipbookSelection("all");
+    setG1Exploded(false);
+    showG1Selection("all");
     setMode("assembly");
 
     function animate() {

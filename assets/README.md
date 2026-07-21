@@ -259,6 +259,13 @@
 - License/status: site owner authorized public browser display on 2026-07-21; the Wuji source is MIT licensed; the CR-DAgger code repository is MIT licensed, but no separate license statement was found for the linked Onshape CAD; the internal and Onshape-derived display geometry is published under the site owner's authorization
 - Local processing: browser display meshes are embedded directly in the page; the original ZIP, STEP, and STL files are not published
 
+## `g1/g1-29dof-dex3.glb`
+
+- Source: Unitree Robotics' public G1 description meshes, assembled with the project's current SIMPLE `g1_29dof_wholebody_dex3` MJCF link and joint tree
+- Official reference: https://github.com/unitreerobotics/unitree_ros/tree/master/robots/g1_description
+- License/status: Unitree G1 description is redistributed under its BSD 3-Clause license; this processed browser model is for visualization and simulation learning, not manufacturing dimensions
+- Local processing: 49 visual link meshes were transformed into the MJCF zero pose, converted to Three.js coordinates, simplified to 38,321 display triangles, and packed as a 468 KB GLB; 43 active-joint positions, axes, and ranges are retained as metadata
+
 ## `reports/simple-bendpick-baseline/assets/official-sim-level-2-success-episode-0.*`
 
 - Source: self-generated SIMPLE `G1WholebodyBendPickMP-v0` Level 2 rollout from the project's DP-Official+Sim `ckpt_40000` evaluation
