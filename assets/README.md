@@ -249,10 +249,15 @@
 
 ## `works/g1-connector/index.html` embedded CAD meshes
 
-- Source: the project owner's current Hardware CAD package, the locally generated G1 bridge, and Wuji Technology's public G1 docking adapter
+- Source: the project owner's current Hardware CAD package, the locally generated G1 bridge, Wuji Technology's public G1 docking adapter, and four CR-DAgger Flip Book parts exported from their linked Onshape documents
 - Wuji reference: https://github.com/wuji-technology/wuji-description/blob/main/hand/attachment/unitree-g1-attachment/unitree-g1-docking-adapter.stl
-- License/status: site owner authorized public browser display on 2026-07-21; the Wuji source is MIT licensed; the internal project geometry is published under the site owner's authorization
-- Local processing: reduced triangle meshes are embedded directly in the page; the original ZIP, STEP, and STL files are not published
+- CR-DAgger project: https://compliant-residual-dagger.github.io/
+- CR-DAgger EoAT Body: https://cad.onshape.com/documents/a0f9a4d1c01c7294b56fdd35/w/866d4f143465e1ce44d86a9f/e/3c981685d8ca691397bc7100
+- CR-DAgger Force Sensor Base Mount: https://cad.onshape.com/documents/54c0cc61c90c032a04bf0f1f/w/af3db96677137d6c1b925e8a/e/c39f4bf08b16d22867b46a6f
+- CR-DAgger Blade Mount: https://cad.onshape.com/documents/991d738d6bc8d4b5e76c1407/w/e51a9882b85005b679a5d394/e/8bec238086a2e087b107f6ab
+- CR-DAgger Blade Finger: https://cad.onshape.com/documents/166ad0386dbe11b09e7fc0b5/w/9bdd077af02ae3efcb98c33b/e/c21950feb8d2cc3d0dd7eecd
+- License/status: site owner authorized public browser display on 2026-07-21; the Wuji source is MIT licensed; the CR-DAgger code repository is MIT licensed, but no separate license statement was found for the linked Onshape CAD; the internal and Onshape-derived display geometry is published under the site owner's authorization
+- Local processing: browser display meshes are embedded directly in the page; the original ZIP, STEP, and STL files are not published
 
 ## `will-lunar-surface.jpg`
 

@@ -8,7 +8,19 @@ Wuji G1 docking adapter mesh
 Copyright (c) 2025 Wuji Technology
 https://github.com/wuji-technology/wuji-description
 
-Both are provided under the MIT License:
+CR-DAgger Flip Book display meshes
+Project: https://compliant-residual-dagger.github.io/
+EoAT Body: https://cad.onshape.com/documents/a0f9a4d1c01c7294b56fdd35/w/866d4f143465e1ce44d86a9f/e/3c981685d8ca691397bc7100
+Force Sensor Base Mount: https://cad.onshape.com/documents/54c0cc61c90c032a04bf0f1f/w/af3db96677137d6c1b925e8a/e/c39f4bf08b16d22867b46a6f
+Blade Mount: https://cad.onshape.com/documents/991d738d6bc8d4b5e76c1407/w/e51a9882b85005b679a5d394/e/8bec238086a2e087b107f6ab
+Blade Finger: https://cad.onshape.com/documents/166ad0386dbe11b09e7fc0b5/w/9bdd077af02ae3efcb98c33b/e/c21950feb8d2cc3d0dd7eecd
+
+The CR-DAgger code repository is MIT licensed. No separate license statement
+was found for the linked Onshape CAD. This page embeds processed display
+meshes under the site owner's authorization; it does not distribute the raw
+Onshape STL exports.
+
+Three.js, OrbitControls, and the Wuji mesh are provided under the MIT License:
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
