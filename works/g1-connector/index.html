@@ -23,6 +23,11 @@
       --family-clamp: #df6bac;
       --family-socket: #8b6fe8;
       --flipbook: #537fa6;
+      --flipbook-body: #2f91ef;
+      --flipbook-base: #f28b32;
+      --flipbook-sensor: #60656a;
+      --flipbook-mount: #59c878;
+      --flipbook-finger: #df6bac;
       --g1-body: #8b8f92;
       --g1-joint: #f28b32;
     }
@@ -282,6 +287,8 @@
       </div>
 
       <div class="control-group" id="flipbook-controls" hidden>
+        <button type="button" id="flipbook-assemble" aria-pressed="true">装配</button>
+        <button type="button" id="flipbook-explode" aria-pressed="false">分解</button>
         <label for="flipbook-select" class="sr-only">选择 CR-DAgger Flip Book 部件</label>
         <select id="flipbook-select">
           <option value="all">全部四件</option>
@@ -339,11 +346,15 @@
 
     <div class="footer flipbook-footer" id="flipbook-footer" hidden>
       <div class="footer-line">
-        <span id="flipbook-detail">全部 4 个原始部件 · 等比例排列</span>
-        <span class="muted">单击部件单独查看 · 拖动旋转 · 滚轮缩放 · 右键平移</span>
+        <span id="flipbook-detail">四个 Onshape 原始部件 · 35,714 三角面 · 未减面</span>
+        <span class="muted" id="flipbook-status">装配位姿为接口推断 · 非官方装配定义</span>
       </div>
       <div class="legend">
-        <span class="key"><span class="swatch" style="background: var(--flipbook)"></span>CR-DAgger Onshape 原始部件</span>
+        <span class="key"><span class="swatch" style="background: var(--flipbook-body)"></span>[9] EoAT Body</span>
+        <span class="key"><span class="swatch" style="background: var(--flipbook-base)"></span>[10] Sensor Base</span>
+        <span class="key"><span class="swatch" style="background: var(--flipbook-sensor)"></span>Mini45 示意</span>
+        <span class="key"><span class="swatch" style="background: var(--flipbook-mount)"></span>[11] Blade Mount</span>
+        <span class="key"><span class="swatch" style="background: var(--flipbook-finger)"></span>[12] Blade Finger</span>
       </div>
     </div>
 
@@ -382,6 +393,7 @@
     const assemblyStatus = document.getElementById("assembly-status");
     const partsDetail = document.getElementById("parts-detail");
     const flipbookDetail = document.getElementById("flipbook-detail");
+    const flipbookStatus = document.getElementById("flipbook-status");
     const g1Detail = document.getElementById("g1-detail");
     const g1Status = document.getElementById("g1-status");
     const partSelect = document.getElementById("part-select");
@@ -539,23 +551,50 @@
       [-55, -105, 0], [55, -105, 0]
     ];
 
-    const flipbookMaterial = new THREE.MeshStandardMaterial({
-      color: 0x537fa6,
-      roughness: 0.72,
-      metalness: 0.04
-    });
+    const flipbookColors = [0x2f91ef, 0xf28b32, 0x59c878, 0xdf6bac];
     const flipbookGroup = new THREE.Group();
     scene.add(flipbookGroup);
-    flipbookRecords.forEach((record) => {
-      const mesh = meshWithEdges(decodeGeometry(record.encoded), flipbookMaterial);
+    flipbookRecords.forEach((record, index) => {
+      const material = new THREE.MeshStandardMaterial({
+        color: flipbookColors[index],
+        roughness: 0.72,
+        metalness: 0.04
+      });
+      const mesh = meshWithEdges(decodeGeometry(record.encoded), material);
       mesh.name = record.id;
       mesh.userData.record = record;
       record.mesh = mesh;
       flipbookGroup.add(mesh);
     });
-    const flipbookGalleryPositions = [
-      [-90, -78, 0], [-90, 0, 0], [-90, 78, 0], [75, 0, 0]
-    ];
+    const mini45Material = new THREE.MeshStandardMaterial({
+      color: 0x60656a,
+      roughness: 0.34,
+      metalness: 0.72
+    });
+    const flipbookMini45 = meshWithEdges(
+      new THREE.CylinderGeometry(22.5, 22.5, 15.7, 64),
+      mini45Material,
+      24
+    );
+    flipbookMini45.name = "ATI Mini45 schematic";
+    flipbookGroup.add(flipbookMini45);
+
+    const flipbookPoses = {
+      assembled: {
+        f0: { position: [0, 20.5, 25.5], rotation: [0, 0, 0] },
+        f1: { position: [0, -14.5, 0], rotation: [0, 0, 0] },
+        sensor: { position: [0, -26.85, 0], rotation: [0, 0, 0] },
+        f2: { position: [0, -58.45, 0], rotation: [0, 0, 0] },
+        f3: { position: [0, -199.7, -20], rotation: [0, 0, Math.PI] }
+      },
+      exploded: {
+        f0: { position: [0, 60, 25.5], rotation: [0, 0, 0] },
+        f1: { position: [0, -35, 0], rotation: [0, 0, 0] },
+        sensor: { position: [0, -85, 0], rotation: [0, 0, 0] },
+        f2: { position: [0, -145, 0], rotation: [0, 0, 0] },
+        f3: { position: [0, -300, -20], rotation: [0, 0, Math.PI] }
+      }
+    };
 
     const g1LightMaterial = new THREE.MeshPhysicalMaterial({
       color: 0xb8bdc2,
@@ -700,6 +739,7 @@
 
     let activeMode = "assembly";
     let exploded = false;
+    let flipbookExploded = false;
 
     function fitBox(box, padding = 1.28, viewDirection = null) {
       if (box.isEmpty()) return;
@@ -734,7 +774,8 @@
         flipbookRecords.forEach((record) => {
           if (record.mesh.visible) box.expandByObject(record.mesh);
         });
-        fitBox(box, 1.28);
+        if (flipbookMini45.visible) box.expandByObject(flipbookMini45);
+        fitBox(box, flipbookExploded ? 1.25 : 1.18, new THREE.Vector3(1.2, 0.12, 0.52));
       } else if (activeMode === "g1") {
         const box = new THREE.Box3();
         g1Parts.forEach((record) => {
@@ -778,23 +819,50 @@
       if (activeMode === "parts") fitCurrent();
     }
 
+    function applyFlipbookPose() {
+      const pose = flipbookPoses[flipbookExploded ? "exploded" : "assembled"];
+      flipbookRecords.forEach((record) => {
+        const transform = pose[record.id];
+        record.mesh.visible = true;
+        record.mesh.position.set(...transform.position);
+        record.mesh.rotation.set(...transform.rotation);
+      });
+      flipbookMini45.visible = true;
+      flipbookMini45.position.set(...pose.sensor.position);
+      flipbookMini45.rotation.set(...pose.sensor.rotation);
+      document.getElementById("flipbook-assemble").setAttribute("aria-pressed", String(!flipbookExploded));
+      document.getElementById("flipbook-explode").setAttribute("aria-pressed", String(flipbookExploded));
+      flipbookDetail.textContent = "四个 Onshape 原始部件 · 35,714 三角面 · 未减面";
+      flipbookStatus.textContent = flipbookExploded
+        ? "分解顺序：[9] → [10] → Mini45 → [11] → [12]"
+        : "机器人侧 → [9] → [10] → Mini45 → [11] → [12] → 书 · 位姿为接口推断";
+    }
+
+    function setFlipbookExploded(next) {
+      flipbookExploded = next;
+      flipbookSelect.value = "all";
+      applyFlipbookPose();
+      if (activeMode === "flipbook") fitCurrent();
+    }
+
     function showFlipbookSelection(id) {
       if (id === "all") {
-        flipbookRecords.forEach((record, index) => {
-          record.mesh.visible = true;
-          record.mesh.position.set(...flipbookGalleryPositions[index]);
-        });
-        flipbookDetail.textContent = "全部 4 个原始部件 · 等比例排列";
+        applyFlipbookPose();
       } else {
+        flipbookMini45.visible = false;
         flipbookRecords.forEach((record) => {
           const selected = record.id === id;
           record.mesh.visible = selected;
           record.mesh.position.set(0, 0, 0);
+          record.mesh.rotation.set(0, 0, 0);
           if (selected) {
             const size = record.extents.map((value) => Number(value).toFixed(1)).join(" × ");
-            flipbookDetail.textContent = `${record.label} · ${size} mm`;
+            flipbookDetail.textContent = `${record.label} · ${size} mm · ${record.faces.toLocaleString()} 三角面`;
           }
         });
+        document.getElementById("flipbook-assemble").setAttribute("aria-pressed", "false");
+        document.getElementById("flipbook-explode").setAttribute("aria-pressed", "false");
+        flipbookStatus.textContent = "原始 Onshape 导出几何 · 未减面 · 拖动旋转 · 滚轮缩放";
       }
       if (activeMode === "flipbook") fitCurrent();
     }
@@ -889,6 +957,8 @@
     });
     partSelect.addEventListener("change", () => showPartSelection(partSelect.value));
     flipbookSelect.addEventListener("change", () => showFlipbookSelection(flipbookSelect.value));
+    document.getElementById("flipbook-assemble").addEventListener("click", () => setFlipbookExploded(false));
+    document.getElementById("flipbook-explode").addEventListener("click", () => setFlipbookExploded(true));
     g1PartSelect.addEventListener("change", () => showG1Selection(g1PartSelect.value));
     document.getElementById("reset-view").addEventListener("click", fitCurrent);
     document.getElementById("flipbook-reset-view").addEventListener("click", fitCurrent);
@@ -972,7 +1042,7 @@
     resize();
     setExploded(false);
     showPartSelection("all");
-    showFlipbookSelection("all");
+    setFlipbookExploded(false);
     setG1Exploded(false);
     showG1Selection("all");
     setMode("assembly");

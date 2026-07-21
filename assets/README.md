@@ -257,7 +257,7 @@
 - CR-DAgger Blade Mount: https://cad.onshape.com/documents/991d738d6bc8d4b5e76c1407/w/e51a9882b85005b679a5d394/e/8bec238086a2e087b107f6ab
 - CR-DAgger Blade Finger: https://cad.onshape.com/documents/166ad0386dbe11b09e7fc0b5/w/9bdd077af02ae3efcb98c33b/e/c21950feb8d2cc3d0dd7eecd
 - License/status: site owner authorized public browser display on 2026-07-21; the Wuji source is MIT licensed; the CR-DAgger code repository is MIT licensed, but no separate license statement was found for the linked Onshape CAD; the internal and Onshape-derived display geometry is published under the site owner's authorization
-- Local processing: browser display meshes are embedded directly in the page; the original ZIP, STEP, and STL files are not published
+- Local processing: browser display meshes are embedded directly in the page; the original ZIP, STEP, and STL files are not published. The four CR-DAgger meshes retain all 35,714 source triangles. Their interactive assembly pose is inferred from the exported interface planes and bounding coordinates, and the gray ATI Mini45 is a dimensioned schematic placeholder rather than an official sensor CAD model.
 
 ## `g1/g1-29dof-dex3.glb`
 
