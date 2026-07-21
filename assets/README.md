@@ -264,7 +264,7 @@
 - Source: Unitree Robotics' public G1 description meshes, assembled with the project's current SIMPLE `g1_29dof_wholebody_dex3` MJCF link and joint tree
 - Official reference: https://github.com/unitreerobotics/unitree_ros/tree/master/robots/g1_description
 - License/status: Unitree G1 description is redistributed under its BSD 3-Clause license; this processed browser model is for visualization and simulation learning, not manufacturing dimensions
-- Local processing: 49 visual link meshes were transformed into the MJCF zero pose, converted to Three.js coordinates, simplified to 38,321 display triangles, and packed as a 468 KB GLB; 43 active-joint positions, axes, and ranges are retained as metadata
+- Local processing: 49 visual link meshes were transformed into the MJCF zero pose and converted to Three.js coordinates without triangle reduction; the 615,678 source triangles are packed as a 7.1 MB GLB, while 43 active-joint positions, axes, and ranges remain as metadata. The web viewer adds a display-only PBR material and lighting layer; these are not manufacturer-supplied surface textures.
 
 ## `reports/simple-bendpick-baseline/assets/official-sim-level-2-success-episode-0.*`
 

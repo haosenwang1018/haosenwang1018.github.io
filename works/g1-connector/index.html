@@ -349,7 +349,7 @@
 
     <div class="footer g1-footer" id="g1-footer" hidden>
       <div class="footer-line">
-        <span id="g1-detail">宇树 G1 · 29-DOF + Dex3 · 49 个可视部件 · 43 个主动关节</span>
+        <span id="g1-detail">宇树 G1 · 公开 STL 原始精度 · 615,678 三角面 · 49 个可视部件 · 43 个主动关节</span>
         <span class="muted" id="g1-status">选择或点击零件单独查看 · 拖动旋转 · 滚轮缩放</span>
       </div>
       <div class="legend">
@@ -464,6 +464,8 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.setClearColor(0xffffff, 0);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 2400);
@@ -555,15 +557,19 @@
       [-90, -78, 0], [-90, 0, 0], [-90, 78, 0], [75, 0, 0]
     ];
 
-    const g1LightMaterial = new THREE.MeshStandardMaterial({
-      color: 0x9da2a5,
-      roughness: 0.58,
-      metalness: 0.12
+    const g1LightMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xb8bdc2,
+      roughness: 0.34,
+      metalness: 0.32,
+      clearcoat: 0.22,
+      clearcoatRoughness: 0.3
     });
-    const g1DarkMaterial = new THREE.MeshStandardMaterial({
-      color: 0x4d5154,
-      roughness: 0.68,
-      metalness: 0.08
+    const g1DarkMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0x353a3f,
+      roughness: 0.42,
+      metalness: 0.2,
+      clearcoat: 0.14,
+      clearcoatRoughness: 0.38
     });
     const g1JointMaterial = new THREE.MeshStandardMaterial({ color: 0xf28b32, roughness: 0.48 });
     const g1AxisMaterial = new THREE.LineBasicMaterial({ color: 0xf28b32, transparent: true, opacity: 0.92 });
@@ -572,6 +578,29 @@
     g1Group.scale.setScalar(1000);
     g1Group.add(g1AxesGroup);
     scene.add(g1Group);
+    const g1KeyLight = new THREE.DirectionalLight(0xffffff, 2.8);
+    g1KeyLight.position.set(1600, 2400, 1800);
+    g1KeyLight.castShadow = true;
+    g1KeyLight.shadow.mapSize.set(2048, 2048);
+    Object.assign(g1KeyLight.shadow.camera, { left: -950, right: 950, top: 1750, bottom: -300, near: 100, far: 6000 });
+    g1KeyLight.shadow.camera.updateProjectionMatrix();
+    g1KeyLight.shadow.bias = -0.00015;
+    const g1LightTarget = new THREE.Object3D();
+    g1LightTarget.position.set(0, 650, 0);
+    scene.add(g1LightTarget);
+    g1KeyLight.target = g1LightTarget;
+    scene.add(g1KeyLight);
+    const g1RimLight = new THREE.DirectionalLight(0xdbe9f6, 1.35);
+    g1RimLight.position.set(-1300, 1100, -900);
+    scene.add(g1RimLight);
+    const g1Ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(2600, 2200),
+      new THREE.ShadowMaterial({ color: 0x000000, opacity: 0.14 })
+    );
+    g1Ground.rotation.x = -Math.PI / 2;
+    g1Ground.position.y = -3;
+    g1Ground.receiveShadow = true;
+    scene.add(g1Ground);
     const g1Parts = [];
     const g1Joints = [];
     let g1Loaded = false;
@@ -611,7 +640,8 @@
     function buildG1Model(model) {
       model.parts.forEach((data) => {
         const baseMaterial = data.shade === "dark" ? g1DarkMaterial : g1LightMaterial;
-        const mesh = meshWithEdges(data.geometry, baseMaterial, 34);
+        const mesh = new THREE.Mesh(data.geometry, baseMaterial);
+        mesh.castShadow = true;
         const record = { ...data, id: `part:${data.meshName}`, kind: "part", mesh, baseMaterial };
         mesh.name = data.meshName;
         mesh.userData.record = record;
@@ -651,7 +681,7 @@
       g1AxesGroup.visible = false;
       g1Loaded = true;
       buildG1Select();
-      g1Detail.textContent = "宇树 G1 · 29-DOF + Dex3 · 49 个可视部件 · 43 个主动关节";
+      g1Detail.textContent = "宇树 G1 · 公开 STL 原始精度 · 615,678 三角面 · 49 个可视部件 · 43 个主动关节";
       g1Status.textContent = "选择或点击零件单独查看 · 拖动旋转 · 滚轮缩放";
       if (activeMode === "g1") fitCurrent();
     }
@@ -786,7 +816,7 @@
         record.mesh.position.copy(record.explodeOffset || new THREE.Vector3()).multiplyScalar(g1Exploded ? 1 : 0);
       });
       if (id === "all") {
-        g1Detail.textContent = "宇树 G1 · 29-DOF + Dex3 · 49 个可视部件 · 43 个主动关节";
+        g1Detail.textContent = "宇树 G1 · 公开 STL 原始精度 · 615,678 三角面 · 49 个可视部件 · 43 个主动关节";
         g1Status.textContent = g1Exploded
           ? "分解视图 · 选择或点击零件单独查看"
           : "选择或点击零件单独查看 · 拖动旋转 · 滚轮缩放";
@@ -827,6 +857,9 @@
       partsGroup.visible = partsActive;
       flipbookGroup.visible = flipbookActive;
       g1Group.visible = g1Active;
+      g1KeyLight.visible = g1Active;
+      g1RimLight.visible = g1Active;
+      g1Ground.visible = g1Active;
       assemblyControls.hidden = !assemblyActive;
       partsControls.hidden = !partsActive;
       flipbookControls.hidden = !flipbookActive;
