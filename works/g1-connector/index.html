@@ -17,6 +17,8 @@
       --line-soft: #eeeeee;
       --blue: #2f91ef;
       --orange: #f28b32;
+      --camera: #207bc3;
+      --sensor: #60656a;
       --family-a: #2f91ef;
       --family-b: #f28b32;
       --family-flange: #59c878;
@@ -260,11 +262,19 @@
         <button type="button" id="explode" aria-pressed="false">分解</button>
         <label class="check">
           <input type="checkbox" id="show-bridge" checked>
-          <span>蓝色连接件</span>
+          <span>V1.1 连接器</span>
         </label>
         <label class="check">
           <input type="checkbox" id="show-adapter" checked>
-          <span>下方 G1 件</span>
+          <span>Wuji G1 Adapter</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="show-camera" checked>
+          <span>蓝色相机支架</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="show-sensor" checked>
+          <span>六孔力传感器</span>
         </label>
       </div>
 
@@ -323,10 +333,12 @@
     <div class="footer assembly-footer" id="assembly-footer">
       <div class="footer-line">
         <div class="legend">
-          <span class="key"><span class="swatch" style="background: var(--blue)"></span>新建传感器连接件</span>
+          <span class="key"><span class="swatch" style="background: var(--blue)"></span>V1.1 带相机卡台连接器</span>
           <span class="key"><span class="swatch" style="background: var(--orange)"></span>Wuji 官方 G1 adapter</span>
+          <span class="key"><span class="swatch" style="background: var(--camera)"></span>现有蓝色相机支架</span>
+          <span class="key"><span class="swatch" style="background: var(--sensor)"></span>六孔传感器占位</span>
         </div>
-        <span class="muted" id="assembly-status">拖动旋转 · 滚轮缩放 · 右键平移</span>
+        <span class="muted" id="assembly-status">V1.1 正在加载</span>
       </div>
     </div>
 
@@ -421,6 +433,31 @@
       return geometry;
     }
 
+    function decodeGeometryBuffer(buffer) {
+      const view = new DataView(buffer);
+      const vertexCount = view.getUint32(0, true);
+      const faceCount = view.getUint32(4, true);
+      const positionOffset = 8;
+      const indexOffset = positionOffset + vertexCount * 3 * 4;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute(
+        "position",
+        new THREE.BufferAttribute(new Float32Array(buffer, positionOffset, vertexCount * 3), 3)
+      );
+      geometry.setIndex(
+        new THREE.BufferAttribute(new Uint32Array(buffer, indexOffset, faceCount * 3), 1)
+      );
+      geometry.computeVertexNormals();
+      geometry.computeBoundingSphere();
+      return geometry;
+    }
+
+    async function loadGeometry(path) {
+      const response = await fetch(path);
+      if (!response.ok) throw new Error(`HTTP ${response.status}: ${path}`);
+      return decodeGeometryBuffer(await response.arrayBuffer());
+    }
+
     function decodeG1Model(arrayBuffer) {
       const bytes = new Uint8Array(arrayBuffer);
       const view = new DataView(arrayBuffer);
@@ -498,6 +535,8 @@
     const edgeMaterial = new THREE.LineBasicMaterial({ color: 0x656565, transparent: true, opacity: 0.28 });
     const bridgeMaterial = new THREE.MeshStandardMaterial({ color: 0x2f91ef, roughness: 0.7, metalness: 0.04 });
     const adapterMaterial = new THREE.MeshStandardMaterial({ color: 0xf28b32, roughness: 0.76, metalness: 0.04 });
+    const cameraBracketMaterial = new THREE.MeshStandardMaterial({ color: 0x207bc3, roughness: 0.7, metalness: 0.04 });
+    const sensorMaterial = new THREE.MeshStandardMaterial({ color: 0x60656a, roughness: 0.58, metalness: 0.18, transparent: true, opacity: 0.72 });
 
     function meshWithEdges(geometry, material, threshold = 26) {
       const mesh = new THREE.Mesh(geometry, material);
@@ -506,11 +545,41 @@
       return mesh;
     }
 
+    function replaceMeshGeometry(mesh, geometry, threshold = 24) {
+      mesh.geometry.dispose();
+      mesh.geometry = geometry;
+      mesh.children.forEach((child) => child.geometry?.dispose());
+      mesh.clear();
+      mesh.add(new THREE.LineSegments(new THREE.EdgesGeometry(geometry, threshold), edgeMaterial));
+    }
+
     const bridge = meshWithEdges(decodeGeometry(bridgeData), bridgeMaterial, 24);
     const adapter = meshWithEdges(decodeGeometry(adapterData), adapterMaterial, 24);
+    const cameraBracket = meshWithEdges(new THREE.BoxGeometry(0.001, 0.001, 0.001), cameraBracketMaterial, 24);
+    const sensorPart = meshWithEdges(new THREE.BoxGeometry(0.001, 0.001, 0.001), sensorMaterial, 24);
+    cameraBracket.visible = false;
+    sensorPart.visible = false;
     const assemblyGroup = new THREE.Group();
-    assemblyGroup.add(bridge, adapter);
+    assemblyGroup.add(bridge, adapter, cameraBracket, sensorPart);
     scene.add(assemblyGroup);
+
+    Promise.all([
+      loadGeometry("../../assets/g1-connector/v1-1/v1-1-connector.bin"),
+      loadGeometry("../../assets/g1-connector/v1-1/wuji-g1-adapter.bin"),
+      loadGeometry("../../assets/g1-connector/v1-1/camera-bracket-blue.bin"),
+      loadGeometry("../../assets/g1-connector/v1-1/force-sensor-envelope.bin")
+    ]).then(([bridgeGeometry, adapterGeometry, cameraGeometry, sensorGeometry]) => {
+      replaceMeshGeometry(bridge, bridgeGeometry);
+      replaceMeshGeometry(adapter, adapterGeometry);
+      replaceMeshGeometry(cameraBracket, cameraGeometry);
+      replaceMeshGeometry(sensorPart, sensorGeometry);
+      cameraBracket.visible = document.getElementById("show-camera").checked;
+      sensorPart.visible = document.getElementById("show-sensor").checked;
+      assemblyStatus.textContent = "V1.1 装配 · 拖动旋转 · 滚轮缩放 · 右键平移";
+      if (activeMode === "assembly") fitCurrent();
+    }).catch((error) => {
+      assemblyStatus.textContent = `V1.1 加载失败：${error.message}`;
+    });
 
     const grid = new THREE.GridHelper(140, 14, 0xc9c9c9, 0xdfdfdf);
     grid.rotation.x = Math.PI / 2;
@@ -762,6 +831,8 @@
         const box = new THREE.Box3();
         if (bridge.visible) box.expandByObject(bridge);
         if (adapter.visible) box.expandByObject(adapter);
+        if (cameraBracket.visible) box.expandByObject(cameraBracket);
+        if (sensorPart.visible) box.expandByObject(sensorPart);
         fitBox(box, exploded ? 1.42 : 1.32);
       } else if (activeMode === "parts") {
         const box = new THREE.Box3();
@@ -788,13 +859,15 @@
 
     function setExploded(next) {
       exploded = next;
-      bridge.position.set(0, 0, exploded ? 27 : 0);
-      adapter.position.set(0, 0, exploded ? -14 : 0);
+      bridge.position.set(0, 0, 0);
+      adapter.position.set(0, 0, exploded ? -18 : 0);
+      cameraBracket.position.set(0, exploded ? 22 : 0, 0);
+      sensorPart.position.set(0, 0, exploded ? 18 : 0);
       document.getElementById("assemble").setAttribute("aria-pressed", String(!exploded));
       document.getElementById("explode").setAttribute("aria-pressed", String(exploded));
       assemblyStatus.textContent = exploded
-        ? "分解视图：上方是新件，下方是 G1 adapter"
-        : "拖动旋转 · 滚轮缩放 · 右键平移";
+        ? "分解视图：Wuji Adapter → V1.1 连接器 → 相机支架 / 六孔传感器"
+        : "V1.1 装配 · 拖动旋转 · 滚轮缩放 · 右键平移";
       if (activeMode === "assembly") fitCurrent();
     }
 
@@ -953,6 +1026,14 @@
     });
     document.getElementById("show-adapter").addEventListener("change", (event) => {
       adapter.visible = event.target.checked;
+      fitCurrent();
+    });
+    document.getElementById("show-camera").addEventListener("change", (event) => {
+      cameraBracket.visible = event.target.checked;
+      fitCurrent();
+    });
+    document.getElementById("show-sensor").addEventListener("change", (event) => {
+      sensorPart.visible = event.target.checked;
       fitCurrent();
     });
     partSelect.addEventListener("change", () => showPartSelection(partSelect.value));
