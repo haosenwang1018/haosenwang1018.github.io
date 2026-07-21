@@ -304,7 +304,7 @@
         <select id="g1-part-select">
           <option value="all">整机（正在加载）</option>
         </select>
-        <button type="button" id="g1-reset-view">重置视角</button>
+        <button type="button" id="g1-reset-view">返回整机</button>
       </div>
     </div>
 
@@ -350,7 +350,7 @@
     <div class="footer g1-footer" id="g1-footer" hidden>
       <div class="footer-line">
         <span id="g1-detail">宇树 G1 · 29-DOF + Dex3 · 49 个可视部件 · 43 个主动关节</span>
-        <span class="muted" id="g1-status">拖动旋转 · 滚轮缩放 · 点击部件 · 右键平移</span>
+        <span class="muted" id="g1-status">选择或点击零件单独查看 · 拖动旋转 · 滚轮缩放</span>
       </div>
       <div class="legend">
         <span class="key"><span class="swatch" style="background: var(--g1-body)"></span>Unitree 官方仿真外形</span>
@@ -565,11 +565,6 @@
       roughness: 0.68,
       metalness: 0.08
     });
-    const g1SelectedMaterial = new THREE.MeshStandardMaterial({
-      color: 0x2f91ef,
-      roughness: 0.5,
-      metalness: 0.08
-    });
     const g1JointMaterial = new THREE.MeshStandardMaterial({ color: 0xf28b32, roughness: 0.48 });
     const g1AxisMaterial = new THREE.LineBasicMaterial({ color: 0xf28b32, transparent: true, opacity: 0.92 });
     const g1Group = new THREE.Group();
@@ -657,7 +652,7 @@
       g1Loaded = true;
       buildG1Select();
       g1Detail.textContent = "宇树 G1 · 29-DOF + Dex3 · 49 个可视部件 · 43 个主动关节";
-      g1Status.textContent = "拖动旋转 · 滚轮缩放 · 点击部件 · 右键平移";
+      g1Status.textContent = "选择或点击零件单独查看 · 拖动旋转 · 滚轮缩放";
       if (activeMode === "g1") fitCurrent();
     }
 
@@ -776,38 +771,49 @@
 
     function setG1Exploded(next) {
       g1Exploded = next;
-      g1Parts.forEach((record) => {
-        record.mesh.position.copy(record.explodeOffset || new THREE.Vector3()).multiplyScalar(g1Exploded ? 1 : 0);
-      });
       document.getElementById("g1-assemble").setAttribute("aria-pressed", String(!g1Exploded));
       document.getElementById("g1-explode").setAttribute("aria-pressed", String(g1Exploded));
-      g1Status.textContent = g1Exploded
-        ? "分解视图 · 点击或下拉选择部件"
-        : "拖动旋转 · 滚轮缩放 · 点击部件 · 右键平移";
-      if (activeMode === "g1" && g1Loaded) fitCurrent();
+      g1PartSelect.value = "all";
+      showG1Selection("all");
     }
 
     function showG1Selection(id) {
       if (g1Selected?.kind === "part") g1Selected.mesh.material = g1Selected.baseMaterial;
       if (g1Selected?.kind === "joint") g1Selected.mesh.scale.setScalar(1);
       g1Selected = null;
+      g1Parts.forEach((record) => {
+        record.mesh.visible = true;
+        record.mesh.position.copy(record.explodeOffset || new THREE.Vector3()).multiplyScalar(g1Exploded ? 1 : 0);
+      });
       if (id === "all") {
         g1Detail.textContent = "宇树 G1 · 29-DOF + Dex3 · 49 个可视部件 · 43 个主动关节";
+        g1Status.textContent = g1Exploded
+          ? "分解视图 · 选择或点击零件单独查看"
+          : "选择或点击零件单独查看 · 拖动旋转 · 滚轮缩放";
+        if (activeMode === "g1" && g1Loaded) fitCurrent();
         return;
       }
       const record = [...g1Parts, ...g1Joints].find((item) => item.id === id);
       if (!record) return;
       g1Selected = record;
       if (record.kind === "part") {
-        record.mesh.material = g1SelectedMaterial;
-        g1Detail.textContent = `${record.cn} · ${record.meshName} · ${record.parent} → ${record.body} · ${record.joint}`;
+        g1Parts.forEach((part) => { part.mesh.visible = part === record; });
+        record.mesh.position.set(0, 0, 0);
+        record.mesh.material = record.baseMaterial;
+        const axesToggle = document.getElementById("g1-show-axes");
+        axesToggle.checked = false;
+        g1AxesGroup.visible = false;
+        g1Detail.textContent = `${record.cn} · ${record.meshName} · ${record.parent} → ${record.body} · ${record.joint} · ${record.function}`;
+        g1Status.textContent = "单件视图 · 拖动旋转 · 滚轮缩放 · 返回整机可继续选择";
       } else {
         const axesToggle = document.getElementById("g1-show-axes");
         axesToggle.checked = true;
         g1AxesGroup.visible = true;
         record.mesh.scale.setScalar(1.45);
         g1Detail.textContent = `${record.cn} · ${record.name} · ${record.parent} → ${record.child} · axis [${record.axis.join(", ")}] · range ${record.range} rad`;
+        g1Status.textContent = "关节视图 · 橙色短线表示旋转轴";
       }
+      if (activeMode === "g1" && g1Loaded) fitCurrent();
     }
 
     function setMode(mode) {
@@ -856,6 +862,10 @@
     document.getElementById("g1-assemble").addEventListener("click", () => setG1Exploded(false));
     document.getElementById("g1-explode").addEventListener("click", () => setG1Exploded(true));
     document.getElementById("g1-show-axes").addEventListener("change", (event) => {
+      if (event.target.checked && g1Selected?.kind === "part") {
+        g1PartSelect.value = "all";
+        showG1Selection("all");
+      }
       g1AxesGroup.visible = event.target.checked;
       if (!event.target.checked && g1Selected?.kind === "joint") {
         g1PartSelect.value = "all";
@@ -863,7 +873,12 @@
       }
       if (activeMode === "g1" && g1Loaded) fitCurrent();
     });
-    document.getElementById("g1-reset-view").addEventListener("click", fitCurrent);
+    document.getElementById("g1-reset-view").addEventListener("click", () => {
+      document.getElementById("g1-show-axes").checked = false;
+      g1AxesGroup.visible = false;
+      g1PartSelect.value = "all";
+      showG1Selection("all");
+    });
     canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
     const raycaster = new THREE.Raycaster();
@@ -885,7 +900,7 @@
         : activeMode === "flipbook"
           ? flipbookRecords
           : activeMode === "g1"
-            ? [...g1Parts, ...(g1AxesGroup.visible ? g1Joints : [])]
+            ? [...g1Parts.filter((record) => record.mesh.visible), ...(g1AxesGroup.visible ? g1Joints : [])]
             : [];
       if (!activeSelect || (activeMode !== "g1" && activeSelect.value !== "all") || !pointerStart) return;
       const moved = Math.hypot(event.clientX - pointerStart[0], event.clientY - pointerStart[1]);
