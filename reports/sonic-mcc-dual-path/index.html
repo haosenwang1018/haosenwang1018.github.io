@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCC + SONIC 双通路实验</title>
+  <style>
+    body {
+      max-width: 960px;
+      margin: 48px auto 80px;
+      padding: 0 20px;
+      color: #111;
+      background: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.75;
+    }
+    p { margin: 0 0 22px; }
+    math { margin: 32px auto; font-size: 1.45em; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    table { width: 100%; border-collapse: collapse; margin: 28px 0 34px; }
+    th, td { padding: 14px 12px; text-align: left; border-bottom: 1px solid #ddd; }
+    th:first-child, td:first-child { padding-left: 0; }
+    th:last-child, td:last-child { padding-right: 0; }
+    img, video { display: block; width: 100%; height: auto; margin: 28px 0 32px; }
+    a { color: inherit; }
+    @media (max-width: 680px) {
+      body { margin-top: 28px; font-size: 16px; }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+      math { font-size: 1.1em; }
+    }
+  </style>
+</head>
+<body>
+  <p>有，而且正是你说的“最原始双通路方案”，不需要重跑：</p>
+
+  <math display="block">
+    <mi>F</mi><mo>→</mo>
+    <mrow>
+      <mo>{</mo>
+      <mtable columnalign="left">
+        <mtr><mtd><mtext>MuJoCo机器人动力学</mtext></mtd></mtr>
+        <mtr><mtd><mtext>MCC</mtext><mo>→</mo><mi>Δx</mi><mo>→</mo><mtext>SONIC腕目标</mtext></mtd></mtr>
+      </mtable>
+    </mrow>
+  </math>
+
+  <p>两组都完整运行到受力、撤力和恢复，<code>schedule_complete</code>，没有骨盆阈值中止。</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>条件</th>
+        <th>稳态位移 XYZ</th>
+        <th>X峰值</th>
+        <th>最大 YZ 串扰</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>理论 <math><mi>F</mi><mo>/</mo><mi>K</mi></math></td>
+        <td>(50,0,0) mm</td>
+        <td>50 mm</td>
+        <td>0</td>
+      </tr>
+      <tr>
+        <td>A：仅10 N力信号</td>
+        <td>(42.0,7.7,4.0) mm</td>
+        <td>44.1 mm</td>
+        <td>9.0 mm</td>
+      </tr>
+      <tr>
+        <td>B：10 N真实力双通路</td>
+        <td>(142.9,−51.6,52.3) mm</td>
+        <td>165.9 mm</td>
+        <td>93.9 mm</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>这非常清楚地证明：A虽然不完美，但基本接近理论；B加入真实物理力通路后，X严重过冲，并出现巨大YZ串扰和撤力后残差。它正是迭代掉该朴素架构的直接证据。</p>
+
+  <img src="assets/trajectory-comparison.png" alt="三方完整轨迹对比">
+
+  <p>你要看的真实力双通路完整视频：</p>
+
+  <video controls preload="metadata">
+    <source src="assets/physical-force-b.mp4" type="video/mp4">
+  </video>
+
+  <p>对照的力信号完整视频：</p>
+
+  <video controls preload="metadata">
+    <source src="assets/force-signal-a.mp4" type="video/mp4">
+  </video>
+
+  <p>原始数据：<a href="assets/force-signal-a.csv">A组CSV</a>、<a href="assets/physical-force-b.csv">B组CSV</a>、<a href="assets/summary.csv">汇总CSV</a>。</p>
+</body>
+</html>
