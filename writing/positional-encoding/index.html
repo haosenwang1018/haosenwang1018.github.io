@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A short tutorial on the sinusoidal positional encoding in the original Transformer: the formula, five figures computed from it, why offsets are rotations, and what adding position to word embeddings mixes.">
+  <title>Positional Encoding in the Transformer - Sense Wang</title>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #fff;
+      --ink: #111;
+      --muted: #666;
+      --rule: #dedede;
+      --font: "OpenAI Sans", Arial, "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+      --body-size: 17px;
+      --body-leading: 28px;
+      --paragraph-space: 24px;
+      --block-space: 48px;
+      --chapter-space: 80px;
+      --gutter: 24px;
+      --grid-gap: 8px;
+      --h1-size: clamp(32px, calc(20.7324px + 3.0047vw), 64px);
+      --h1-leading: clamp(36.48px, calc(26.7904px + 2.584vw), 64px);
+      --h2-size: clamp(24px, calc(21.8873px + .56338vw), 30px);
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--paper); }
+    body { margin: 0; color: var(--ink); background: var(--paper); font: 400 var(--body-size)/var(--body-leading) var(--font); letter-spacing: -.01em; -webkit-font-smoothing: antialiased; }
+    main { overflow: clip; padding: 40px 0 112px; }
+    a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: .2em; }
+    a:hover { text-decoration-thickness: 2px; }
+    :focus-visible { outline: 2px solid currentColor; outline-offset: 5px; }
+    .site-nav { max-width: 1440px; margin: 0 auto 80px; padding-inline: var(--gutter); font-size: 14px; line-height: 20px; color: var(--muted); letter-spacing: normal; }
+    .article-header { width: calc(100% - 48px); max-width: 802px; margin: 0 auto var(--chapter-space); text-align: center; }
+    .article-header h1 { margin: 0; font-size: var(--h1-size); line-height: var(--h1-leading); font-weight: 500; letter-spacing: -.03em; text-wrap: balance; }
+    .deck { max-width: 596px; margin: 24px auto 0; font-size: 17px; line-height: 28px; text-wrap: balance; }
+    .metadata { margin: 24px auto 0; font-size: 14px; line-height: 19.6px; letter-spacing: normal; color: var(--muted); }
+    .layout { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--grid-gap); max-width: 1440px; padding-inline: var(--gutter); margin-inline: auto; }
+    .prose, .media { grid-column: 1 / -1; min-width: 0; }
+    .chapter + .chapter { margin-top: var(--chapter-space); }
+    .block + .block { margin-top: var(--block-space); }
+    .prose h2 { margin: 0 0 var(--block-space); font-size: var(--h2-size); line-height: 1.32; font-weight: 500; letter-spacing: -.01em; text-wrap: pretty; }
+    p { margin: 0 0 var(--paragraph-space); }
+    p:last-child { margin-bottom: 0; }
+    strong { font-weight: 600; }
+    figure { margin: 0; }
+    figure img { display: block; width: 100%; height: auto; }
+    figcaption { margin-top: 20px; font-size: 14px; line-height: 22.96px; letter-spacing: normal; color: var(--muted); }
+    .equation { margin-block: 32px; overflow-x: auto; overflow-y: hidden; padding-block: 12px; }
+    .label { display: block; margin-bottom: 4px; font-size: 13px; letter-spacing: .02em; color: var(--muted); }
+    .reading-note { margin-top: 32px; border-block: 1px solid var(--rule); padding-block: 20px; color: #444; font-size: 15px; line-height: 1.65; }
+    .footnotes { border-top: 1px solid var(--rule); padding-top: 28px; font-size: 14px; line-height: 1.64; letter-spacing: normal; }
+    .footnotes ol { padding-left: 1.6em; margin: 0; }
+    .footnotes li + li { margin-top: 8px; }
+    .source-link { overflow-wrap: anywhere; }
+    mjx-container[display="true"] { margin: 0 !important; }
+    .tag { margin-right: 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+    .tag.inline { margin: 0 2px; }
+    ul { padding-left: 1.2em; margin: 0 0 24px; }
+    li + li { margin-top: 12px; }
+    @media (max-width: 767px) { .equation { font-size: 13px; } }
+    @media (min-width: 768px) {
+      :root { --gutter: 32px; --grid-gap: 16px; --block-space: 64px; --chapter-space: 120px; }
+      main { padding-top: 48px; }
+      .site-nav { margin-bottom: 96px; }
+      .prose { grid-column: 4 / 10; }
+      .media { grid-column: 3 / 11; }
+    }
+    @media (min-width: 1024px) { :root { --grid-gap: 24px; } }
+  </style>
+</head>
+<body>
+<main id="article">
+  <nav class="site-nav"><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+  <header class="article-header">
+    <h1>Positional Encoding in the Transformer</h1>
+    <p class="deck">The original Transformer gives every position a fixed 512-dimensional vector of sines and cosines and adds it to the word embedding. Early dimensions change fast and separate neighbouring positions; late dimensions change slowly and separate distant ones.</p>
+    <p class="metadata">Sense Wang · September 2026</p>
+  </header>
+
+  <section class="chapter" aria-labelledby="s1">
+    <div class="layout block"><div class="prose">
+      <h2 id="s1">1. Attention ignores order</h2>
+      <p>A <strong>token</strong> is the unit of text the model reads: a word or a piece of a word. In <strong>self-attention</strong>, token i scores every token j with a dot product of a query vector and a key vector:</p>
+      <div class="equation">\[ a_{ij} = \mathrm{softmax}_j\!\left(\frac{q_i \cdot k_j}{\sqrt{d_k}}\right) \]</div>
+      <p>Nothing in this formula depends on where token j sits. Swap two tokens and the outputs are swapped too, so “dog bites man” and “man bites dog” look the same to the layer. The paper therefore has to inject position explicitly <sup><a href="#ref-1">[1]</a></sup>.</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s2">
+    <div class="layout block"><div class="prose">
+      <h2 id="s2">2. Add a position vector to each input</h2>
+      <div class="equation">\[ x_i = E[t_i]\cdot\sqrt{d_{\text{model}}} + PE(i) \]</div>
+      <p>\(t_i\) is the id of the i-th token. \(E\) is the learned <strong>embedding</strong> table, one row per token. \(d_{\text{model}} = 512\) is the model width; the paper multiplies embeddings by \(\sqrt{d_{\text{model}}}\) <sup><a href="#ref-1">[1]</a></sup>. \(PE(i)\) is the position vector for position i, also 512-dimensional.</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s3">
+    <div class="layout block"><div class="prose">
+      <h2 id="s3">3. The formula</h2>
+      <div class="equation">\[ \begin{aligned} PE_{(pos,\,2i)} &= \sin(\omega_i\, pos) \\ PE_{(pos,\,2i+1)} &= \cos(\omega_i\, pos) \\ \omega_i &= 1/10000^{2i/d_{\text{model}}} \end{aligned} \]</div>
+      <p>Dimensions come in 256 sin/cos pairs; pair i has frequency \(\omega_i\) and period \(2\pi/\omega_i\). The periods run from \(2\pi \approx 6\) positions to about \(10000 \cdot 2\pi\) <sup><a href="#ref-1">[1]</a></sup>. The table has no trainable parameters.</p>
+    </div></div>
+    <div class="layout block"><figure class="media">
+      <img src="assets/pe-heatmap.png" alt="Heatmap of the sinusoidal positional-encoding matrix, positions 0 to 63 by dimensions 0 to 511" width="1600" height="720" loading="lazy">
+      <figcaption>Figure 1. The first 64 rows of the encoding. Each row is one position; each column is one dimension. Red is +1, blue is −1, white is 0. Computed from the paper’s formula with \(d_{\text{model}} = 512\).</figcaption>
+    </figure></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s4">
+    <div class="layout block"><div class="prose">
+      <h2 id="s4">4. Each column is a sine wave</h2>
+      <p>Pull single columns out of Figure 1 and each one is a sinusoid. Only the period differs.</p>
+    </div></div>
+    <div class="layout block"><figure class="media">
+      <img src="assets/pe-dimensions.png" alt="Values of dimensions 0, 32, 128, 256 and 500 plotted against position" width="1600" height="1040" loading="lazy">
+      <figcaption>Figure 2. Five sin dimensions over positions 0–63. Dots are the values at integer positions. Dimension 0 repeats every ~6 positions; dimension 128 completes one cycle in 64; dimension 500 barely moves.</figcaption>
+    </figure></div>
+    <div class="layout block"><div class="prose">
+      <p>A binary counter has the same structure: the lowest bit flips every step, the next every 2 steps, the next every 4. Fast dimensions tell neighbours apart, slow dimensions tell distant positions apart, and together each position gets a distinct vector.</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s5">
+    <div class="layout block"><div class="prose">
+      <h2 id="s5">5. Periods grow geometrically</h2>
+      <div class="equation">\[ \frac{\text{period}_{i+1}}{\text{period}_i} = 10000^{2/512} \approx 1.036 \]</div>
+      <p>Each pair’s period is 3.6% longer than the previous one, so on a log axis the periods form a straight line. From dimension 130 on, the period is longer than the 64 positions shown in Figure 1.</p>
+    </div></div>
+    <div class="layout block"><figure class="media">
+      <img src="assets/pe-wavelengths.png" alt="Period of each sin/cos pair on a log axis, with a line at 64 positions" width="1600" height="640" loading="lazy">
+      <figcaption>Figure 3. Period of each dimension pair, log scale. The last pair’s period is about 60,611 positions. The dashed line marks 64 positions.</figcaption>
+    </figure></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s6">
+    <div class="layout block"><div class="prose">
+      <h2 id="s6">6. The right half is constant only in short sequences</h2>
+      <p>A dimension whose period is much longer than the sequence stays near its starting value: \(\sin 0 = 0\) (white) or \(\cos 0 = 1\) (red). That is the red-and-white striping on the right of Figure 1.</p>
+    </div></div>
+    <div class="layout block"><figure class="media">
+      <img src="assets/pe-range.png" alt="Range of each dimension over positions 0 to 63, for sin and cos dimensions" width="1600" height="600" loading="lazy">
+      <figcaption>Figure 4. How much each dimension changes over positions 0–63 (max minus min). 194 of 512 dimensions change by less than 0.1; 264 change by less than 0.5.</figcaption>
+    </figure></div>
+    <div class="layout block"><div class="prose">
+      <p><span class="tag">Measured</span>In a 64-token window, position information sits mostly in the early dimensions, and the late dimensions act as near-constant offsets that the learned embedding can use freely. This split comes from the choice of periods; nothing in the architecture enforces it. We did not check whether trained models actually use the dimensions this way.</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s7">
+    <div class="layout block"><div class="prose">
+      <h2 id="s7">7. A shift by k is a rotation</h2>
+      <div class="equation">\[ \begin{pmatrix} s_{pos+k} \\ c_{pos+k} \end{pmatrix} = \begin{pmatrix} \cos\theta & \sin\theta \\ -\sin\theta & \cos\theta \end{pmatrix} \begin{pmatrix} s_{pos} \\ c_{pos} \end{pmatrix}, \qquad \theta = \omega_i k \]</div>
+      <p>Here \(s_{pos} = \sin(\omega_i\, pos)\) and \(c_{pos} = \cos(\omega_i\, pos)\) are pair i of \(PE(pos)\). The matrix depends on the offset k and not on pos, so \(PE(pos+k)\) is a fixed linear function of \(PE(pos)\).</p>
+      <p><span class="tag">Paper</span>The authors <em>hypothesized</em> that this lets the model learn to attend by relative position. The paper does not test the hypothesis <sup><a href="#ref-1">[1]</a></sup>.</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s8">
+    <div class="layout block"><div class="prose">
+      <h2 id="s8">8. Similarity depends only on distance</h2>
+      <div class="equation">\[ PE(pos)\cdot PE(pos+k) = \sum_{i=0}^{255} \cos(\omega_i k) \]</div>
+      <p>Using \(\sin a \sin b + \cos a \cos b = \cos(a-b)\), the dot product of two position vectors depends only on their distance k. Nearby positions score higher.</p>
+    </div></div>
+    <div class="layout block"><figure class="media">
+      <img src="assets/pe-dot.png" alt="Dot product between position vectors as a function of offset k" width="1600" height="600" loading="lazy">
+      <figcaption>Figure 5. Dot product between two position vectors versus their offset k. The maximum, 256, is at k = 0. The same curve holds for every starting position; for k = 37 the value is 139.05 at pos = 0, 100 and 300.</figcaption>
+    </figure></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s9">
+    <div class="layout block"><div class="prose">
+      <h2 id="s9">9. Learned embeddings did as well</h2>
+      <p><span class="tag">Paper</span>Replacing the sinusoids with a <strong>learned positional embedding</strong> (one trainable vector per position) gave perplexity 4.92 and BLEU 25.7 on English–German newstest2013, against 4.92 and 25.8 for the sinusoidal base model (Table 3, row E) <sup><a href="#ref-1">[1]</a></sup>. The authors kept sinusoids because they <em>may</em> extrapolate to sequences longer than those seen in training; the paper has no experiment on this.</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s10">
+    <div class="layout block"><div class="prose">
+      <h2 id="s10">10. Adding mixes word and position</h2>
+      <div class="equation">\[ \begin{aligned} (w_1+p_1)\cdot(w_2+p_2) = {} & \underbrace{w_1\cdot w_2}_{\text{word}} + \underbrace{p_1\cdot p_2}_{\text{position}} \\ & + \underbrace{w_1\cdot p_2 + p_1\cdot w_2}_{\text{cross terms}} \end{aligned} \]</div>
+      <p>Yes, they mix: the cross terms are noise for attention. The paper never compares adding with concatenating. Three reasons it still works, all <span class="tag inline">Inference</span>:</p>
+      <ul>
+        <li><strong>Comparable scale.</strong> PE entries lie in [−1, 1]. In tensor2tensor, embeddings are initialized with standard deviation \(d_{\text{model}}^{-1/2}\) and multiplied by \(\sqrt{d_{\text{model}}}\), so their entries are also about 1 <sup><a href="#ref-2">[2]</a></sup>. The paper does not explain the \(\sqrt{d_{\text{model}}}\).</li>
+        <li><strong>Soft dimension split.</strong> Figure 4: in short sequences, late dimensions carry little position signal, leaving room for word information.</li>
+        <li><strong>Learned projections.</strong> \(q = xW^Q\) and \(k = xW^K\) can learn to pick out word-related and position-related directions before the dot product.</li>
+      </ul>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s11">
+    <div class="layout block"><div class="prose">
+      <h2 id="s11">11. What replaced it: RoPE</h2>
+      <div class="equation">\[ \begin{aligned} \tilde q_m = R(m\omega)\, q_m, &\quad \tilde k_n = R(n\omega)\, k_n \\ \tilde q_m \cdot \tilde k_n &= q_m^{\top} R\big((n-m)\omega\big)\, k_n \end{aligned} \]</div>
+      <p><strong>Rotary Position Embedding (RoPE)</strong> <sup><a href="#ref-3">[3]</a></sup> applies the rotation from section 7 to each pair of query and key dimensions inside every attention layer, instead of adding a vector at the input. The attention score then sees position only through the offset \(n-m\), and there are no word–position cross terms. LLaMA <sup><a href="#ref-4">[4]</a></sup> and Qwen <sup><a href="#ref-5">[5]</a></sup> use RoPE.</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-label="References">
+    <div class="layout block"><div class="prose footnotes">
+      <ol>
+        <li id="ref-1">Vaswani et al., <a class="source-link" href="https://arxiv.org/abs/1706.03762">Attention Is All You Need</a>, NeurIPS 2017. Section 3.4 (embedding scale), Section 3.5 (positional encoding and the relative-position hypothesis), Table 3 row (E).</li>
+        <li id="ref-2">tensor2tensor, <a class="source-link" href="https://github.com/tensorflow/tensor2tensor/blob/master/tensor2tensor/layers/modalities.py">layers/modalities.py</a>: embedding initializer <code>hidden_dim**-0.5</code>; <code>sqrt_depth</code> mode multiplies by <code>hidden_size**0.5</code>.</li>
+        <li id="ref-3">Su et al., <a class="source-link" href="https://arxiv.org/abs/2104.09864">RoFormer: Enhanced Transformer with Rotary Position Embedding</a>, 2021.</li>
+        <li id="ref-4">Touvron et al., <a class="source-link" href="https://arxiv.org/abs/2302.13971">LLaMA: Open and Efficient Foundation Language Models</a>, 2023.</li>
+        <li id="ref-5">Bai et al., <a class="source-link" href="https://arxiv.org/abs/2309.16609">Qwen Technical Report</a>, 2023.</li>
+      </ol>
+      <p style="margin-top:20px">Figures 1–5 are computed by the author from the formula in [1].</p>
+    </div></div>
+  </section>
+</main>
+</body>
+</html>
