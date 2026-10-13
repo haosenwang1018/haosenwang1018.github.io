@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Stage-by-stage MMLU calibration of Olmo 3 7B (base, SFT, DPO, RLVR, and RL-Zero) with a matched-template control for RL alone and per-stage temperature scaling.">
+  <title>Which Post-Training Stage Hurts Calibration? - Sense Wang</title>
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #fff;
+      --ink: #111;
+      --muted: #666;
+      --rule: #dedede;
+      --font: "OpenAI Sans", Arial, "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+      --body-size: 17px;
+      --body-leading: 28px;
+      --paragraph-space: 24px;
+      --block-space: 48px;
+      --chapter-space: 80px;
+      --gutter: 24px;
+      --grid-gap: 8px;
+      --h1-size: clamp(32px, calc(20.7324px + 3.0047vw), 64px);
+      --h1-leading: clamp(36.48px, calc(26.7904px + 2.584vw), 64px);
+      --h2-size: clamp(24px, calc(21.8873px + .56338vw), 30px);
+    }
+    * { box-sizing: border-box; }
+    html { background: var(--paper); }
+    body { margin: 0; color: var(--ink); background: var(--paper); font: 400 var(--body-size)/var(--body-leading) var(--font); letter-spacing: -.01em; -webkit-font-smoothing: antialiased; }
+    main { overflow: clip; padding: 40px 0 112px; }
+    a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: .2em; }
+    a:hover { text-decoration-thickness: 2px; }
+    :focus-visible { outline: 2px solid currentColor; outline-offset: 5px; }
+    .site-nav { max-width: 1440px; margin: 0 auto 80px; padding-inline: var(--gutter); font-size: 14px; line-height: 20px; color: var(--muted); letter-spacing: normal; }
+    .article-header { width: calc(100% - 48px); max-width: 802px; margin: 0 auto var(--chapter-space); text-align: center; }
+    .article-header h1 { margin: 0; font-size: var(--h1-size); line-height: var(--h1-leading); font-weight: 500; letter-spacing: -.03em; text-wrap: balance; }
+    .deck { max-width: 596px; margin: 24px auto 0; font-size: 17px; line-height: 28px; text-wrap: balance; }
+    .metadata { margin: 24px auto 0; font-size: 14px; line-height: 19.6px; letter-spacing: normal; color: var(--muted); }
+    .layout { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--grid-gap); max-width: 1440px; padding-inline: var(--gutter); margin-inline: auto; }
+    .prose, .media { grid-column: 1 / -1; min-width: 0; }
+    .chapter + .chapter { margin-top: var(--chapter-space); }
+    .block + .block { margin-top: var(--block-space); }
+    .prose h2 { margin: 0 0 var(--block-space); font-size: var(--h2-size); line-height: 1.32; font-weight: 500; letter-spacing: -.01em; text-wrap: pretty; }
+    p { margin: 0 0 var(--paragraph-space); }
+    p:last-child { margin-bottom: 0; }
+    strong { font-weight: 600; }
+    code { font-size: 13px; letter-spacing: normal; }
+    figure { margin: 0; max-width: 100%; }
+    figure img { display: block; width: 100%; max-width: 100%; height: auto; }
+    figcaption { margin-top: 20px; font-size: 14px; line-height: 22.96px; letter-spacing: normal; color: var(--muted); }
+    .equation { margin-block: 32px; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-block: 12px; }
+    .table-caption { margin: 0 0 12px; font-size: 14px; line-height: 22.96px; letter-spacing: normal; color: var(--muted); }
+    .table-wrap { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 1.6; letter-spacing: normal; font-variant-numeric: tabular-nums; }
+    th, td { padding: 10px 16px 10px 0; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; white-space: nowrap; }
+    th { font-weight: 500; border-bottom-color: #bbb; }
+    .footnotes { border-top: 1px solid var(--rule); padding-top: 28px; font-size: 14px; line-height: 1.64; letter-spacing: normal; }
+    .footnotes ol { padding-left: 1.6em; margin: 0; }
+    .footnotes li + li { margin-top: 8px; }
+    .source-link { overflow-wrap: anywhere; }
+    mjx-container[display="true"] { margin: 0 !important; }
+    ul { padding-left: 1.2em; margin: 0 0 24px; }
+    li + li { margin-top: 12px; }
+    li ul { margin: 12px 0 0; }
+    @media (max-width: 767px) { .equation { font-size: 13px; } table { font-size: 13px; } }
+    @media (min-width: 768px) {
+      :root { --gutter: 32px; --grid-gap: 16px; --block-space: 64px; --chapter-space: 120px; }
+      main { padding-top: 48px; }
+      .site-nav { margin-bottom: 96px; }
+      .prose { grid-column: 4 / 10; }
+      .media { grid-column: 3 / 11; }
+    }
+    @media (min-width: 1024px) { :root { --grid-gap: 24px; } }
+  </style>
+</head>
+<body>
+<main id="article">
+  <nav class="site-nav"><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+  <header class="article-header">
+    <h1>Which Post-Training Stage Hurts Calibration?</h1>
+    <p class="deck">We scored every public Olmo 3 7B post-training checkpoint on all 14,042 MMLU questions. Expected calibration error rises from 0.025 at the base model to 0.278 at the final Instruct model. SFT and DPO each add about 0.12. The final RLVR step adds 0.006. One temperature parameter removes most of the rise.</p>
+    <p class="metadata">Sense Wang · October 2026</p>
+  </header>
+
+  <section class="chapter" aria-labelledby="s1">
+    <div class="layout block"><div class="prose">
+      <h2 id="s1">1. A figure with two points</h2>
+      <p>Figure 8 of the GPT-4 technical report shows two calibration curves on a subset of MMLU <sup><a href="#ref-1">[1]</a></sup>. The confidence is the model’s probability on each answer letter A, B, C and D. The pre-trained model has an expected calibration error (ECE) of 0.007. The model after PPO has an ECE of 0.074. The report states that post-training hurts calibration significantly. A post on X by Wenhao Chai in October 2026 showed this figure again, in a discussion of calibration for agents <sup><a href="#ref-2">[2]</a></sup>.</p>
+      <p>The figure has two points. A current post-training pipeline has at least three stages: supervised fine-tuning (SFT), direct preference optimization (DPO), and reinforcement learning with verifiable rewards (RLVR). Two points cannot show which stage changes calibration. The intermediate GPT-4 checkpoints are not public, so nobody outside OpenAI can measure them.</p>
+      <p>Olmo 3 releases the checkpoint after each stage of its 7B Instruct pipeline <sup><a href="#ref-3">[3]</a></sup>. It also releases RL-Zero, a model trained with RLVR directly from the same base model, with no SFT and no DPO. We measured MMLU calibration at each of these checkpoints. For this one model family, the results are:</p>
+      <ul>
+        <li>ECE rises from 0.025 (base) to 0.278 (final Instruct model, chat template).</li>
+        <li>SFT and DPO each account for about half of the rise. The final RLVR step accounts for 2.5% (chat template) and 3.5% (plain prompt).</li>
+        <li>RLVR applied directly to the base model adds 0.034 [0.027, 0.040], measured against a control that receives identical tokens.</li>
+        <li>One temperature per checkpoint removes 90–96% of the rise under the chat template.</li>
+        <li>The ability of confidence to separate right answers from wrong answers (AUROC) changes at one step only. SFT lowers it by 0.030 to 0.038.</li>
+      </ul>
+    </div></div>
+    <div class="layout block"><figure class="media">
+      <img src="assets/fig_ece_by_stage.png" alt="Bar chart of MMLU expected calibration error for ten Olmo 3 7B conditions, raw and after one temperature. Raw ECE rises from about 0.03 at the base model to about 0.28 at the final Instruct model with the chat template; after one temperature every post-trained condition falls to between about 0.02 and 0.06." width="1625" height="586" loading="lazy">
+      <figcaption>Figure 1. MMLU expected calibration error of Olmo 3 7B checkpoints. Dark bars: raw. Light bars: after one temperature, fit on a random 20% of the questions. Both bars use the other 80% of the questions. Error bars are 95% bootstrap intervals over questions. “plain” is a classic 5-shot text prompt. “chat” is the checkpoint’s own chat template. “RL-Zero” is RL-Zero Mix. The bars labeled “base” and “RL-Zero template” show the base model given the exact token ids of the RL-Zero Mix chat condition.</figcaption>
+    </figure></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s2">
+    <div class="layout block"><div class="prose">
+      <h2 id="s2">2. Calibration error and temperature</h2>
+      <p>For question i, the model gives a probability distribution p over the four answer letters. The confidence \(c_{i}\) is the largest entry of p. The prediction is the letter with that entry. A model is calibrated when its confidence equals its accuracy. For example, among the questions it answers with confidence 0.8, 80% are correct.</p>
+      <p>ECE puts the questions into 15 equal-width confidence bins. It then averages the difference between accuracy and mean confidence over the bins:</p>
+      <div class="equation">\[ \mathrm{ECE} = \sum_{b=1}^{15} \frac{n_{b}}{N} \left\vert \mathrm{acc}_{b} - \mathrm{conf}_{b} \right\vert \]</div>
+      <p>Here \(n_{b}\) is the number of questions in bin b, and N is the total number of questions. \(\mathrm{acc}_{b}\) is the accuracy in bin b, and \(\mathrm{conf}_{b}\) is the mean confidence in bin b. ECE is 0 for a perfectly calibrated model. We also computed ECE with 15 equal-count bins. For every checkpoint, it agrees with the equal-width ECE to within 0.002.</p>
+      <p>Temperature scaling divides the four letter logits by one scalar T before the softmax <sup><a href="#ref-11">[11]</a></sup>:</p>
+      <div class="equation">\[ p_{k}(T) = \frac{\exp(z_{k} / T)}{\sum_{j=1}^{4} \exp(z_{j} / T)} \]</div>
+      <p>Here \(z_{k}\) is the logit of letter k. A temperature above 1 makes every distribution flatter. A temperature below 1 makes every distribution sharper. T does not change the predicted letter, so accuracy stays the same. We fit T on a random 20% of the questions by minimizing the negative log-likelihood of the correct letter. We report ECE before and after scaling on the other 80%.</p>
+      <p>One scalar can correct one kind of error: confidence that is too sharp, or too flat, by the same factor everywhere. We call this a scale error. A temperature cannot correct confidence that no longer separates right answers from wrong answers. We call this a ranking error and measure it with AUROC. AUROC is the probability that a randomly chosen correct answer has higher confidence than a randomly chosen wrong answer. It is 0.5 when confidence carries no information, and it depends only on the order of the confidences.</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s3">
+    <div class="layout block"><div class="prose">
+      <h2 id="s3">3. Setup</h2>
+      <p><strong>Checkpoints.</strong> All five checkpoints are public on Hugging Face. We pinned each one to a commit.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Stage</th><th>Repository</th><th>Training</th></tr></thead>
+        <tbody>
+          <tr><td>Base</td><td>allenai/Olmo-3-1025-7B</td><td>pre-training</td></tr>
+          <tr><td>SFT</td><td>allenai/Olmo-3-7B-Instruct-SFT</td><td>base, then SFT</td></tr>
+          <tr><td>DPO</td><td>allenai/Olmo-3-7B-Instruct-DPO</td><td>SFT, then DPO</td></tr>
+          <tr><td>RLVR (final Instruct)</td><td>allenai/Olmo-3-7B-Instruct</td><td>DPO, then RLVR</td></tr>
+          <tr><td>RL-Zero Mix</td><td>allenai/Olmo-3-7B-RL-Zero-Mix</td><td>base, then RLVR on math, code and instruction-following data <sup><a href="#ref-3">[3]</a></sup></td></tr>
+        </tbody>
+      </table></div>
+      <p style="margin-top:24px"><strong>Data.</strong> We used the full MMLU test set: 14,042 questions in 57 subjects <sup><a href="#ref-4">[4]</a></sup>. The five few-shot examples come from the dev split, one from each of five subjects chosen with a fixed seed. Every checkpoint sees the same five examples.</p>
+      <p><strong>Prompts.</strong> We used two prompt formats.</p>
+      <ul>
+        <li><strong>Plain.</strong> The classic MMLU text prompt. Each question ends with “Answer:”. We read the next-token logits of “ A”, “ B”, “ C” and “ D”. We used this format for all checkpoints.</li>
+        <li><strong>Chat.</strong> The checkpoint’s own chat template. Each few-shot example is one user turn and one assistant turn, for example “The answer is C.” The test turn ends with the assistant prefix and the text “The answer is”. We read the same four logits. We used this format for the post-trained checkpoints.</li>
+      </ul>
+      <p>The base model has no chat template. So the plain ladder and the chat ladder both start from the base model’s plain score. When there is no system message, the Olmo 3 chat templates insert a default system prompt. We kept this released behavior.</p>
+      <p><strong>Statistics.</strong> Each 95% interval comes from 1,000 bootstrap resamples of the questions. A difference between two checkpoints uses a paired bootstrap on the same questions.</p>
+      <p><strong>Pre-registration.</strong> We wrote the protocol, the metrics and our predictions before the full runs. We added two items later, and each one before the data it concerns: a loading fix for RL-Zero Mix (section 10) and the matched-template control (section 5). Some predictions failed. For DPO, we predicted an ECE of 0.08–0.20 with the plain prompt and 0.10–0.25 with the chat template. The measured values are 0.234 and 0.271.</p>
+      <p><strong>Hardware.</strong> All runs used bf16 on one Apple M4 Pro laptop. Scoring took 0.31–0.41 seconds per question, which is 1.2–1.6 hours for each checkpoint and prompt format.</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s4">
+    <div class="layout block"><div class="prose">
+      <h2 id="s4">4. SFT and DPO account for almost all of the rise</h2>
+      <p>Table 1 gives the change at each step of the Instruct pipeline. Each difference is computed on the same 14,042 questions.</p>
+    </div></div>
+    <div class="layout block"><div class="media">
+      <p class="table-caption">Table 1. Change at each stage. 95% paired bootstrap intervals in brackets.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Step</th><th>Prompt</th><th>Change in ECE</th><th>Change in AUROC</th><th>Change in accuracy</th></tr></thead>
+        <tbody>
+          <tr><td>Base → SFT</td><td>chat</td><td>+0.126 [+0.116, +0.134]</td><td>−0.030 [−0.039, −0.022]</td><td>−0.032 [−0.039, −0.025]</td></tr>
+          <tr><td>SFT → DPO</td><td>chat</td><td>+0.121 [+0.116, +0.126]</td><td>−0.005 [−0.012, +0.002]</td><td>+0.006 [+0.001, +0.011]</td></tr>
+          <tr><td>DPO → RLVR</td><td>chat</td><td>+0.006 [+0.003, +0.009]</td><td>+0.004 [−0.001, +0.009]</td><td>−0.004 [−0.007, −0.001]</td></tr>
+          <tr><td>Base → SFT</td><td>plain</td><td>+0.105 [+0.095, +0.113]</td><td>−0.038 [−0.046, −0.030]</td><td>−0.039 [−0.046, −0.031]</td></tr>
+          <tr><td>SFT → DPO</td><td>plain</td><td>+0.104 [+0.100, +0.109]</td><td>−0.004 [−0.011, +0.003]</td><td>+0.005 [+0.000, +0.009]</td></tr>
+          <tr><td>DPO → RLVR</td><td>plain</td><td>+0.008 [+0.004, +0.010]</td><td>+0.000 [−0.004, +0.005]</td><td>−0.000 [−0.003, +0.002]</td></tr>
+        </tbody>
+      </table></div>
+    </div></div>
+    <div class="layout block"><div class="prose">
+      <p>From the base model to the final Instruct model, ECE rises by 0.253 with the chat template and by 0.217 with the plain prompt. SFT accounts for 50% (chat) and 48% (plain) of the rise. DPO accounts for 48% in both formats. The final RLVR step accounts for 2.5% (chat) and 3.5% (plain). The SFT and DPO intervals overlap, so these data do not rank the two steps.</p>
+      <p>DPO raises ECE by 0.10–0.12, and accuracy changes by only +0.005 to +0.006 at the same step. So DPO makes the model more confident without making it more often correct. The RLVR step is small but not zero: its interval excludes 0 in both formats.</p>
+      <p>Every checkpoint after SFT in the Instruct pipeline is overconfident. Its mean confidence exceeds its accuracy by 0.130 to 0.278. For each of these checkpoints, ECE equals this confidence–accuracy gap to three decimals. This equality holds only when the model is overconfident in every confidence bin. So the miscalibration has one sign over the whole confidence range. The base model has an ECE of 0.025 and a gap of 0.016, so its small errors have mixed signs.</p>
+      <p>The first step of the chat ladder changes two things: the weights and the prompt format. The later chat steps keep the format fixed, because SFT, DPO and the final model share one chat template. The plain ladder keeps the format fixed at every step. But the post-trained models handle the plain format poorly (section 8). The two ladders give the same pattern.</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s5">
+    <div class="layout block"><div class="prose">
+      <h2 id="s5">5. RL alone, with a matched template</h2>
+      <p>The RLVR step in the Instruct pipeline starts from a model that DPO has already made overconfident. RL-Zero Mix answers a different question: what does RLVR do to the base model directly?</p>
+      <p>With the plain prompt, RL-Zero Mix changes ECE by +0.011 [+0.004, +0.017]. AUROC and accuracy do not change within the intervals.</p>
+      <p>With its chat template, RL-Zero Mix has an ECE of 0.106. This is 0.081 above the base model’s plain score. But that comparison changes two things. The weights change. The input also changes, from a plain prompt to a chat transcript with a default system prompt, role tokens and multi-turn examples. The base model was never trained on this format, so the format alone can change its calibration.</p>
+      <p>A control separates the two effects. We ran the base model’s weights with RL-Zero Mix’s tokenizer and chat template. Both runs tokenize the same text with the same tokenizer, and the two models share one vocabulary. So the base model receives the same token ids as RL-Zero Mix: a 764-token few-shot prefix, followed by each question. Only the weights differ. The base model scores an ECE of 0.072 [0.065, 0.079] under this template.</p>
+      <p>The 0.081 difference then splits into two parts:</p>
+      <ul>
+        <li><strong>Template effect</strong> (base with plain prompt → base with RL-Zero template): ECE +0.047 [+0.039, +0.054].</li>
+        <li><strong>RL effect</strong> (base → RL-Zero Mix, same template and same tokens): ECE +0.034 [+0.027, +0.040].</li>
+      </ul>
+      <p>The RL effect is a scale error. AUROC changes by +0.002 [−0.005, +0.009]. After one temperature, RL-Zero Mix reaches an ECE of 0.029 [0.024, 0.038]. The base model under the same template reaches only 0.052 [0.045, 0.060].</p>
+      <p>So the template adds an error that a temperature removes only in part (R = 0.43 in Table 2). RL adds an error that a temperature removes. RL also lowers accuracy by 0.011 [0.005, 0.016].</p>
+      <p>Before running this control, we wrote down a threshold for a real RL effect: an interval that excludes 0 and a point estimate of at least 0.03. The effect passes, by a small margin. Its lower bound, 0.027, is below 0.03. For comparison, the SFT and DPO steps are each 3.6 to 3.8 times larger. RL-Zero Mix trains on math, code and instruction-following data. Most MMLU subjects lie outside these domains.</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s6">
+    <div class="layout block"><div class="prose">
+      <h2 id="s6">6. A scale error, mostly</h2>
+      <p>To measure how much of the rise one temperature removes, we use the recovered fraction R:</p>
+      <div class="equation">\[ R = \frac{\mathrm{ECE}_{\mathrm{raw}} - \mathrm{ECE}_{T}}{\mathrm{ECE}_{\mathrm{raw}} - \mathrm{ECE}_{T,\mathrm{base}}} \]</div>
+      <p>\(\mathrm{ECE}_{\mathrm{raw}}\) and \(\mathrm{ECE}_{T}\) are a checkpoint’s ECE before and after temperature scaling, on the 80% evaluation split. \(\mathrm{ECE}_{T,\mathrm{base}}\) is the base model’s ECE after temperature scaling, 0.025. We use it as the lowest value this protocol reaches. R = 1 means that the temperature brings the checkpoint down to the base model’s level.</p>
+    </div></div>
+    <div class="layout block"><div class="media">
+      <p class="table-caption">Table 2. Temperature scaling. T is fit on 20% of the questions. ECE is computed on the other 80%. Intervals for the scaled ECE in brackets.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Checkpoint</th><th>Prompt</th><th>T</th><th>ECE raw</th><th>ECE after T</th><th>R</th></tr></thead>
+        <tbody>
+          <tr><td>Base</td><td>plain</td><td>1.03</td><td>0.027</td><td>0.025 [0.020, 0.034]</td><td>—</td></tr>
+          <tr><td>SFT</td><td>chat</td><td>1.86</td><td>0.150</td><td>0.037 [0.033, 0.046]</td><td>0.90</td></tr>
+          <tr><td>DPO</td><td>chat</td><td>4.11</td><td>0.272</td><td>0.035 [0.029, 0.044]</td><td>0.96</td></tr>
+          <tr><td>RLVR (final)</td><td>chat</td><td>4.30</td><td>0.278</td><td>0.034 [0.028, 0.044]</td><td>0.96</td></tr>
+          <tr><td>SFT</td><td>plain</td><td>1.63</td><td>0.128</td><td>0.040 [0.034, 0.050]</td><td>0.85</td></tr>
+          <tr><td>DPO</td><td>plain</td><td>2.46</td><td>0.234</td><td>0.059 [0.052, 0.067]</td><td>0.84</td></tr>
+          <tr><td>RLVR (final)</td><td>plain</td><td>2.58</td><td>0.241</td><td>0.059 [0.052, 0.067]</td><td>0.84</td></tr>
+          <tr><td>RL-Zero Mix</td><td>chat</td><td>1.64</td><td>0.105</td><td>0.029 [0.024, 0.038]</td><td>0.95</td></tr>
+          <tr><td>RL-Zero Mix</td><td>plain</td><td>1.14</td><td>0.036</td><td>0.024 [0.018, 0.032]</td><td>1.11</td></tr>
+          <tr><td>Base, RL-Zero template</td><td>chat</td><td>1.24</td><td>0.072</td><td>0.052 [0.045, 0.060]</td><td>0.43</td></tr>
+        </tbody>
+      </table></div>
+    </div></div>
+    <div class="layout block"><div class="prose">
+      <p>With the chat template, R is 0.90 for SFT and 0.96 for DPO and the final model. After scaling, these three checkpoints have an ECE of 0.034–0.037. This is about 0.01 above the base model. The fitted temperature grows along the pipeline: 1.86 after SFT, 4.11 after DPO and 4.30 after RLVR. A temperature of 4.30 means that the final model’s letter logits are about four times too large for its accuracy.</p>
+      <p>With the plain prompt, R is lower, 0.84–0.85. The scaled ECE stays at 0.040–0.059. We have not isolated the cause. One candidate is the prompt itself: with the plain prompt, the post-trained models put only 49–70% of the next-token probability on the four letters.</p>
+      <p>AUROC changes at one step only. SFT changes it by −0.030 [−0.039, −0.022] with the chat template and by −0.038 [−0.046, −0.030] with the plain prompt. The same step lowers accuracy by 0.032 and 0.039. AUROC depends on which questions the model answers correctly, so part of this drop can come from the accuracy change.</p>
+      <p>DPO, the final RLVR step and RL from the base model leave AUROC unchanged within the intervals. Our pre-registered rule labels an AUROC drop of 0.02 or more as a ranking error. By that rule, SFT adds a small ranking error, and DPO and RLVR add only scale error.</p>
+      <p>This pattern matches an older result. Kadavath et al. found that a 52B RLHF policy looked badly calibrated on MMLU and other tasks, and that one temperature, T = 2.5, largely corrected it <sup><a href="#ref-5">[5]</a></sup>. They also noted that more intensive RL might distort calibration in ways a temperature cannot correct. In Olmo 3 7B on MMLU, the stages that need large temperatures are SFT and DPO. RLVR adds little, and what it adds is scale.</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s7">
+    <div class="layout block"><div class="prose">
+      <h2 id="s7">7. What is known, and what this adds</h2>
+      <p>The general finding is known: post-training makes language models overconfident. Earlier work shows it in several settings:</p>
+      <ul>
+        <li>The GPT-4 report compares the pre-trained model and the model after PPO on an MMLU subset <sup><a href="#ref-1">[1]</a></sup>.</li>
+        <li>Kadavath et al. show that an RLHF policy is miscalibrated and that a single temperature largely corrects it <sup><a href="#ref-5">[5]</a></sup>.</li>
+        <li>Oh and Hwang compare base and aligned models across open model families, tasks, metrics and confidence-extraction methods, including option-letter logits. Under careful measurement, alignment consistently harms calibration <sup><a href="#ref-6">[6]</a></sup>.</li>
+        <li>Hu et al. find a severe loss of calibration after alignment and recover much of it by interpolating the weights before and after alignment <sup><a href="#ref-7">[7]</a></sup>.</li>
+        <li>Luo et al. show that post-trained models are overconfident and use the pre-trained model to set the temperature without labels <sup><a href="#ref-8">[8]</a></sup>.</li>
+        <li>Sanz-Guerrero et al. separate the post-training algorithm from the chat format. Both increase overconfidence <sup><a href="#ref-9">[9]</a></sup>. Section 5 measures a related template effect.</li>
+        <li>Huang et al. follow the Tülu 3 pipeline on Llama-3.1-8B: base, SFT, DPO and RLVR <sup><a href="#ref-10">[10]</a></sup>. Their metric is the share of factual questions answered wrongly with a confidence of at least 0.95. On 22,267 PopQA and TriviaQA questions, it rises from 0.28% (base) to 1.16% (SFT), 2.79% (DPO) and 3.83% (RLVR).</li>
+      </ul>
+      <p>Within the work we found, this post adds three measurements:</p>
+      <ul>
+        <li>Stage-by-stage multiple-choice calibration on one fully open pipeline, with a paired interval for each step.</li>
+        <li>RL applied directly to the base model, compared against a control that receives identical tokens. This separates the effect of RL from the effect of the chat template.</li>
+        <li>Temperature recovery at each stage, which separates scale error from ranking error.</li>
+      </ul>
+      <p>One difference from Huang et al. needs a note. In their Tülu 3 ladder, RLVR still raises confident errors, from 2.79% to 3.83%. In Olmo 3, RLVR raises ECE by 0.006. The model family, the metric and the task all differ, and we have not run Tülu 3. So these two results do not test the same claim.</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s8">
+    <div class="layout block"><div class="prose">
+      <h2 id="s8">8. Limitations</h2>
+      <ul>
+        <li><strong>One family, one size.</strong> All results are for Olmo 3 at 7B. We planned the same measurement on Tülu 3 8B. It did not run, because its base model is a gated repository and each 7B–8B download took about two hours on our connection.</li>
+        <li><strong>Contamination.</strong> MMLU has been public since 2020. It may appear in pre-training or post-training data. Contamination raises accuracy and can change confidence. We did not test for it.</li>
+        <li><strong>One confidence definition.</strong> We measure option-letter probabilities from one forward pass, renormalized over four letters. This is confidence conditional on the four options. It says nothing about verbalized confidence (“I am 80% sure”), about confidence in free-form answers, or about confidence after reasoning. Much recent work on RLVR and calibration studies those settings.</li>
+        <li><strong>The plain prompt.</strong> With the plain prompt, the post-trained models put only 49% (SFT), 59% (DPO) and 70% (final) of the next-token probability on the four letters. The rest goes to other tokens. Renormalizing over four letters hides this. With the chat template, the letter mass is 0.989 or higher for every post-trained checkpoint. For this reason, we treat the chat numbers as the primary result.</li>
+        <li><strong>One run per checkpoint.</strong> Each stage is one released checkpoint. We evaluated it with one prompt wording, one set of five examples and one 20/80 split. The intervals cover resampling of questions only. They do not cover training seeds, prompt wording or the choice of examples.</li>
+        <li><strong>Released checkpoints.</strong> Each stage has its own data and hyperparameters. The differences we measure belong to these released checkpoints. A claim about SFT or DPO as methods needs controlled retraining.</li>
+        <li><strong>Numerics.</strong> We used bf16 and reused the cached few-shot prefix across questions. On 200 random questions (SFT, plain prompt), we compared this with an uncached forward pass for each question. The mean absolute probability difference was 0.003, the maximum was 0.030, and the predicted letter agreed on all 200.</li>
+        <li><strong>ECE bias.</strong> Binned ECE has a finite-sample bias. Part of the base model’s 0.025 after scaling comes from this bias.</li>
+      </ul>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s9">
+    <div class="layout block"><div class="prose">
+      <h2 id="s9">9. Next measurements</h2>
+      <p>Three measurements would test the scope of these results:</p>
+      <ul>
+        <li>The Tülu 3 8B pipeline with the same protocol. This tests whether the pattern holds in a second family.</li>
+        <li>The RL-Zero Math, Code and IF checkpoints, one at a time. This tests whether the RL training domain changes the RL effect.</li>
+        <li>The same Olmo 3 ladder with verbalized confidence. This tests whether the scale-error result holds for confidence that the model states in text.</li>
+      </ul>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s10">
+    <div class="layout block"><div class="prose">
+      <h2 id="s10">10. Reproducing the numbers</h2>
+      <p>Two scripts produce every number in this post.</p>
+      <ul>
+        <li><strong>score.py</strong> scores one checkpoint with one prompt format.
+          <ul>
+            <li>It encodes the 5-shot prefix once and reuses its key-value cache for every question. It groups questions of similar length into batches.</li>
+            <li>It checks that “ A”, “ B”, “ C” and “ D” are single tokens. For each question, it stores the four-letter softmax and the total probability on the four letters.</li>
+            <li>An optional flag compares the cached result with an uncached forward pass.</li>
+            <li>One flag loads the tokenizer and chat template from another checkpoint. We used it for the control in section 5.</li>
+            <li>One flag loads the model configuration from another checkpoint. We used it for RL-Zero Mix. Its configuration declares a model type that transformers 5.19 cannot load. Its hyperparameters and all 355 weight names are identical to the base model’s, so we loaded its own weights with the base configuration.</li>
+          </ul>
+        </li>
+        <li><strong>analyze.py</strong> reads the per-question files. It computes accuracy, ECE with 15 equal-width bins, ECE with 15 equal-count bins, Brier score, AUROC, the confidence–accuracy gap and negative log-likelihood. It fits T on the 20% split with a grid search over log T, followed by a golden-section refinement. It computes the bootstrap and paired-bootstrap intervals. It writes all results to one JSON file and draws Figure 1.</li>
+      </ul>
+      <p>Environment: PyTorch 2.14.1 with the MPS backend, transformers 5.19.0, bf16, one Apple M4 Pro. Pinned revisions:</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Repository</th><th>Revision</th></tr></thead>
+        <tbody>
+          <tr><td>allenai/Olmo-3-1025-7B</td><td><code>a81bae42db3975be1671e27b9c9a56da1a9f980f</code></td></tr>
+          <tr><td>allenai/Olmo-3-7B-Instruct-SFT</td><td><code>e1452fc572d51966ff4aaeb25118b891eb93e549</code></td></tr>
+          <tr><td>allenai/Olmo-3-7B-Instruct-DPO</td><td><code>b33130b7de49f0c2553b5c2b3bc8409ff3e627d1</code></td></tr>
+          <tr><td>allenai/Olmo-3-7B-Instruct</td><td><code>6e5971d9eba42665f5bd5a0fcf047f299ce1dccc</code></td></tr>
+          <tr><td>allenai/Olmo-3-7B-RL-Zero-Mix</td><td><code>73b2b1a50d94aec859e22c9b4a524416b5a3a739</code></td></tr>
+        </tbody>
+      </table></div>
+      <p style="margin-top:24px">The two scripts, the per-question probabilities for all ten conditions and the metrics file are not yet in a public repository. They are available on request.</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-label="References">
+    <div class="layout block"><div class="prose footnotes">
+      <ol>
+        <li id="ref-1">OpenAI, <a class="source-link" href="https://arxiv.org/abs/2303.08774">GPT-4 Technical Report</a>, arXiv:2303.08774, 2023. Figure 8.</li>
+        <li id="ref-2">Wenhao Chai, post on X, October 2026.</li>
+        <li id="ref-3">Team Olmo, <a class="source-link" href="https://arxiv.org/abs/2512.13961">Olmo 3</a>, arXiv:2512.13961, 2025. Checkpoints: <a class="source-link" href="https://huggingface.co/allenai">allenai on Hugging Face</a>. RL-Zero Mix model card: <a class="source-link" href="https://huggingface.co/allenai/Olmo-3-7B-RL-Zero-Mix">allenai/Olmo-3-7B-RL-Zero-Mix</a>.</li>
+        <li id="ref-4">Hendrycks et al., <a class="source-link" href="https://arxiv.org/abs/2009.03300">Measuring Massive Multitask Language Understanding</a>, ICLR 2021.</li>
+        <li id="ref-5">Kadavath et al., <a class="source-link" href="https://arxiv.org/abs/2207.05221">Language Models (Mostly) Know What They Know</a>, arXiv:2207.05221, 2022. Section 3.3 and Figure 9.</li>
+        <li id="ref-6">Hongseok Oh and Wonseok Hwang, <a class="source-link" href="https://arxiv.org/abs/2409.00352">Does Alignment Tuning Really Break LLMs’ Internal Confidence?</a>, BlackboxNLP 2024.</li>
+        <li id="ref-7">Tiancheng Hu, Benjamin Minixhofer and Nigel Collier, <a class="source-link" href="https://arxiv.org/abs/2510.17426">Navigating the Alignment-Calibration Trade-off: A Pareto-Superior Frontier via Model Merging</a>, Findings of ACL 2026.</li>
+        <li id="ref-8">Beier Luo, Shuoyuan Wang, Sharon Li and Hongxin Wei, <a class="source-link" href="https://arxiv.org/abs/2505.16690">Your Pre-trained LLM is Secretly an Unsupervised Confidence Calibrator</a>, NeurIPS 2025.</li>
+        <li id="ref-9">Mario Sanz-Guerrero, Manuel Mager and Katharina von der Wense, <a class="source-link" href="https://arxiv.org/abs/2606.03437">Large Language Models Are Overconfident in Their Own Responses</a>, Findings of ACL 2026.</li>
+        <li id="ref-10">Qingjia Huang et al., <a class="source-link" href="https://arxiv.org/abs/2609.32617">The Alignment Paradox: How Post-Training Amplifies Confident Hallucinations in Language Models</a>, arXiv:2609.32617, 2026. Appendix B.2, Table 10.</li>
+        <li id="ref-11">Chuan Guo, Geoff Pleiss, Yu Sun and Kilian Q. Weinberger, <a class="source-link" href="https://arxiv.org/abs/1706.04599">On Calibration of Modern Neural Networks</a>, ICML 2017.</li>
+      </ol>
+      <p style="margin-top:20px">Figure 1 and Tables 1–2 are computed by the author from the released checkpoints listed above.</p>
+    </div></div>
+  </section>
+</main>
+</body>
+</html>
