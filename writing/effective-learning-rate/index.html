@@ -4,7 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>A Small Cosine Sets the Weight Norm under AdamW and Muon - Sense Wang</title>
-<meta name="description" content="In 16 GPT-2-small-shaped runs with AdamW and Muon, a small negative cosine between update and weight supplies 94–97% of the weight-norm growth at a constant learning rate with weight decay. A random-walk model with momentum predicts its median size and the equilibrium effective learning rate.">
+<meta name="description" content="Each update leans slightly against the weights. That small cosine supplies 94–97% of the weight-norm growth, and a momentum model predicts it and the equilibrium effective learning rate of AdamW and Muon.">
+<link rel="canonical" href="https://sensewang.com/writing/effective-learning-rate/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Sense Wang">
+<meta property="og:title" content="A Small Cosine Sets the Weight Norm under AdamW and Muon">
+<meta property="og:description" content="Each update leans slightly against the weights. That small cosine supplies 94–97% of the weight-norm growth, and a momentum model predicts it and the equilibrium effective learning rate of AdamW and Muon.">
+<meta property="og:url" content="https://sensewang.com/writing/effective-learning-rate/">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="zh_CN">
+<meta property="article:published_time" content="2026-10-30">
+<meta property="article:author" content="Sense Wang">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="A Small Cosine Sets the Weight Norm under AdamW and Muon">
+<meta name="twitter:description" content="Each update leans slightly against the weights. That small cosine supplies 94–97% of the weight-norm growth, and a momentum model predicts it and the equilibrium effective learning rate of AdamW and Muon.">
 <link rel="stylesheet" href="reader.css?v=3">
 <style>
   .ledger td.state { white-space: nowrap; font-weight: 500; }
@@ -16,6 +29,8 @@
   .lang-panel[hidden] { display: none; }
   .site-nav { max-width: 1440px; margin: 0 auto 48px; padding: 24px var(--gutter) 0; font-size: 14px; line-height: 20px; color: var(--muted); letter-spacing: normal; }
   .site-nav a { color: inherit; }
+  .footnotes ol.refs { list-style: none; padding-left: 0; }
+  .footnotes .refs-heading { margin: 40px 0 20px; font-size: 21px; line-height: 1.35; font-weight: 500; }
 </style>
 <script>
   window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, chtml: { scale: 1.0 } };
@@ -34,7 +49,7 @@
 <div class="lang-panel" lang="en" data-lang="en">
 <header class="article-header">
   <h1>A Small Cosine Sets the Weight Norm under AdamW and Muon</h1>
-  <p class="deck">We trained GPT with AdamW and Muon in 16 runs. In the constant-rate runs with weight decay, a small negative cosine between update and weight supplies 94–97% of the weight-norm growth. A random-walk model with momentum predicts the median ratio of this cosine to the effective learning rate (ELR) within 13%. In the one run pair that reached equilibrium, Muon settled 23% below AdamW, and the model predicts 24%.</p>
+  <p class="deck">With weight decay, the weight norm sets the equilibrium effective learning rate (ELR), the step size relative to the weights. In constant-rate runs, each update leans slightly against the weights, and this small negative cosine supplies 94–97% of the weight-norm growth. A momentum model predicts this lean and the equilibrium ELR: 24% lower for Muon than for AdamW, against 23% in one equilibrium run pair.</p>
   <p class="metadata">Sense Wang · October 2026</p>
 </header>
 
@@ -45,8 +60,8 @@
     <p>Here \(W\) is a weight matrix. \(\eta\) is the learning rate that the schedule sets, which we call the nominal learning rate. \(U\) is the update: the direction that the optimizer computes from the gradients, before scaling by \(\eta\). \(\lVert\cdot\rVert\) is the Frobenius norm, the square root of the sum of the squared entries. Both optimizers in this post apply the same rule,</p>
     <div class="equation">\[ W \leftarrow (1-\eta\lambda)\,W - \eta U . \]</div>
     <p>The step is \(-\eta U\). Weight decay, with coefficient \(\lambda\), separately shrinks \(W\) by \(\eta\lambda W\). AdamW and Muon differ only in how they compute \(U\). For a scale-invariant weight, the ELR measures how fast the function of the network changes. A weight is scale-invariant when the network output does not change if \(W\) is multiplied by a positive number. No matrix in these runs is scale-invariant. In a pre-norm transformer, scale symmetries hold for pairs of matrices such as \((W_{q}, W_{k})\), and not for single matrices (<a href="https://kexue.fm/archives/11985">Su, 2026</a>).</p>
-    <p>At a constant nominal learning rate of 2.4e-3 with weight decay 0.1, the runs cover 6 timescales of \(1/(\eta\lambda)\) steps and the norm budget balances. Over the last 10% of training, the median ELR is 0.0041 for Muon and 0.0053 for AdamW. So Muon is 23% lower. At equilibrium, the ELR does not depend on the update size. This comparison is one run per optimizer. At the base rate of 6e-4, Muon is also 20% lower, but the cause is different. There the runs cover only 1.5 timescales, and the ELR still follows the update size. With Moonlight scaling, the Muon update norm is 0.80× the AdamW update norm. The same 20–24% gap appears without weight decay and under linear decay.</p>
-    <p>At equilibrium, the weight norm sets the ELR. The norm settles where weight decay removes what the updates add. The median cosine between \(U\) and \(W\) is small, −0.02 to −0.06. It still supplies 94–97% of the norm growth. A random-walk model with momentum predicts the median ratio of this cosine to the ELR within 13% of the model value. The model gives Muon, with Nesterov momentum at 0.95, an equilibrium ELR 24% below AdamW at \(\beta_{1} = 0.9\). Single matrix types depart from the model by up to a factor of about 2, and one outlier by more than 5.</p>
+    <p>Weight decay alone shrinks \(\lVert W\rVert\) by a factor \(e\) every \(1/(\eta\lambda)\) steps. We call this span one timescale. The norm budget of a matrix is what each step adds to \(\lVert W\rVert^2\) and what weight decay removes. After several timescales the budget balances, and the norm stops changing. We call this state the equilibrium. At a constant nominal learning rate of 2.4e-3 with weight decay 0.1, the runs cover 6 timescales and reach equilibrium. Over the last 10% of training, the median ELR is 0.0041 for Muon and 0.0053 for AdamW, so Muon is 23% lower. The weight norm adjusts until weight decay removes what the updates add, so the update size cancels out of the equilibrium ELR. This comparison is one run per optimizer. At the base rate, a second gap appears with a different cause. We discuss it after the equilibrium formula.</p>
+    <p>At equilibrium, the weight norm sets the ELR. The norm settles where weight decay removes what the updates add. The median cosine between \(U\) and \(W\) is small, −0.02 to −0.06. It still supplies 94–97% of the norm growth in the constant-rate runs with weight decay. A random-walk model with momentum predicts that the cosine is a fixed multiple of the ELR, set only by the momentum coefficient \(\beta\). For AdamW at \(\beta_{1} = 0.9\) the multiple is \(-\beta_{1}/(1-\beta_{1}) = -9\). For the Nesterov momentum of Muon at 0.95 it is −16. Across our 16 runs, the four constant-rate runs with weight decay give medians of −8.0 to −9.4 and −14.0 to −15.7. These are within 13% of the model value. The model gives Muon an equilibrium ELR 24% below AdamW. Single matrix types depart from the model by up to a factor of about 2, and one outlier by more than 5.</p>
     <p>Part of this is known. A constant \(\eta\) gives a falling ELR. Weight decay brings the ELR to a rotational equilibrium, in which the norm stops changing (<a href="https://arxiv.org/abs/1706.05350">van Laarhoven, 2017</a>; <a href="https://arxiv.org/abs/2006.08419">Wan et al., 2020</a>; <a href="https://arxiv.org/abs/2010.02916">Li et al., 2020</a>). <a href="https://arxiv.org/abs/2305.17212">Kosson et al. (2023)</a> derived the AdamW equilibrium and measured it per layer in GPT-2 124M at a constant rate. In LLM pretraining, <a href="https://jiaxuanzou0714.github.io/blog/2026/hyperball-implicit-lr-schedule/">Zou (2026)</a> measured a falling ELR for Muon at a constant rate. The <a href="https://hy.tencent.com/research/elr">Hunyuan team (2026)</a> derived a steady-state angle per step near \(\sqrt{2\eta\lambda}\). It also saw that angle curves under different schedules nearly coincide. This post adds three things. It measures Muon and AdamW in one setup. It splits the per-step norm budget into a square term and a cross term. It predicts the cross term from the momentum coefficients, for any momentum form.</p>
   </div></div>
   <div class="layout block"><div class="prose">
@@ -92,7 +107,7 @@
     <div class="equation">\[ \begin{aligned} \langle W_t, U_t\rangle &\approx -\eta\,\frac{\beta}{1-\beta}\,\lVert U\rVert^2 , \\ \cos(W,U) &\approx -\frac{\beta}{1-\beta}\,\mathrm{ELR} . \end{aligned} \]</div>
     <p>The update leans toward \(-W\), so the step \(-\eta U\) points partly along \(+W\), away from the origin. This grows the norm. The derivation does not use weight decay. The cross / square ratio is \(2\beta/(1-\beta)\), and it does not depend on \(\eta\).</p>
     <p>For AdamW with \(\beta_{1} = 0.9\), the model predicts \(\cos/\mathrm{ELR} = -9\) and cross / square = 18. The AdamW runs give −9.4 and 19 at the base rate, and −8.0 and 16 at the 4× rate.</p>
-    <p>Muon in this code uses Nesterov momentum: \(m_t = \beta m_{t-1} + g_t\) and \(U_t \propto g_t + \beta m_t\). The coefficient of the gradient \(k\) steps back is \(a_0 = 1+\beta\), and \(a_k = \beta^{k+1}\) for \(k \ge 1\). Only the ratios of the coefficients matter, because Muon rescales \(U\). For any coefficients, the same sum gives</p>
+    <p>Muon in this code uses Nesterov momentum: \(m_t = \beta m_{t-1} + g_t\) and \(U_t \propto g_t + \beta m_t\). The coefficient of the gradient \(k\) steps back is \(a_0 = 1+\beta\), and \(a_k = \beta^{k+1}\) for \(k \ge 1\). With \(U_t \propto \sum_k a_k g_{t-k}\), two updates \(d\) steps apart share gradients with total coefficient \(\sum_k a_k a_{k+d}\). Summing over \(d \ge 1\) gives \(\tfrac12\big[(\sum_k a_k)^2 - \sum_k a_k^2\big]\). Dividing by \(\lVert U\rVert^2\), which is proportional to \(\sum_k a_k^2\), gives the formula below. Only the ratios of the coefficients matter, because Muon rescales \(U\). This step treats orthogonalization as a fixed rescaling. That is an approximation, and Table 1 checks it against the runs.</p>
     <div class="equation">\[ \frac{\cos(W,U)}{\mathrm{ELR}} \approx -\,\frac{\left(\sum_k a_k\right)^2 - \sum_k a_k^2}{2\sum_k a_k^2} . \]</div>
     <p>The EMA coefficients \((1-\beta)\beta^k\) give \(-\beta/(1-\beta)\). Nesterov momentum at \(\beta = 0.95\) gives −16.0, so cross / square ≈ 32. Plain momentum at 0.95 would give −19 and 38. The Muon runs give −15.7 and 31 at the base rate, and −14.0 and 28 at the 4× rate.</p>
   </div></div>
@@ -119,7 +134,8 @@
     <div class="equation">\[ \mathrm{ELR} \approx \sqrt{\frac{2\eta\lambda\,(1-\beta)}{1+\beta}} . \]</div>
     <p>This is the known AdamW equilibrium (Kosson et al., 2023). Kosson et al. derive it per neuron, for one row of the matrix. Here we apply it to whole matrices. At \(\beta_{1} = 0.9\) it is 4.4× below \(\sqrt{2\eta\lambda}\). At the 4× rate, where the budget balances, it predicts 0.0050 for AdamW, and the run gives 0.0053. For Nesterov momentum the right side is \(1 + 32 = 33\) times \(\mathrm{ELR}^2\), so the ELR is \(\sqrt{2\eta\lambda/33}\). It predicts 0.0038 for Muon, and the run gives 0.0041. The model is 5–7% low for both optimizers.</p>
     <p>Because \(\beta\) fixes the cross / square ratio, the equilibrium ELR scales as \(\sqrt{\eta\lambda}\). So 4× the rate predicts 2× the ELR. The runs give 2.1× (AdamW) and 2.0× (Muon), although the base-rate runs have not fully reached equilibrium.</p>
-    <p>The model also predicts the equilibrium gap. At the same \(\eta\) and \(\lambda\), Muon with Nesterov 0.95 should settle about 24% below AdamW with \(\beta_{1} = 0.9\). The 4×-rate runs give 23%. In those runs, the Muon update norm is 0.85× the AdamW update norm, and the Muon weight norm is 1.05× larger. The weight norm adjusts so that the update size cancels. At the base rate, the runs are not at equilibrium, and the 20% gap comes from the update norm. The two optimizers differ in more than momentum, so this agreement does not isolate momentum. The model further predicts that raising \(\beta_{1}\) from 0.9 to 0.95 lowers the AdamW equilibrium ELR by 30%. We did not test this.</p>
+    <p>The model also predicts the equilibrium gap. At the same \(\eta\) and \(\lambda\), Muon with Nesterov 0.95 should settle about 24% below AdamW with \(\beta_{1} = 0.9\). The 4×-rate runs give 23%. In those runs, the Muon update norm is 0.85× the AdamW update norm, and the Muon weight norm is 1.05× larger. The weight norm adjusts so that the update size cancels. The two optimizers differ in more than momentum, so this agreement does not isolate momentum. The model further predicts that raising \(\beta_{1}\) from 0.9 to 0.95 lowers the AdamW equilibrium ELR by 30%. We did not test this.</p>
+    <p>The base rate of 6e-4 shows a second gap with a different cause. These runs cover only 1.5 timescales, so they are not at equilibrium. There Muon is also 20% lower, but the ELR still follows the update size. With Moonlight scaling, the Muon update norm is 0.80× the AdamW update norm, and the weight norms differ by only 3%. The same 20–24% gap appears without weight decay and under linear decay. This gap comes from the update norm, and the equilibrium model does not explain it.</p>
     <p>The ELR approximates the angle between \(W\) and \(W - \eta U\) (Kosson et al., 2023). Two definitions are in use: the relative step, which is the ELR here (Su, 2026), and the angular update (Wan et al., 2020; Kosson et al., 2023; discussed by Zou, 2026). Xiao et al. (2026) argue that an angular ELR should keep the \(\langle W,U\rangle\) term. Here the two definitions differ by at most 0.2% at the median. So the inner product has a negligible effect on the angle and a dominant effect on the norm. A model of the norm must keep it. A monitor of the angle can drop it.</p>
     <p>The random-walk model is for a constant rate. Under linear decay, the magnitude of cos / ELR is larger: −19 to −36 with weight decay, −13 to −23 without. We fit the median cosine against the median ELR over the last 40% of each stable decay run. The slope is near the constant-rate ratio: −8 to −9 for AdamW, −12 to −14 for Muon. The fit also has an offset of −0.001 to −0.004 that the model does not have. So the ratio grows as the ELR goes to zero. A mean gradient component along \(-W\) could give such an offset, as noted above, but we did not measure it.</p>
   </div></div>
@@ -172,26 +188,27 @@
 <section class="chapter" aria-label="Notes and references">
   <div class="layout block"><div class="prose footnotes">
     <p>Code and raw logs for all 16 runs are at <a href="https://github.com/haosenwang1018/elrstats">github.com/haosenwang1018/elrstats</a>. A small library there computes \(\lVert W\rVert^2\), \(\lVert U\rVert^2\) and \(\langle W,U\rangle\) for every full matrix. It also does this when FSDP2 or tensor parallelism splits a matrix across GPUs. It can split a fused matrix into q, k and v. Related tools exist. NVIDIA Emerging-Optimizers implements a relative-update rule with per-tensor norms (<a href="https://github.com/NVIDIA-NeMo/Emerging-Optimizers/pull/224">RelativeUpdateHook, PR #224</a>). <a href="https://github.com/allenai/OLMo/blob/main/olmo/optim.py">OLMo</a> packs per-parameter norms into one all-reduce.</p>
-    <ol>
-      <li>T. van Laarhoven, <a href="https://arxiv.org/abs/1706.05350">L2 Regularization versus Batch and Weight Normalization</a>, arXiv:1706.05350, 2017.</li>
-      <li>R. Wan, Z. Zhu, X. Zhang, J. Sun, <a href="https://arxiv.org/abs/2006.08419">Spherical Motion Dynamics: Learning Dynamics of Neural Network with Normalization, Weight Decay, and SGD</a>, arXiv:2006.08419, 2020. Defines the angular update; momentum is not always perpendicular to the weight.</li>
-      <li>Z. Li, K. Lyu, S. Arora, <a href="https://arxiv.org/abs/2010.02916">Reconciling Modern Deep Learning with Traditional Optimization Analyses: The Intrinsic Learning Rate</a>, arXiv:2010.02916, 2020. The number of steps to equilibrium scales as \(1/(\eta\lambda)\), stated as a conjecture with experiments.</li>
-      <li>A. Kosson, B. Messmer, M. Jaggi, <a href="https://arxiv.org/abs/2305.17212">Rotational Equilibrium: How Weight Decay Balances Learning Across Neural Networks</a>, arXiv:2305.17212, 2023. Sec. 3: with momentum, the per-step update is not orthogonal to the weight. Derives the equilibrium per neuron from total update contributions. The appendices measure GPT-2 124M at a constant rate.</li>
-      <li>F. D'Angelo, M. Andriushchenko, A. Varre, N. Flammarion, <a href="https://arxiv.org/abs/2310.04415">Why Do We Need Weight Decay in Modern Deep Learning?</a>, arXiv:2310.04415, 2023.</li>
-      <li>K. Jordan et al., <a href="https://kellerjordan.github.io/posts/muon/">Muon: An optimizer for hidden layers in neural networks</a>, 2024.</li>
-      <li>J. Liu et al., <a href="https://arxiv.org/abs/2502.16982">Muon is Scalable for LLM Training</a>, arXiv:2502.16982, 2025.</li>
-      <li>X. Wang, L. Aitchison, <a href="https://arxiv.org/abs/2405.13698">How to set AdamW's weight decay as you scale model and dataset size</a>, arXiv:2405.13698, 2024.</li>
+    <h2 class="refs-heading">References</h2>
+    <ol class="refs">
       <li>S. Bergsma et al., <a href="https://arxiv.org/abs/2505.13738">Power Lines: Scaling Laws for Weight Decay and Batch Size in LLM Pre-training</a>, arXiv:2505.13738, 2025.</li>
-      <li>A. Kosson et al., <a href="https://arxiv.org/abs/2510.19093">Weight Decay may matter more than muP for Learning Rate Transfer in Practice</a>, arXiv:2510.19093, 2025.</li>
-      <li>Y. Xiao et al., <a href="https://arxiv.org/abs/2607.22444">Hyperball May Not Be a Free Lunch</a>, arXiv:2607.22444, 2026. Reports a negative \(\cos(W,U)\) in LLM training.</li>
-      <li>Z. Liu et al., <a href="https://arxiv.org/abs/2608.24814">Effective Learning Rate Governs Loss Dynamics in Language Model Pretraining</a>, arXiv:2608.24814, 2026.</li>
-      <li>Z. Yang, H. Zhang, J. Xu, J. Zhang, <a href="https://arxiv.org/abs/2606.29158">On the Nonlinearity of Learning Rate Scaling for LLM Training</a>, arXiv:2606.29158, 2026.</li>
-      <li>K. Wen et al., <a href="https://arxiv.org/abs/2606.16899">Fantastic Pretraining Optimizers and Where to Find Them II: Hyperball Optimization</a>, arXiv:2606.16899, 2026.</li>
-      <li>I. Loshchilov et al., <a href="https://arxiv.org/abs/2410.01131">nGPT: Normalized Transformer with Representation Learning on the Hypersphere</a>, arXiv:2410.01131, 2024.</li>
+      <li>F. D'Angelo, M. Andriushchenko, A. Varre, N. Flammarion, <a href="https://arxiv.org/abs/2310.04415">Why Do We Need Weight Decay in Modern Deep Learning?</a>, arXiv:2310.04415, 2023.</li>
       <li>Hunyuan Pretrain Team, <a href="https://hy.tencent.com/research/elr">From LR to ELR</a>, 2026-08-11.</li>
-      <li>Jiaxuan Zou, <a href="https://jiaxuanzou0714.github.io/blog/2026/hyperball-implicit-lr-schedule/">Hyperball、effective lr 与峰值加衰减的形状</a>, 2026-08-25.</li>
+      <li>K. Jordan et al., <a href="https://kellerjordan.github.io/posts/muon/">Muon: An optimizer for hidden layers in neural networks</a>, 2024.</li>
+      <li>A. Kosson, B. Messmer, M. Jaggi, <a href="https://arxiv.org/abs/2305.17212">Rotational Equilibrium: How Weight Decay Balances Learning Across Neural Networks</a>, arXiv:2305.17212, 2023. Sec. 3: with momentum, the per-step update is not orthogonal to the weight. Derives the equilibrium per neuron from total update contributions. The appendices measure GPT-2 124M at a constant rate.</li>
+      <li>A. Kosson et al., <a href="https://arxiv.org/abs/2510.19093">Weight Decay may matter more than muP for Learning Rate Transfer in Practice</a>, arXiv:2510.19093, 2025.</li>
+      <li>T. van Laarhoven, <a href="https://arxiv.org/abs/1706.05350">L2 Regularization versus Batch and Weight Normalization</a>, arXiv:1706.05350, 2017.</li>
+      <li>Z. Li, K. Lyu, S. Arora, <a href="https://arxiv.org/abs/2010.02916">Reconciling Modern Deep Learning with Traditional Optimization Analyses: The Intrinsic Learning Rate</a>, arXiv:2010.02916, 2020. The number of steps to equilibrium scales as \(1/(\eta\lambda)\), stated as a conjecture with experiments.</li>
+      <li>J. Liu et al., <a href="https://arxiv.org/abs/2502.16982">Muon is Scalable for LLM Training</a>, arXiv:2502.16982, 2025.</li>
+      <li>Z. Liu et al., <a href="https://arxiv.org/abs/2608.24814">Effective Learning Rate Governs Loss Dynamics in Language Model Pretraining</a>, arXiv:2608.24814, 2026.</li>
+      <li>I. Loshchilov et al., <a href="https://arxiv.org/abs/2410.01131">nGPT: Normalized Transformer with Representation Learning on the Hypersphere</a>, arXiv:2410.01131, 2024.</li>
       <li>Su Jianlin, <a href="https://kexue.fm/archives/11307">AdamW 的 Weight RMS 的渐近估计（上）</a>, 2025-10-01.</li>
       <li>Su Jianlin, <a href="https://kexue.fm/archives/11985">从参数对称性到有效学习率</a>, 2026-10-27.</li>
+      <li>R. Wan, Z. Zhu, X. Zhang, J. Sun, <a href="https://arxiv.org/abs/2006.08419">Spherical Motion Dynamics: Learning Dynamics of Neural Network with Normalization, Weight Decay, and SGD</a>, arXiv:2006.08419, 2020. Defines the angular update; momentum is not always perpendicular to the weight.</li>
+      <li>X. Wang, L. Aitchison, <a href="https://arxiv.org/abs/2405.13698">How to set AdamW's weight decay as you scale model and dataset size</a>, arXiv:2405.13698, 2024.</li>
+      <li>K. Wen et al., <a href="https://arxiv.org/abs/2606.16899">Fantastic Pretraining Optimizers and Where to Find Them II: Hyperball Optimization</a>, arXiv:2606.16899, 2026.</li>
+      <li>Y. Xiao et al., <a href="https://arxiv.org/abs/2607.22444">Hyperball May Not Be a Free Lunch</a>, arXiv:2607.22444, 2026. Reports a negative \(\cos(W,U)\) in LLM training.</li>
+      <li>Z. Yang, H. Zhang, J. Xu, J. Zhang, <a href="https://arxiv.org/abs/2606.29158">On the Nonlinearity of Learning Rate Scaling for LLM Training</a>, arXiv:2606.29158, 2026.</li>
+      <li>Jiaxuan Zou, <a href="https://jiaxuanzou0714.github.io/blog/2026/hyperball-implicit-lr-schedule/">Hyperball、effective lr 与峰值加衰减的形状</a>, 2026-08-25.</li>
     </ol>
   </div></div>
 </section>
@@ -200,7 +217,7 @@
 <div class="lang-panel" lang="zh-CN" data-lang="zh" hidden>
 <header class="article-header">
   <h1>一个很小的余弦决定了 AdamW 和 Muon 的权重范数</h1>
-  <p class="deck">我们用 AdamW 和 Muon 训练了 16 次 GPT。在恒定学习率、加权重衰减的运行中，更新与权重之间一个很小的负余弦提供了权重范数加回量的 94–97%。一个带动量的随机游走模型能预测这个余弦与有效学习率（ELR）之比的中位数，偏差在 13% 以内。在到达平衡的那一对运行中，Muon 的 ELR 比 AdamW 低 23%，模型预测 24%。</p>
+  <p class="deck">加权重衰减时，权重范数决定平衡时的有效学习率（ELR），即相对于权重的步长。在恒定学习率的运行中，每步更新都略微偏向权重的反方向，这个很小的负余弦提供了权重范数加回量的 94–97%。一个带动量的模型能预测这个偏向和平衡 ELR：Muon 比 AdamW 低 24%，到达平衡的那一对运行实测低 23%。</p>
   <p class="metadata">Sense Wang · 2026 年 10 月</p>
 </header>
 
@@ -211,8 +228,8 @@
     <p>其中 \(W\) 是一个权重矩阵。\(\eta\) 是学习率调度给出的学习率，下文叫名义学习率。\(U\) 是更新：优化器根据梯度算出的方向，还没乘 \(\eta\)。\(\lVert\cdot\rVert\) 是 Frobenius 范数，即所有元素平方和的平方根。本文的两个优化器都按同一条规则更新：</p>
     <div class="equation">\[ W \leftarrow (1-\eta\lambda)\,W - \eta U . \]</div>
     <p>一步是 \(-\eta U\)。权重衰减系数为 \(\lambda\)，它另外把 \(W\) 缩小 \(\eta\lambda W\)。AdamW 和 Muon 的区别只在于怎样算 \(U\)。对尺度不变的权重，ELR 衡量网络函数变化的快慢。尺度不变是指把 \(W\) 乘以任意正数，网络输出都不变。这些运行里没有一个矩阵是尺度不变的。在 pre-norm Transformer 里，尺度对称性成立于成对的矩阵，例如 \((W_{q}, W_{k})\)，对单个矩阵不成立（<a href="https://kexue.fm/archives/11985">苏剑林，2026</a>）。</p>
-    <p>名义学习率恒定为 2.4e-3、权重衰减为 0.1 时，运行覆盖 6 个 \(1/(\eta\lambda)\) 步的时间尺度，范数收支达到平衡。训练最后 10% 的 ELR 中位数，Muon 为 0.0041，AdamW 为 0.0053。所以 Muon 低 23%。在平衡点上，ELR 与更新大小无关。这个比较每个优化器只有一次运行。基准学习率 6e-4 下，Muon 也低 20%，但原因不同。这时运行只覆盖 1.5 个时间尺度，ELR 仍随更新大小变化。用 Moonlight 缩放时，Muon 的更新范数是 AdamW 的 0.80 倍。不加权重衰减和线性衰减时，也有同样 20–24% 的差距。</p>
-    <p>在平衡点上，权重范数决定 ELR。权重衰减去掉的量等于更新加回的量时，范数稳定下来。\(U\) 与 \(W\) 之间余弦的中位数很小，为 −0.02 到 −0.06。它仍然提供了加回量的 94–97%。一个带动量的随机游走模型能预测这个余弦与 ELR 之比的中位数，偏差在模型值的 13% 以内。按这个模型，Nesterov 动量 0.95 的 Muon，其平衡 ELR 比 \(\beta_{1} = 0.9\) 的 AdamW 低 24%。单个矩阵类型与模型的偏差最大约为 2 倍，一个离群值超过 5 倍。</p>
+    <p>只有权重衰减时，\(\lVert W\rVert\) 每 \(1/(\eta\lambda)\) 步缩小为原来的 \(1/e\)。我们把这段步数称为一个时间尺度。一个矩阵的范数收支，是每一步给 \(\lVert W\rVert^2\) 加上的量和权重衰减去掉的量。经过几个时间尺度后，收支达到平衡，范数不再变化。我们把这个状态称为平衡。名义学习率恒定为 2.4e-3、权重衰减为 0.1 时，运行覆盖 6 个时间尺度，到达平衡。训练最后 10% 的 ELR 中位数，Muon 为 0.0041，AdamW 为 0.0053，所以 Muon 低 23%。权重范数会一直调整，直到权重衰减去掉的量等于更新加回的量，所以平衡 ELR 与更新大小无关。这个比较每个优化器只有一次运行。基准学习率下还有第二个差距，原因不同，在平衡公式之后讨论。</p>
+    <p>在平衡点上，权重范数决定 ELR。权重衰减去掉的量等于更新加回的量时，范数稳定下来。\(U\) 与 \(W\) 之间余弦的中位数很小，为 −0.02 到 −0.06。在恒定学习率、加权重衰减的运行中，它仍然提供了加回量的 94–97%。一个带动量的随机游走模型预测：余弦是 ELR 的固定倍数，这个倍数只由动量系数 \(\beta\) 决定。\(\beta_{1} = 0.9\) 的 AdamW，倍数为 \(-\beta_{1}/(1-\beta_{1}) = -9\)。Muon 的 Nesterov 动量取 0.95，倍数为 −16。在我们的 16 次运行中，四次恒定学习率、加权重衰减的运行给出的中位数为 −8.0 到 −9.4 和 −14.0 到 −15.7。偏差都在模型值的 13% 以内。按这个模型，Muon 的平衡 ELR 比 AdamW 低 24%。单个矩阵类型与模型的偏差最大约为 2 倍，一个离群值超过 5 倍。</p>
     <p>其中一部分是已知结论。恒定的 \(\eta\) 会让 ELR 下降。权重衰减会让 ELR 进入旋转平衡，此时范数不再变化（<a href="https://arxiv.org/abs/1706.05350">van Laarhoven, 2017</a>；<a href="https://arxiv.org/abs/2006.08419">Wan et al., 2020</a>；<a href="https://arxiv.org/abs/2010.02916">Li et al., 2020</a>）。<a href="https://arxiv.org/abs/2305.17212">Kosson et al.（2023）</a>推出了 AdamW 的平衡值，并在 GPT-2 124M、恒定学习率下逐层测量了它。在 LLM 预训练中，<a href="https://jiaxuanzou0714.github.io/blog/2026/hyperball-implicit-lr-schedule/">Zou（2026）</a>测到 Muon 在恒定学习率下 ELR 下降。<a href="https://hy.tencent.com/research/elr">混元团队（2026）</a>推出每步转角的稳态值约为 \(\sqrt{2\eta\lambda}\)。他们还观察到，不同学习率调度下的转角曲线几乎重合。本文补充三点。第一，在同一套设置里测量 Muon 和 AdamW。第二，把每步的范数收支拆成平方项和交叉项。第三，用动量系数预测交叉项，适用于任意动量形式。</p>
   </div></div>
   <div class="layout block"><div class="prose">
@@ -258,7 +275,7 @@
     <div class="equation">\[ \begin{aligned} \langle W_t, U_t\rangle &\approx -\eta\,\frac{\beta}{1-\beta}\,\lVert U\rVert^2 , \\ \cos(W,U) &\approx -\frac{\beta}{1-\beta}\,\mathrm{ELR} . \end{aligned} \]</div>
     <p>更新偏向 \(-W\)，所以一步 \(-\eta U\) 有一部分沿着 \(+W\)，指向远离原点的方向。这使范数增长。这个推导没有用到权重衰减。交叉项与平方项之比等于 \(2\beta/(1-\beta)\)，与 \(\eta\) 无关。</p>
     <p>AdamW 的 \(\beta_{1} = 0.9\)，模型预测 \(\cos/\mathrm{ELR} = -9\)，交叉项 / 平方项 = 18。AdamW 的运行在基准学习率下实测 −9.4 和 19，在 4 倍学习率下实测 −8.0 和 16。</p>
-    <p>这份代码里的 Muon 用 Nesterov 动量：\(m_t = \beta m_{t-1} + g_t\)，\(U_t \propto g_t + \beta m_t\)。\(k\) 步之前的梯度的系数为 \(a_0 = 1+\beta\)，\(k \ge 1\) 时 \(a_k = \beta^{k+1}\)。Muon 会重新缩放 \(U\)，所以只有各系数之间的比例起作用。对任意一组系数，同样的求和给出</p>
+    <p>这份代码里的 Muon 用 Nesterov 动量：\(m_t = \beta m_{t-1} + g_t\)，\(U_t \propto g_t + \beta m_t\)。\(k\) 步之前的梯度的系数为 \(a_0 = 1+\beta\)，\(k \ge 1\) 时 \(a_k = \beta^{k+1}\)。设 \(U_t \propto \sum_k a_k g_{t-k}\)。相隔 \(d\) 步的两个更新含有相同的梯度，共同的系数为 \(\sum_k a_k a_{k+d}\)。对 \(d \ge 1\) 求和得到 \(\tfrac12\big[(\sum_k a_k)^2 - \sum_k a_k^2\big]\)。再除以 \(\lVert U\rVert^2\)，它正比于 \(\sum_k a_k^2\)，就得到下式。Muon 会重新缩放 \(U\)，所以只有各系数之间的比例起作用。这一步把正交化当成固定的缩放。这是近似，表 1 用实测检验它。</p>
     <div class="equation">\[ \frac{\cos(W,U)}{\mathrm{ELR}} \approx -\,\frac{\left(\sum_k a_k\right)^2 - \sum_k a_k^2}{2\sum_k a_k^2} . \]</div>
     <p>代入 EMA 的系数 \((1-\beta)\beta^k\)，得到 \(-\beta/(1-\beta)\)。Nesterov 动量在 \(\beta = 0.95\) 时得到 −16.0，交叉项 / 平方项约为 32。0.95 的普通动量会给出 −19 和 38。Muon 的运行在基准学习率下实测 −15.7 和 31，在 4 倍学习率下实测 −14.0 和 28。</p>
   </div></div>
@@ -285,7 +302,8 @@
     <div class="equation">\[ \mathrm{ELR} \approx \sqrt{\frac{2\eta\lambda\,(1-\beta)}{1+\beta}} . \]</div>
     <p>这是已知的 AdamW 平衡值（Kosson et al., 2023）。Kosson et al. 对每个神经元推导，即矩阵的一行。本文把它用于整个矩阵。\(\beta_{1} = 0.9\) 时，它比 \(\sqrt{2\eta\lambda}\) 小 4.4 倍。4 倍学习率下收支已经平衡，公式对 AdamW 预测 0.0050，实测 0.0053。对 Nesterov 动量，右边是 \(1 + 32 = 33\) 倍的 \(\mathrm{ELR}^2\)，所以 ELR 为 \(\sqrt{2\eta\lambda/33}\)。它对 Muon 预测 0.0038，实测 0.0041。模型对两个优化器都偏低 5–7%。</p>
     <p>\(\beta\) 固定了交叉项与平方项之比，所以平衡 ELR 按 \(\sqrt{\eta\lambda}\) 变化。学习率提高到 4 倍，ELR 应变为 2 倍。实测为 2.1 倍（AdamW）和 2.0 倍（Muon），尽管基准学习率的运行还没完全到达平衡。</p>
-    <p>这个模型也预测了平衡时的差距。\(\eta\) 和 \(\lambda\) 相同时，Nesterov 0.95 的 Muon 应比 \(\beta_{1} = 0.9\) 的 AdamW 低约 24%。4 倍学习率的运行实测低 23%。在这对运行中，Muon 的更新范数是 AdamW 的 0.85 倍，Muon 的权重范数是 AdamW 的 1.05 倍。权重范数的调整抵消了更新大小的差别。基准学习率的运行没有到达平衡，那里 20% 的差距来自更新范数。两个优化器除了动量还有其他区别，所以这个吻合不能单独证明动量的作用。模型还预测：把 \(\beta_{1}\) 从 0.9 提到 0.95，AdamW 的平衡 ELR 降低 30%。我们没有检验这一点。</p>
+    <p>这个模型也预测了平衡时的差距。\(\eta\) 和 \(\lambda\) 相同时，Nesterov 0.95 的 Muon 应比 \(\beta_{1} = 0.9\) 的 AdamW 低约 24%。4 倍学习率的运行实测低 23%。在这对运行中，Muon 的更新范数是 AdamW 的 0.85 倍，Muon 的权重范数是 AdamW 的 1.05 倍。权重范数的调整抵消了更新大小的差别。两个优化器除了动量还有其他区别，所以这个吻合不能单独证明动量的作用。模型还预测：把 \(\beta_{1}\) 从 0.9 提到 0.95，AdamW 的平衡 ELR 降低 30%。我们没有检验这一点。</p>
+    <p>基准学习率 6e-4 下有第二个差距，原因不同。这些运行只覆盖 1.5 个时间尺度，没有到达平衡。这时 Muon 也低 20%，但 ELR 仍随更新大小变化。用 Moonlight 缩放时，Muon 的更新范数是 AdamW 的 0.80 倍，两者的权重范数只差 3%。不加权重衰减和线性衰减时，也有同样 20–24% 的差距。这个差距来自更新范数，平衡模型不能解释它。</p>
     <p>ELR 近似等于 \(W\) 与 \(W - \eta U\) 之间的夹角（Kosson et al., 2023）。常用的定义有两种：相对步长，即本文的 ELR（苏剑林，2026）；以及角度更新（Wan et al., 2020；Kosson et al., 2023；Zou, 2026 有讨论）。Xiao et al.（2026）认为角度形式的 ELR 应保留 \(\langle W,U\rangle\) 项。在这里，两种定义的中位数相差不超过 0.2%。所以内积对角度的影响可以忽略，对范数的影响占主导。建模范数时必须保留它。只监控角度时可以去掉它。</p>
     <p>随机游走模型针对恒定学习率。线性衰减时，cos / ELR 的绝对值更大：加权重衰减为 −19 到 −36，不加为 −13 到 −23。我们对每次稳定的线性衰减运行，在训练最后 40% 上用余弦中位数对 ELR 中位数做线性拟合。斜率接近恒定学习率下的比值：AdamW 为 −8 到 −9，Muon 为 −12 到 −14。拟合还有一个 −0.001 到 −0.004 的偏移，模型里没有这一项。所以 ELR 趋于零时，比值变大。如前所述，沿 \(-W\) 方向的平均梯度分量可能产生这样的偏移，但我们没有测量它。</p>
   </div></div>
@@ -338,26 +356,27 @@
 <section class="chapter" aria-label="注释与参考文献">
   <div class="layout block"><div class="prose footnotes">
     <p>代码和全部 16 次运行的原始日志放在 <a href="https://github.com/haosenwang1018/elrstats">github.com/haosenwang1018/elrstats</a>。仓库里有一个小库，它为每个完整的矩阵算出 \(\lVert W\rVert^2\)、\(\lVert U\rVert^2\) 和 \(\langle W,U\rangle\)。FSDP2 或张量并行把矩阵切到多张 GPU 上时，它也能算。它还能把合并的矩阵拆成 q、k、v。已有相关工具。NVIDIA Emerging-Optimizers 用逐张量的范数实现了相对更新规则（<a href="https://github.com/NVIDIA-NeMo/Emerging-Optimizers/pull/224">RelativeUpdateHook，PR #224</a>）。<a href="https://github.com/allenai/OLMo/blob/main/olmo/optim.py">OLMo</a> 把逐参数的范数打包成一次 all-reduce。</p>
-    <ol>
-      <li>T. van Laarhoven, <a href="https://arxiv.org/abs/1706.05350">L2 Regularization versus Batch and Weight Normalization</a>, arXiv:1706.05350, 2017.</li>
-      <li>R. Wan, Z. Zhu, X. Zhang, J. Sun, <a href="https://arxiv.org/abs/2006.08419">Spherical Motion Dynamics: Learning Dynamics of Neural Network with Normalization, Weight Decay, and SGD</a>, arXiv:2006.08419, 2020. 定义了角度更新；动量与权重不一定垂直。</li>
-      <li>Z. Li, K. Lyu, S. Arora, <a href="https://arxiv.org/abs/2010.02916">Reconciling Modern Deep Learning with Traditional Optimization Analyses: The Intrinsic Learning Rate</a>, arXiv:2010.02916, 2020. 到达平衡所需的步数按 \(1/(\eta\lambda)\) 变化，以猜想形式提出并有实验支持。</li>
-      <li>A. Kosson, B. Messmer, M. Jaggi, <a href="https://arxiv.org/abs/2305.17212">Rotational Equilibrium: How Weight Decay Balances Learning Across Neural Networks</a>, arXiv:2305.17212, 2023. 第 3 节：有动量时，每步更新与权重不正交。用总更新贡献按神经元推出平衡值。附录在恒定学习率下测量了 GPT-2 124M。</li>
-      <li>F. D'Angelo, M. Andriushchenko, A. Varre, N. Flammarion, <a href="https://arxiv.org/abs/2310.04415">Why Do We Need Weight Decay in Modern Deep Learning?</a>, arXiv:2310.04415, 2023.</li>
-      <li>K. Jordan et al., <a href="https://kellerjordan.github.io/posts/muon/">Muon: An optimizer for hidden layers in neural networks</a>, 2024.</li>
-      <li>J. Liu et al., <a href="https://arxiv.org/abs/2502.16982">Muon is Scalable for LLM Training</a>, arXiv:2502.16982, 2025.</li>
-      <li>X. Wang, L. Aitchison, <a href="https://arxiv.org/abs/2405.13698">How to set AdamW's weight decay as you scale model and dataset size</a>, arXiv:2405.13698, 2024.</li>
+    <h2 class="refs-heading">参考文献</h2>
+    <ol class="refs">
       <li>S. Bergsma et al., <a href="https://arxiv.org/abs/2505.13738">Power Lines: Scaling Laws for Weight Decay and Batch Size in LLM Pre-training</a>, arXiv:2505.13738, 2025.</li>
-      <li>A. Kosson et al., <a href="https://arxiv.org/abs/2510.19093">Weight Decay may matter more than muP for Learning Rate Transfer in Practice</a>, arXiv:2510.19093, 2025.</li>
-      <li>Y. Xiao et al., <a href="https://arxiv.org/abs/2607.22444">Hyperball May Not Be a Free Lunch</a>, arXiv:2607.22444, 2026. 在 LLM 训练中报告负的 \(\cos(W,U)\)。</li>
-      <li>Z. Liu et al., <a href="https://arxiv.org/abs/2608.24814">Effective Learning Rate Governs Loss Dynamics in Language Model Pretraining</a>, arXiv:2608.24814, 2026.</li>
-      <li>Z. Yang, H. Zhang, J. Xu, J. Zhang, <a href="https://arxiv.org/abs/2606.29158">On the Nonlinearity of Learning Rate Scaling for LLM Training</a>, arXiv:2606.29158, 2026.</li>
-      <li>K. Wen et al., <a href="https://arxiv.org/abs/2606.16899">Fantastic Pretraining Optimizers and Where to Find Them II: Hyperball Optimization</a>, arXiv:2606.16899, 2026.</li>
-      <li>I. Loshchilov et al., <a href="https://arxiv.org/abs/2410.01131">nGPT: Normalized Transformer with Representation Learning on the Hypersphere</a>, arXiv:2410.01131, 2024.</li>
+      <li>F. D'Angelo, M. Andriushchenko, A. Varre, N. Flammarion, <a href="https://arxiv.org/abs/2310.04415">Why Do We Need Weight Decay in Modern Deep Learning?</a>, arXiv:2310.04415, 2023.</li>
       <li>混元 Pretrain Team，<a href="https://hy.tencent.com/research/elr">From LR to ELR</a>，2026-08-11.</li>
-      <li>Jiaxuan Zou, <a href="https://jiaxuanzou0714.github.io/blog/2026/hyperball-implicit-lr-schedule/">Hyperball、effective lr 与峰值加衰减的形状</a>, 2026-08-25.</li>
+      <li>K. Jordan et al., <a href="https://kellerjordan.github.io/posts/muon/">Muon: An optimizer for hidden layers in neural networks</a>, 2024.</li>
+      <li>A. Kosson, B. Messmer, M. Jaggi, <a href="https://arxiv.org/abs/2305.17212">Rotational Equilibrium: How Weight Decay Balances Learning Across Neural Networks</a>, arXiv:2305.17212, 2023. 第 3 节：有动量时，每步更新与权重不正交。用总更新贡献按神经元推出平衡值。附录在恒定学习率下测量了 GPT-2 124M。</li>
+      <li>A. Kosson et al., <a href="https://arxiv.org/abs/2510.19093">Weight Decay may matter more than muP for Learning Rate Transfer in Practice</a>, arXiv:2510.19093, 2025.</li>
+      <li>T. van Laarhoven, <a href="https://arxiv.org/abs/1706.05350">L2 Regularization versus Batch and Weight Normalization</a>, arXiv:1706.05350, 2017.</li>
+      <li>Z. Li, K. Lyu, S. Arora, <a href="https://arxiv.org/abs/2010.02916">Reconciling Modern Deep Learning with Traditional Optimization Analyses: The Intrinsic Learning Rate</a>, arXiv:2010.02916, 2020. 到达平衡所需的步数按 \(1/(\eta\lambda)\) 变化，以猜想形式提出并有实验支持。</li>
+      <li>J. Liu et al., <a href="https://arxiv.org/abs/2502.16982">Muon is Scalable for LLM Training</a>, arXiv:2502.16982, 2025.</li>
+      <li>Z. Liu et al., <a href="https://arxiv.org/abs/2608.24814">Effective Learning Rate Governs Loss Dynamics in Language Model Pretraining</a>, arXiv:2608.24814, 2026.</li>
+      <li>I. Loshchilov et al., <a href="https://arxiv.org/abs/2410.01131">nGPT: Normalized Transformer with Representation Learning on the Hypersphere</a>, arXiv:2410.01131, 2024.</li>
       <li>苏剑林，<a href="https://kexue.fm/archives/11307">AdamW 的 Weight RMS 的渐近估计（上）</a>，2025-10-01.</li>
       <li>苏剑林，<a href="https://kexue.fm/archives/11985">从参数对称性到有效学习率</a>，2026-10-27.</li>
+      <li>R. Wan, Z. Zhu, X. Zhang, J. Sun, <a href="https://arxiv.org/abs/2006.08419">Spherical Motion Dynamics: Learning Dynamics of Neural Network with Normalization, Weight Decay, and SGD</a>, arXiv:2006.08419, 2020. 定义了角度更新；动量与权重不一定垂直。</li>
+      <li>X. Wang, L. Aitchison, <a href="https://arxiv.org/abs/2405.13698">How to set AdamW's weight decay as you scale model and dataset size</a>, arXiv:2405.13698, 2024.</li>
+      <li>K. Wen et al., <a href="https://arxiv.org/abs/2606.16899">Fantastic Pretraining Optimizers and Where to Find Them II: Hyperball Optimization</a>, arXiv:2606.16899, 2026.</li>
+      <li>Y. Xiao et al., <a href="https://arxiv.org/abs/2607.22444">Hyperball May Not Be a Free Lunch</a>, arXiv:2607.22444, 2026. 在 LLM 训练中报告负的 \(\cos(W,U)\)。</li>
+      <li>Z. Yang, H. Zhang, J. Xu, J. Zhang, <a href="https://arxiv.org/abs/2606.29158">On the Nonlinearity of Learning Rate Scaling for LLM Training</a>, arXiv:2606.29158, 2026.</li>
+      <li>Jiaxuan Zou, <a href="https://jiaxuanzou0714.github.io/blog/2026/hyperball-implicit-lr-schedule/">Hyperball、effective lr 与峰值加衰减的形状</a>, 2026-08-25.</li>
     </ol>
   </div></div>
 </section>
@@ -366,7 +385,7 @@
 <script>
 (function () {
   var KEY = "elr-blog-language";
-  var TITLES = { en: "A Small Cosine Sets the Weight Norm under AdamW and Muon", zh: "一个很小的余弦决定了 AdamW 和 Muon 的权重范数" };
+  var TITLES = { en: "A Small Cosine Sets the Weight Norm under AdamW and Muon - Sense Wang", zh: "一个很小的余弦决定了 AdamW 和 Muon 的权重范数 - Sense Wang" };
   var buttons = Array.prototype.slice.call(document.querySelectorAll("[data-lang-button]"));
   var panels = Array.prototype.slice.call(document.querySelectorAll(".lang-panel[data-lang]"));
 
@@ -400,12 +419,33 @@
   try { fromUrl = new URLSearchParams(window.location.search).get("lang"); } catch (e) {}
   if (fromUrl === "zh" || fromUrl === "en") {
     initial = fromUrl;
-  } else if (window.location.hash.indexOf("#zh-") === 0) {
-    initial = "zh";
   } else {
-    try { var saved = localStorage.getItem(KEY); if (saved === "zh" || saved === "en") initial = saved; } catch (e) {}
+    var panel = null;
+    if (window.location.hash.length > 1) {
+      var target = null;
+      try { target = document.getElementById(decodeURIComponent(window.location.hash.slice(1))); } catch (e) {}
+      panel = target && target.closest(".lang-panel[data-lang]");
+    }
+    if (panel) {
+      initial = panel.getAttribute("data-lang");
+    } else {
+      try { var saved = localStorage.getItem(KEY); if (saved === "zh" || saved === "en") initial = saved; } catch (e) {}
+    }
   }
   show(initial, false);
+
+  function scrollToHash() {
+    var t = null;
+    try { t = location.hash.length > 1 && document.getElementById(decodeURIComponent(location.hash.slice(1))); } catch (e) {}
+    if (t) t.scrollIntoView({ behavior: "instant", block: "start" });
+  }
+  window.addEventListener("load", function () {
+    if (window.MathJax && MathJax.startup && MathJax.startup.promise) {
+      MathJax.startup.promise.then(scrollToHash);
+    } else {
+      scrollToHash();
+    }
+  });
 })();
 </script>
 </main>
