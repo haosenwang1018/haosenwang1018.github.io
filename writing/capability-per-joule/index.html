@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Capability per Joule - Sense Wang</title>
+<meta name="description" content="Capability per joule is capability per FLOP times FLOP per joule; pretraining and infrastructure move these two factors, and gains there transfer across models.">
+<link rel="canonical" href="https://sensewang.com/writing/capability-per-joule/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Sense Wang">
+<meta property="og:title" content="Capability per Joule">
+<meta property="og:description" content="Capability per joule is capability per FLOP times FLOP per joule; pretraining and infrastructure move these two factors, and gains there transfer across models.">
+<meta property="og:url" content="https://sensewang.com/writing/capability-per-joule/">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="zh_CN">
+<meta property="article:published_time" content="2026-10-30">
+<meta property="article:author" content="Sense Wang">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Capability per Joule">
+<meta name="twitter:description" content="Capability per joule is capability per FLOP times FLOP per joule; pretraining and infrastructure move these two factors, and gains there transfer across models.">
+<link rel="stylesheet" href="reader.css?v=3">
+<style>
+  main { position: relative; }
+  .lang-switch { position: absolute; top: 24px; right: var(--gutter); font-size: 14px; line-height: 20px; letter-spacing: normal; color: var(--muted); }
+  .lang-switch button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  .lang-switch button[aria-pressed="true"] { color: var(--ink); cursor: default; }
+  .lang-switch .sep { margin: 0 6px; }
+  .lang-panel[hidden] { display: none; }
+  .site-nav { max-width: 1440px; margin: 0 auto 48px; padding: 24px var(--gutter) 0; font-size: 14px; line-height: 20px; color: var(--muted); letter-spacing: normal; }
+  .site-nav a { color: inherit; }
+</style>
+<script>
+  window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, chtml: { scale: 1.0 } };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"></script>
+</head>
+<body>
+<a class="skip" href="#article">Skip to article</a>
+<nav class="site-nav"><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+<main id="article">
+<nav class="lang-switch" aria-label="Language">
+  <button type="button" data-lang-button="en" aria-pressed="true" lang="en">English</button><span class="sep" aria-hidden="true">/</span><button type="button" data-lang-button="zh" aria-pressed="false" lang="zh-CN">中文</button>
+</nav>
+
+<div class="lang-panel" lang="en" data-lang="en">
+<header class="article-header">
+  <h1>Capability per Joule</h1>
+  <p class="metadata">Sense Wang · October 2026</p>
+</header>
+
+<section class="chapter" aria-label="Opening">
+  <div class="layout block"><div class="prose">
+    <p>Every model inherits two numbers from its stack: how much capability it gets per FLOP, and how many FLOPs it gets per joule. Pretraining sets most of the first. Infrastructure and the chip set the second. I think energy and efficiency are first principles of intelligence, so I have moved my research focus from robot world models to these two numbers.</p>
+    <p>Multiplied, the two numbers give capability per joule:</p>
+    <div class="equation">\[ \frac{\text{capability}}{\text{joule}} = \frac{\text{capability}}{\text{FLOP}} \times \frac{\text{FLOP}}{\text{joule}} \]</div>
+    <p>The formula is bookkeeping. It is true for any model. The claim is about who can move each factor. Pretraining moves the first factor through architecture, data, optimizer and learning-rate schedule. Infrastructure moves the second through kernels, memory traffic and communication; the chip sets its ceiling. Capability needs a fixed proxy, such as loss on fixed data or a fixed evaluation score.</p>
+    <p>An LLM is a system, and infrastructure and pretraining are its core. Gains in this layer transfer across models. A new world-model architecture raises capability per FLOP for one class of tasks. A better optimizer, or a kernel that moves fewer bytes, can help many models that share the same operators and hardware. That transfer is why I call this layer more fundamental.</p>
+  </div></div>
+</section>
+
+<section class="chapter" aria-labelledby="hardware">
+  <div class="layout block"><div class="prose">
+    <h2 id="hardware">Algorithms fit the hardware</h2>
+    <p>Aidan Smith, a co-founder of Flapping Airplanes, gives an example from the brain. He says that signals in the brain are slow next to a GPU, which works in microseconds. He adds that the brain spends about 20 times more energy on white-matter wiring to get even that speed. His conclusion: “everything fits to the hardware that it’s given” (<a href="https://www.youtube.com/watch?v=D6vex2xnwD8&amp;t=352s">05:52</a>).</p>
+    <p>If algorithms fit the hardware, the cost of the hardware is part of what makes an algorithm good: joules, bytes moved, microseconds.</p>
+  </div></div>
+</section>
+
+<section class="chapter" aria-labelledby="small">
+  <div class="layout block"><div class="prose">
+    <h2 id="small">What small experiments can already do</h2>
+    <p>Two recent measurements show that small experiments can study this layer. Neither is in joules yet.</p>
+    <p>One-row BF16 GEMMs in a decode step are bound by bytes read from memory. Triton’s <a href="../do-bench-dirty-l2/"><code>do_bench</code></a> clears the L2 cache by writing zeros. The zeros leave dirty lines that must go back to memory first, and this adds 12–20&nbsp;µs to these GEMMs on one A100. For one layer shape, the flush changed the rank of 9 of 96 Triton INT8 kernel configurations against cuBLAS. In this layer, the measurement is part of the research.</p>
+    <p>In a GPT-2-small-sized model, a simple momentum model predicts that the <a href="../effective-learning-rate/">equilibrium effective learning rate</a> of Muon is 24% below that of AdamW. The one run pair that reached equilibrium gave 23%. One pair cannot isolate momentum, and a gap of similar size also appears away from equilibrium, for another reason.</p>
+  </div></div>
+</section>
+
+<section class="chapter" aria-labelledby="limits">
+  <div class="layout block"><div class="prose">
+    <h2 id="limits">Where the claim stops</h2>
+    <p>The strongest objection is historical. The largest past gains in capability per FLOP came from architecture and data, such as the transformer. I accept it. I put architecture inside pretraining, and I do not claim that kernels matter more than architecture.</p>
+    <p>Data is a limit that the formula hides. When the number or quality of tokens binds, FLOP efficiency does not help. Even Aidan’s lab, which bets on data efficiency, works toward it through new GPU primitives.</p>
+    <p>So the claim needs three conditions: compute and energy limit capability, data does not, and the capability proxy is stable. Under them, gains in this layer reach many models that share the same operators and hardware.</p>
+  </div></div>
+</section>
+</div>
+
+<div class="lang-panel" lang="zh-CN" data-lang="zh" hidden>
+<header class="article-header">
+  <h1>每焦耳的能力</h1>
+  <p class="metadata">Sense Wang · 2026 年 10 月</p>
+</header>
+
+<section class="chapter" aria-label="开篇">
+  <div class="layout block"><div class="prose">
+    <p>每个模型都从它的技术栈继承两个数：每个 FLOP 换来多少能力，每焦耳能算多少个 FLOP。第一个数主要由预训练决定。第二个数由芯片和基础设施决定。我认为能量和效率是智能的第一性原理，所以把研究投入从机器人世界模型转到了这两个数上。</p>
+    <p>两个数相乘，就是每焦耳的能力：</p>
+    <div class="equation">\[ \frac{\text{能力}}{\text{焦耳}} = \frac{\text{能力}}{\text{FLOP}} \times \frac{\text{FLOP}}{\text{焦耳}} \]</div>
+    <p>这个式子只是记账，对任何模型都成立。真正的判断在于谁能改变哪个因子。预训练通过架构、数据、优化器和学习率调度改变第一个因子。基础设施通过 kernel、显存读写和通信改变第二个因子，芯片决定它的上限。能力要用一个固定的指标代替，例如固定数据上的 loss，或固定评测集上的分数。</p>
+    <p>LLM 是一个系统，基础设施和预训练是它的核心。这一层的改进能在模型之间迁移。新的世界模型架构，只提高一类任务的每 FLOP 能力。更好的优化器，或少搬运字节的 kernel，能帮到共用同一批算子和硬件的许多模型。所以我说这一层更本质。</p>
+  </div></div>
+</section>
+
+<section class="chapter" aria-labelledby="hardware-zh">
+  <div class="layout block"><div class="prose">
+    <h2 id="hardware-zh">算法适应硬件</h2>
+    <p>Flapping Airplanes 的联合创始人 Aidan Smith 举过大脑的例子。他说，和以微秒计的 GPU 相比，大脑里的信号很慢；为了这个速度，大脑还要在白质连接上多花约 20 倍的能量。他的结论是：“everything fits to the hardware that it’s given”（<a href="https://www.youtube.com/watch?v=D6vex2xnwD8&amp;t=352s">05:52</a>）。</p>
+    <p>既然算法适应硬件，硬件的代价就是衡量算法好坏的一部分：焦耳、搬运的字节、微秒。</p>
+  </div></div>
+</section>
+
+<section class="chapter" aria-labelledby="small-zh">
+  <div class="layout block"><div class="prose">
+    <h2 id="small-zh">小实验已经能做什么</h2>
+    <p>最近的两项测量说明，这一层可以用小实验研究。两项都还没有以焦耳为单位。</p>
+    <p>decode 阶段的单行 BF16 GEMM，耗时由从显存读出的字节数决定。Triton 的 <a href="../do-bench-dirty-l2/"><code>do_bench</code></a> 用写零的方法清空 L2 缓存，留下的脏缓存行要先写回显存，在一张 A100 上让这类 GEMM 多出 12 到 20 微秒。在同一个层形状下，96 个 Triton INT8 kernel 配置里有 9 个因此改变了和 cuBLAS 的快慢排名。在这一层，测量本身就是研究的一部分。</p>
+    <p>在 GPT-2 small 规模的模型上，简单的动量模型预测：平衡状态下 Muon 的<a href="../effective-learning-rate/">有效学习率</a>比 AdamW 低 24%。唯一达到平衡的一对运行测得 23%。只有一对运行，分离不出动量的作用；而且离开平衡状态时，也会因为别的原因出现差不多大的差距。</p>
+  </div></div>
+</section>
+
+<section class="chapter" aria-labelledby="limits-zh">
+  <div class="layout block"><div class="prose">
+    <h2 id="limits-zh">这个判断的边界</h2>
+    <p>最有力的反驳来自历史：过去每 FLOP 能力最大的提升来自架构和数据，例如 Transformer。我接受这一点。我把架构算在预训练里，也不认为 kernel 比架构更重要。</p>
+    <p>数据是这个式子藏起来的限制。token 的数量或质量成为瓶颈时，FLOP 效率帮不上忙。即使是押注数据效率的 Aidan 的实验室，走的路也是新的 GPU 原语。</p>
+    <p>所以这个判断要满足三个条件：能力受算力和能量限制，不受数据限制，能力指标足够稳定。满足这些条件时，这一层的一次改进，能同时帮到共用同一批算子和硬件的许多模型。</p>
+  </div></div>
+</section>
+</div>
+
+<script>
+(function () {
+  var KEY = "writing-language";
+  var TITLES = { en: "Capability per Joule - Sense Wang", zh: "每焦耳的能力 - Sense Wang" };
+  var DESCS = {
+    en: "Capability per joule is capability per FLOP times FLOP per joule; pretraining and infrastructure move these two factors, and gains there transfer across models.",
+    zh: "每焦耳的能力等于每 FLOP 的能力乘以每焦耳的 FLOP；预训练和基础设施改变这两个因子，这一层的改进能在模型之间迁移。"
+  };
+  var buttons = Array.prototype.slice.call(document.querySelectorAll("[data-lang-button]"));
+  var panels = Array.prototype.slice.call(document.querySelectorAll(".lang-panel[data-lang]"));
+  var metaDesc = document.querySelector('meta[name="description"]');
+
+  function show(lang, remember) {
+    if (!TITLES[lang]) lang = "en";
+    var active = null;
+    panels.forEach(function (p) {
+      var on = p.getAttribute("data-lang") === lang;
+      p.hidden = !on;
+      if (on) active = p;
+    });
+    buttons.forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.getAttribute("data-lang-button") === lang));
+    });
+    document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+    document.title = TITLES[lang];
+    if (metaDesc) metaDesc.setAttribute("content", DESCS[lang]);
+    if (remember) {
+      try { localStorage.setItem(KEY, lang); } catch (e) {}
+    }
+    if (active && window.MathJax && typeof window.MathJax.typesetPromise === "function") {
+      window.MathJax.typesetPromise([active]).catch(function () {});
+    }
+  }
+
+  buttons.forEach(function (b) {
+    b.addEventListener("click", function () { show(b.getAttribute("data-lang-button"), true); });
+  });
+
+  var initial = "en";
+  var fromUrl = null;
+  try { fromUrl = new URLSearchParams(window.location.search).get("lang"); } catch (e) {}
+  if (fromUrl === "zh" || fromUrl === "en") {
+    initial = fromUrl;
+  } else {
+    var panel = null;
+    if (window.location.hash.length > 1) {
+      var target = null;
+      try { target = document.getElementById(decodeURIComponent(window.location.hash.slice(1))); } catch (e) {}
+      panel = target && target.closest(".lang-panel[data-lang]");
+    }
+    if (panel) {
+      initial = panel.getAttribute("data-lang");
+    } else {
+      try { var saved = localStorage.getItem(KEY); if (saved === "zh" || saved === "en") initial = saved; } catch (e) {}
+    }
+  }
+  show(initial, false);
+})();
+</script>
+</main>
+</body>
+</html>

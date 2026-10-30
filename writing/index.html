@@ -76,6 +76,7 @@
     html[data-view="zh"] .entry-title { line-height: 1.5; }
     html[data-view="zh"] .entry-desc { font-size: 15px; line-height: 1.8; }
     .entry[hidden], .section[hidden] { display: none; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
     @media (max-width: 600px) {
       main { padding: 32px 16px 64px; }
@@ -105,9 +106,15 @@
 
     <h1><span data-l="en">Writing</span><span data-l="zh" lang="zh-CN">文章</span></h1>
     <div class="filters" role="group" aria-label="Filter by type"><button type="button" class="filter" data-filter="all" aria-pressed="true"><span data-l="en">All</span><span data-l="zh" lang="zh-CN">全部</span></button><button type="button" class="filter" data-filter="experiment" aria-pressed="false"><span data-l="en">Experiment</span><span data-l="zh" lang="zh-CN">实验</span></button><button type="button" class="filter" data-filter="paper" aria-pressed="false"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span></button><button type="button" class="filter" data-filter="explainer" aria-pressed="false"><span data-l="en">Explainer</span><span data-l="zh" lang="zh-CN">讲解</span></button><button type="button" class="filter" data-filter="survey" aria-pressed="false"><span data-l="en">Survey</span><span data-l="zh" lang="zh-CN">综述</span></button><button type="button" class="filter" data-filter="essay" aria-pressed="false"><span data-l="en">Essay</span><span data-l="zh" lang="zh-CN">观点</span></button></div>
+    <p class="sr-only" aria-live="polite" id="filter-status"></p>
 
     <section class="section" data-topic="pretrain">
       <h2 class="section-title"><span data-l="en">Pretraining</span><span data-l="zh" lang="zh-CN">预训练</span></h2>
+      <article class="entry" data-type="essay">
+        <h3 class="entry-title"><a href="capability-per-joule/"><span data-l="en">Capability per Joule</span><span data-l="zh" lang="zh-CN">每焦耳的能力</span></a></h3>
+        <p class="entry-meta"><span class="entry-type"><span data-l="en">Essay</span><span data-l="zh" lang="zh-CN">观点</span><span class="dot"> · </span></span><span data-l="en">October 2026</span><span data-l="zh" lang="zh-CN">2026 年 10 月</span></p>
+        <p class="entry-desc"><span data-l="en">Energy and efficiency are first principles of intelligence; that is why my research moved from world models to pretraining and infrastructure.</span><span data-l="zh" lang="zh-CN">能量和效率是智能的第一性原理，所以我的研究从世界模型转向了预训练和基础设施。</span></p>
+      </article>
       <article class="entry" data-type="survey">
         <h3 class="entry-title"><a href="lr-schedule-loss-curves/"><span data-l="en">Can You Compute the Loss Curve from the Learning-Rate Schedule?</span><span data-l="zh" lang="zh-CN">给定一条学习率调度，能算出整条 loss 曲线吗？</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Survey</span><span data-l="zh" lang="zh-CN">综述</span><span class="dot"> · </span></span><span data-l="en">October 2026</span><span data-l="zh" lang="zh-CN">2026 年 10 月</span><span data-l="en"><span class="dot"> · </span><span lang="zh-CN">中文</span></span></p>
@@ -116,20 +123,20 @@
       <article class="entry" data-type="experiment">
         <h3 class="entry-title"><a href="effective-learning-rate/"><span data-l="en">A Small Cosine Sets the Weight Norm under AdamW and Muon</span><span data-l="zh" lang="zh-CN">一个很小的余弦决定了 AdamW 和 Muon 的权重范数</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Experiment</span><span data-l="zh" lang="zh-CN">实验</span><span class="dot"> · </span></span><span data-l="en">October 2026</span><span data-l="zh" lang="zh-CN">2026 年 10 月</span></p>
-        <p class="entry-desc"><span data-l="en">In 16 GPT-2-small runs, an update–weight cosine of only −0.02 to −0.06 supplies 94⁠–⁠97% of weight-norm growth.</span><span data-l="zh" lang="zh-CN">在 16 个 GPT-2 small 规模的 run 里，更新与权重之间只有 −0.02 到 −0.06 的余弦，却贡献了 94⁠–⁠97% 的权重范数增长。</span></p>
+        <p class="entry-desc"><span data-l="en">In constant-rate GPT-2-small runs with weight decay, an update–weight cosine of only −0.02 to −0.06 supplies 94⁠–⁠97% of weight-norm growth.</span><span data-l="zh" lang="zh-CN">在恒定学习率、带权重衰减的 GPT-2 small 训练里，更新与权重的余弦只有 −0.02 到 −0.06，却贡献了 94⁠–⁠97% 的权重范数增长。</span></p>
       </article>
     </section>
     <section class="section" data-topic="gpu">
       <h2 class="section-title"><span data-l="en">GPU and inference</span><span data-l="zh" lang="zh-CN">GPU 与推理</span></h2>
       <article class="entry" data-type="experiment">
-        <h3 class="entry-title"><a href="do-bench-dirty-l2/"><span data-l="en">Triton&#x27;s do_bench L2 Flush Adds 12⁠–⁠20 µs to One-Row BF16 GEMMs on an A100</span><span data-l="zh" lang="zh-CN">Triton do_bench 的 L2 清理让 A100 上的单行 BF16 GEMM 多出 12⁠–⁠20 µs</span></a></h3>
+        <h3 class="entry-title"><a href="do-bench-dirty-l2/"><span data-l="en">Triton’s do_bench L2 Flush Adds 12⁠–⁠20 µs to One-Row BF16 GEMMs on an A100</span><span data-l="zh" lang="zh-CN">Triton do_bench 的 L2 清理让 A100 上的单行 BF16 GEMM 多出 12⁠–⁠20 µs</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Experiment</span><span data-l="zh" lang="zh-CN">实验</span><span class="dot"> · </span></span><span data-l="en">October 2026</span><span data-l="zh" lang="zh-CN">2026 年 10 月</span><span data-l="zh" lang="zh-CN"><span class="dot"> · </span><span lang="en">English</span></span></p>
         <p class="entry-desc"><span data-l="en">do_bench clears L2 by writing zeros, so the next kernel first writes dirty lines back to HBM. That can flip a benchmark ranking.</span><span data-l="zh" lang="zh-CN">do_bench 用写零的方式清 L2，下一个 kernel 要先把脏行写回 HBM。多出的时间足以让性能排名翻转。</span></p>
       </article>
       <article class="entry" data-type="essay">
         <h3 class="entry-title"><a href="attention-as-memory/"><span data-l="en">Attention Is Not Expensive. Remembering Attention Is.</span><span data-l="zh" lang="zh-CN">Attention 不贵，记住 Attention 才贵</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Essay</span><span data-l="zh" lang="zh-CN">观点</span><span class="dot"> · </span></span><span data-l="en">April 2026</span><span data-l="zh" lang="zh-CN">2026 年 4 月</span><span data-l="zh" lang="zh-CN"><span class="dot"> · </span><span lang="en">English</span></span></p>
-        <p class="entry-desc"><span data-l="en">At inference the cost is not computing attention but keeping its past. MQA, GQA and MLA all shrink the KV cache.</span><span data-l="zh" lang="zh-CN">推理时，贵的不是算 attention，而是保存它的过去。MQA、GQA 和 MLA 都在压缩 KV cache。</span></p>
+        <p class="entry-desc"><span data-l="en">At inference the cost is not computing attention but keeping its past. MQA, GQA and MLA all shrink the KV cache.</span><span data-l="zh" lang="zh-CN">推理时，贵的不是计算 attention，而是保存历史 token 的 KV cache。MQA、GQA 和 MLA 都在压缩 KV cache。</span></p>
       </article>
     </section>
     <section class="section" data-topic="mech">
@@ -137,12 +144,12 @@
       <article class="entry" data-type="experiment">
         <h3 class="entry-title"><a href="olmo-3-calibration/"><span data-l="en">Which Post-Training Stage Hurts Calibration?</span><span data-l="zh" lang="zh-CN">后训练的哪一步让校准变差？</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Experiment</span><span data-l="zh" lang="zh-CN">实验</span><span class="dot"> · </span></span><span data-l="en">October 2026</span><span data-l="zh" lang="zh-CN">2026 年 10 月</span><span data-l="zh" lang="zh-CN"><span class="dot"> · </span><span lang="en">English</span></span></p>
-        <p class="entry-desc"><span data-l="en">Across Olmo 3 7B post-training checkpoints, SFT and DPO cause almost all of the rise in calibration error. RLVR adds little.</span><span data-l="zh" lang="zh-CN">在 Olmo 3 7B 的后训练 checkpoint 上，校准误差的上升几乎都来自 SFT 和 DPO，RLVR 影响很小。</span></p>
+        <p class="entry-desc"><span data-l="en">On MMLU, across Olmo 3 7B post-training checkpoints, SFT and DPO cause almost all of the rise in calibration error. RLVR adds little.</span><span data-l="zh" lang="zh-CN">在 MMLU 上，Olmo 3 7B 各后训练 checkpoint 的校准误差上升几乎都来自 SFT 和 DPO，RLVR 影响很小。</span></p>
       </article>
       <article class="entry" data-type="explainer">
         <h3 class="entry-title"><a href="positional-encoding/"><span data-l="en">Positional Encoding in the Transformer</span><span data-l="zh" lang="zh-CN">Transformer 里的位置编码</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Explainer</span><span data-l="zh" lang="zh-CN">讲解</span><span class="dot"> · </span></span><span data-l="en">September 2026</span><span data-l="zh" lang="zh-CN">2026 年 9 月</span><span data-l="zh" lang="zh-CN"><span class="dot"> · </span><span lang="en">English</span></span></p>
-        <p class="entry-desc"><span data-l="en">The original Transformer adds a fixed sine–cosine vector to each word embedding. A shift by k is a rotation.</span><span data-l="zh" lang="zh-CN">原始 Transformer 给每个词向量加上一个固定的正弦余弦向量。平移 k 等于一次旋转。</span></p>
+        <p class="entry-desc"><span data-l="en">The original Transformer adds a fixed sine–cosine vector to each word embedding. A shift by k is a rotation.</span><span data-l="zh" lang="zh-CN">原始 Transformer 给每个词向量加上一个固定的正弦余弦向量。平移 k 个位置等于一次旋转。</span></p>
       </article>
     </section>
     <section class="section" data-topic="wm">
@@ -150,17 +157,17 @@
       <article class="entry" data-type="paper">
         <h3 class="entry-title"><a href="td-mpc-world-model/"><span data-l="en">TD-MPC: A World Model Need Not Reconstruct the World</span><span data-l="zh" lang="zh-CN">TD-MPC：世界模型不必还原世界</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span><span class="dot"> · </span></span><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span></p>
-        <p class="entry-desc"><span data-l="en">TD-MPC predicts only what matters for action, latent dynamics, reward and value, instead of reconstructing every visible detail.</span><span data-l="zh" lang="zh-CN">TD-MPC 不还原每个可见细节，只预测对动作有用的部分：潜空间动力学、奖励和价值。</span></p>
+        <p class="entry-desc"><span data-l="en">TD-MPC does not reconstruct every visible detail. It predicts only what matters for action: latent dynamics, reward and value.</span><span data-l="zh" lang="zh-CN">TD-MPC 不还原每个可见细节，只预测对动作有用的部分：潜空间动力学、奖励和价值。</span></p>
       </article>
       <article class="entry" data-type="paper">
         <h3 class="entry-title"><a href="prism-wm/"><span data-l="en">PRISM-WM: A World Model Should Not Average Contact Away</span><span data-l="zh" lang="zh-CN">PRISM-WM：世界模型不能把接触平均掉</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span><span class="dot"> · </span></span><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span></p>
-        <p class="entry-desc"><span data-l="en">A planner calls the transition function again and again, so it must keep contact, sliding and landing as separate regimes.</span><span data-l="zh" lang="zh-CN">planner 会反复调用转移函数，所以它必须把接触、滑动、落地分成不同的区段，不能平均成一条平滑曲线。</span></p>
+        <p class="entry-desc"><span data-l="en">A planner calls the transition function again and again, so the world model must keep contact, sliding and landing as separate regimes.</span><span data-l="zh" lang="zh-CN">planner 会反复调用转移函数，所以世界模型必须把接触、滑动、落地分成不同的区段，不能平均成一条平滑曲线。</span></p>
       </article>
       <article class="entry" data-type="explainer">
         <h3 class="entry-title"><a href="world-model-transition-operator/"><span data-l="en">The Transition Operator of a World Model: VLWM and PRISM-WM Change the Same Interface</span><span data-l="zh" lang="zh-CN">世界模型的转移算子：VLWM 和 PRISM-WM 改的是同一个接口</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Explainer</span><span data-l="zh" lang="zh-CN">讲解</span><span class="dot"> · </span></span><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span data-l="en"><span class="dot"> · </span><span lang="zh-CN">中文</span></span></p>
-        <p class="entry-desc"><span data-l="en">VLWM changes the time scale of the dynamics interface; PRISM-WM changes its regime structure. Both reject one smooth transition function.</span><span data-l="zh" lang="zh-CN">VLWM 改变了动力学接口的时间尺度，PRISM-WM 改变了它的物理分段结构。两者都否定了一个平滑的整体转移函数。</span></p>
+        <p class="entry-desc"><span data-l="en">VLWM changes the time scale of the dynamics interface; PRISM-WM changes its regime structure. Both reject one smooth transition function.</span><span data-l="zh" lang="zh-CN">VLWM 改变了动力学接口的时间尺度，PRISM-WM 改变了它的区段结构。两者都否定了一个平滑的整体转移函数。</span></p>
       </article>
       <article class="entry" data-type="explainer">
         <h3 class="entry-title"><a href="world-model-paradigms-math/"><span data-l="en">The Math Under Three Robot World-Model Paradigms</span><span data-l="zh" lang="zh-CN">三类机器人世界模型范式的底层数学</span></a></h3>
@@ -168,19 +175,19 @@
         <p class="entry-desc"><span data-l="en">IDM-, VLA- and MoT-style world models approximate the same policy distribution. They differ only in the structure in between.</span><span data-l="zh" lang="zh-CN">IDM、VLA、MoT 三类世界模型近似的是同一个策略分布，区别只在中间结构。</span></p>
       </article>
       <article class="entry" data-type="explainer">
-        <h3 class="entry-title"><a href="tdmpc-outlier/"><span data-l="en">Why TD-MPC Sits Outside the Three World-Model Paradigms</span><span data-l="zh" lang="zh-CN">TD-MPC 为什么不属于这三类范式</span></a></h3>
+        <h3 class="entry-title"><a href="tdmpc-outlier/"><span data-l="en">Why TD-MPC Is Not One of the Three Robot World-Model Paradigms</span><span data-l="zh" lang="zh-CN">TD-MPC 为什么不属于三类机器人世界模型范式</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Explainer</span><span data-l="zh" lang="zh-CN">讲解</span><span class="dot"> · </span></span><span data-l="en">July 2026</span><span data-l="zh" lang="zh-CN">2026 年 7 月</span><span data-l="en"><span class="dot"> · </span><span lang="zh-CN">中文</span></span></p>
         <p class="entry-desc"><span data-l="en">In IDM-, VLA- and MoT-style world models, action is the prediction. In TD-MPC, it is the condition for prediction and planning.</span><span data-l="zh" lang="zh-CN">在 IDM、VLA、MoT 三类世界模型里，动作是被预测的对象。在 TD-MPC 里，动作是潜空间预测和规划的条件。</span></p>
       </article>
       <article class="entry" data-type="explainer">
         <h3 class="entry-title"><a href="robot-action-space-layers/"><span data-l="en">What Exactly Is the Action a Policy Outputs?</span><span data-l="zh" lang="zh-CN">策略输出的动作到底是什么？</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Explainer</span><span data-l="zh" lang="zh-CN">讲解</span><span class="dot"> · </span></span><span data-l="en">July 2026</span><span data-l="zh" lang="zh-CN">2026 年 7 月</span><span data-l="en"><span class="dot"> · </span><span lang="zh-CN">中文</span></span></p>
-        <p class="entry-desc"><span data-l="en">A policy can output pose targets, force commands or motor commands. The layer decides what the model learns and where safety lives.</span><span data-l="zh" lang="zh-CN">策略可以输出位姿目标、力或柔顺指令，或电机指令。输出在哪一层，决定了模型学什么、安全由谁负责。</span></p>
+        <p class="entry-desc"><span data-l="en">A policy can output pose targets, force commands or motor commands. The layer decides what the model learns and where safety lives.</span><span data-l="zh" lang="zh-CN">策略输出的可以是位姿目标、力与柔顺指令，或电机指令。输出在哪一层，决定了模型学什么、安全由谁负责。</span></p>
       </article>
       <article class="entry" data-type="explainer">
         <h3 class="entry-title"><a href="diffusion-path/"><span data-l="en">Diffusion: Learning a Path from Noise to Data</span><span data-l="zh" lang="zh-CN">Diffusion：从噪声到数据的一条路径</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Explainer</span><span data-l="zh" lang="zh-CN">讲解</span><span class="dot"> · </span></span><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span></p>
-        <p class="entry-desc"><span data-l="en">A diffusion model learns small denoising corrections along a path, not one jump from noise to data.</span><span data-l="zh" lang="zh-CN">diffusion 模型不学从噪声到数据的一步跳跃，而是学一条路径上每一小步的去噪修正。</span></p>
+        <p class="entry-desc"><span data-l="en">A diffusion model learns small denoising corrections along a path, not one jump from noise to data.</span><span data-l="zh" lang="zh-CN">Diffusion 模型不学从噪声到数据的一步跳跃，而是学一条路径上每一小步的去噪修正。</span></p>
       </article>
       <article class="entry" data-type="paper">
         <h3 class="entry-title"><a href="cosmos-policy/"><span data-l="en">Cosmos Policy: How a Video Model Outputs Actions</span><span data-l="zh" lang="zh-CN">Cosmos Policy：视频模型怎样输出机器人动作</span></a></h3>
@@ -190,7 +197,7 @@
       <article class="entry" data-type="paper">
         <h3 class="entry-title"><a href="puppeteer/"><span data-l="en">Puppeteer: Splitting Humanoid Control into Two World Models</span><span data-l="zh" lang="zh-CN">Puppeteer：把人形机器人控制拆成两层世界模型</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span><span class="dot"> · </span></span><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span data-l="en"><span class="dot"> · </span><span lang="zh-CN">中文</span></span></p>
-        <p class="entry-desc"><span data-l="en">Puppeteer splits visual humanoid control into two TD-MPC2-style world models: a MoCap-trained tracker and a vision-driven agent.</span><span data-l="zh" lang="zh-CN">Puppeteer 把视觉人形机器人控制拆成两层 TD-MPC2 式世界模型：动捕训练的低层 tracker，和从视觉生成目标的高层 agent。</span></p>
+        <p class="entry-desc"><span data-l="en">Puppeteer splits visual humanoid control into two TD-MPC2-style world models: a MoCap-trained tracker and a vision-driven agent.</span><span data-l="zh" lang="zh-CN">Puppeteer 把视觉人形机器人控制拆成两层 TD-MPC2 式世界模型。低层用动捕数据学跟踪，高层从视觉生成跟踪目标。</span></p>
       </article>
       <article class="entry" data-type="paper">
         <h3 class="entry-title"><a href="qwen-agentworld/"><span data-l="en">Qwen-AgentWorld: The Limits of a Text World Model</span><span data-l="zh" lang="zh-CN">Qwen-AgentWorld：文本世界模型的边界</span></a></h3>
@@ -221,9 +228,9 @@
         <p class="entry-desc"><span data-l="en">The verifier decodes each imagined future into task predicates and checks whether the event happened, not feature distance to the goal.</span><span data-l="zh" lang="zh-CN">verifier 把每个想象的未来解码成任务谓词，检查事件是否发生，而不是算特征到目标的距离。</span></p>
       </article>
       <article class="entry" data-type="paper">
-        <h3 class="entry-title"><a href="neubay-long-rollouts/"><span data-l="en">NEUBAY: Longer Rollouts, Less Overestimation</span><span data-l="zh" lang="zh-CN">NEUBAY：想象得越长，价值高估越小</span></a></h3>
+        <h3 class="entry-title"><a href="neubay-long-rollouts/"><span data-l="en">NEUBAY: Longer Rollouts, Less Overestimation</span><span data-l="zh" lang="zh-CN">NEUBAY：rollout 越长，价值高估越小</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span><span class="dot"> · </span></span><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span></p>
-        <p class="entry-desc"><span data-l="en">Offline model-based RL without explicit conservatism: a posterior over world models sets how long to roll out.</span><span data-l="zh" lang="zh-CN">不加显式保守项的离线基于模型强化学习：世界模型的后验决定 rollout 多长。</span></p>
+        <p class="entry-desc"><span data-l="en">Offline model-based RL without explicit conservatism: a posterior over world models sets how long to roll out.</span><span data-l="zh" lang="zh-CN">离线 model-based RL，不加显式保守项：由世界模型的后验决定 rollout 多长。</span></p>
       </article>
     </section>
     <section class="section" data-topic="lh">
@@ -234,14 +241,9 @@
         <p class="entry-desc"><span data-l="en">“Long horizon” means reliability over time for language-model agents and fidelity over a rollout for world models.</span><span data-l="zh" lang="zh-CN">“长程”在语言模型 agent 里指随时间的可靠性，在世界模型里指 rollout 的保真度。</span></p>
       </article>
       <article class="entry" data-type="survey">
-        <h3 class="entry-title"><a href="long-horizon-failure-modes/"><span data-l="en">Long Horizon Is Not One Problem</span><span data-l="zh" lang="zh-CN">长程：六种失败，五种应对</span></a></h3>
+        <h3 class="entry-title"><a href="long-horizon-failure-modes/"><span data-l="en">Long Horizon Is Not One Problem</span><span data-l="zh" lang="zh-CN">六种失败，五种应对</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Survey</span><span data-l="zh" lang="zh-CN">综述</span><span class="dot"> · </span></span><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span></p>
-        <p class="entry-desc"><span data-l="en">Coding agents, robot world models and contact-rich control all fail at long horizons, yet cite none of each other&#x27;s fixes.</span><span data-l="zh" lang="zh-CN">代码 agent、机器人世界模型和接触密集的控制都在长程上失败，却互不引用对方的解法。</span></p>
-      </article>
-      <article class="entry" data-type="survey">
-        <h3 class="entry-title"><a href="long-horizon-map/"><span data-l="en">Long Horizon, from Rollout to Context</span><span data-l="zh" lang="zh-CN">长程：从 rollout 到上下文</span></a></h3>
-        <p class="entry-meta"><span class="entry-type"><span data-l="en">Survey</span><span data-l="zh" lang="zh-CN">综述</span><span class="dot"> · </span></span><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span></p>
-        <p class="entry-desc"><span data-l="en">“Long horizon” names three failures: rollout error that compounds, long robot execution, and agent state over a long context.</span><span data-l="zh" lang="zh-CN">“长程”指三种失败：rollout 中累积的误差，机器人的长时间执行，agent 在长上下文里的状态一致。</span></p>
+        <p class="entry-desc"><span data-l="en">Coding agents, robot world models and contact-rich control all fail at long horizons, yet rarely cite each other&#x27;s fixes.</span><span data-l="zh" lang="zh-CN">代码 agent、机器人世界模型和接触丰富的控制都在长程上失败，却很少引用彼此的解法。</span></p>
       </article>
       <article class="entry" data-type="survey">
         <h3 class="entry-title"><a href="long-horizon-world-model-interfaces/"><span data-l="en">Five Interfaces of a Long-Horizon World Model</span><span data-l="zh" lang="zh-CN">长程世界模型的五个接口</span></a></h3>
@@ -251,22 +253,17 @@
       <article class="entry" data-type="survey">
         <h3 class="entry-title"><a href="long-horizon-world-model-basemap/"><span data-l="en">Which Part of the Loop Each Long-Horizon Paper Changes</span><span data-l="zh" lang="zh-CN">机器人世界模型的闭环底图：每篇长程论文改的是哪个零件</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Survey</span><span data-l="zh" lang="zh-CN">综述</span><span class="dot"> · </span></span><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span data-l="en"><span class="dot"> · </span><span lang="zh-CN">中文</span></span></p>
-        <p class="entry-desc"><span data-l="en">Fifty world-model papers from 2026 H1, each placed on the one part of the robot&#x27;s plan–act loop it changes.</span><span data-l="zh" lang="zh-CN">2026 上半年的 50 篇世界模型论文，各自放到机器人规划–执行闭环中它所修改的那一个部分。</span></p>
+        <p class="entry-desc"><span data-l="en">Nearly fifty recent world-model papers, each placed on the one part of the robot&#x27;s plan–act loop it changes.</span><span data-l="zh" lang="zh-CN">近 50 篇近期世界模型论文，逐篇对应到它改动的那一个闭环环节。</span></p>
       </article>
       <article class="entry" data-type="survey">
-        <h3 class="entry-title"><a href="long-horizon-research-matrix/"><span data-l="en">Long Horizon: A Research Matrix for Robot World Models</span><span data-l="zh" lang="zh-CN">长程机器人世界模型：研究矩阵</span></a></h3>
+        <h3 class="entry-title"><a href="long-horizon-research-matrix/"><span data-l="en">A Research Matrix for Robot World Models</span><span data-l="zh" lang="zh-CN">机器人世界模型的研究矩阵</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Survey</span><span data-l="zh" lang="zh-CN">综述</span><span class="dot"> · </span></span><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span data-l="en"><span class="dot"> · </span><span lang="zh-CN">中文</span></span></p>
         <p class="entry-desc"><span data-l="en">In a closed loop, the planner turns a small prediction error into a wrong action. Six coupled failures follow.</span><span data-l="zh" lang="zh-CN">在闭环里，planner 会把小的预测误差放大成错误的动作，由此产生六类互相耦合的失败。</span></p>
       </article>
       <article class="entry" data-type="essay">
-        <h3 class="entry-title"><a href="long-horizon-experiment-logic/"><span data-l="en">Long-Horizon World Models: From Claims to Experiments</span><span data-l="zh" lang="zh-CN">长程世界模型：从主张到实验</span></a></h3>
+        <h3 class="entry-title"><a href="long-horizon-experiment-logic/"><span data-l="en">From Claims to Experiments</span><span data-l="zh" lang="zh-CN">从主张到实验</span></a></h3>
         <p class="entry-meta"><span class="entry-type"><span data-l="en">Essay</span><span data-l="zh" lang="zh-CN">观点</span><span class="dot"> · </span></span><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span data-l="en"><span class="dot"> · </span><span lang="zh-CN">中文</span></span></p>
         <p class="entry-desc"><span data-l="en">A long-horizon claim counts only when it names a task, a metric and a failure it reduces.</span><span data-l="zh" lang="zh-CN">一个长程主张，只有写明任务、指标和它减少的失败，才算数。</span></p>
-      </article>
-      <article class="entry" data-type="essay">
-        <h3 class="entry-title"><a href="long-horizon-research-direction/"><span data-l="en">Long-Horizon World Models: Planner, Verifier, Backbone</span><span data-l="zh" lang="zh-CN">长程世界模型：planner、verifier、主干</span></a></h3>
-        <p class="entry-meta"><span class="entry-type"><span data-l="en">Essay</span><span data-l="zh" lang="zh-CN">观点</span><span class="dot"> · </span></span><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span data-l="en"><span class="dot"> · </span><span lang="zh-CN">中文</span></span></p>
-        <p class="entry-desc"><span data-l="en">Check what the planner selects, verify imagined futures before acting, and let the backbone say how far its rollout holds.</span><span data-l="zh" lang="zh-CN">检查 planner 实际选中的候选，在执行前验证想象的未来，让主干自己判断 rollout 能信多远。</span></p>
       </article>
     </section>
   </main>
@@ -313,8 +310,11 @@
           });
           sec.hidden = shown === 0;
         });
-        if (save) setParam("type", t === "all" ? null : t);
-        else {
+        if (save) {
+          setParam("type", t === "all" ? null : t);
+          var n = document.querySelectorAll(".entry:not([hidden])").length;
+          document.getElementById("filter-status").textContent = docEl.dataset.view === "zh" ? n + " 篇" : n + (n === 1 ? " post" : " posts");
+        } else {
           var a = document.querySelector('.filter[aria-pressed="true"]'), row = a.parentNode;
           var ar = a.getBoundingClientRect(), rr = row.getBoundingClientRect();
           if (ar.right > rr.right - 28) row.scrollLeft += ar.right - rr.right + 28;
