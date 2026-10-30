@@ -109,13 +109,25 @@
 
       <article class="entry">
         <div class="entry-title">
+          <a href="do-bench-dirty-l2/">Triton's do_bench L2 Flush Adds 12–20 µs to One-Row BF16 GEMMs on an A100</a>
+        </div>
+        <div class="entry-meta">October 2026</div>
+        <p class="entry-desc">
+          do_bench clears L2 by zeroing a buffer, which leaves dirty lines that
+          the next kernel must write back to HBM. Nsight Compute write-back
+          bytes, a dose-response sweep, a benchmark ranking that flips, an
+          audit of common timing tools, and a read-based flush that removes
+          the effect.
+        </p>
+      </article>
+
+      <article class="entry">
+        <div class="entry-title">
           <a href="lr-schedule-loss-curves/">给定一条学习率调度，能算出整条 loss 曲线吗？</a>
         </div>
         <div class="entry-meta">October 2026</div>
         <p class="entry-desc">
-          面积律、多幂律和函数缩放律把 loss 写成学习率调度的泛函。本文核对
-          这些模型的预测误差、改用有效学习率后的变化、衰减终值与形状哪个更重要，
-          以及按现有证据怎样设调度。
+          面积律、多幂律和函数缩放律把 loss 写成学习率调度的泛函。本文核对这些模型的预测误差、改用有效学习率后的变化、衰减终值与形状哪个更重要，以及按现有证据怎样设调度。
         </p>
       </article>
 
