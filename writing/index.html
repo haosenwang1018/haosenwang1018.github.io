@@ -1,12 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-view="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Writing — Sense Wang</title>
+  <meta name="description" content="Technical essays, experiments and paper notes on LLM pretraining, GPU kernels, model evaluation and robot world models, in English and Chinese.">
+  <script>
+    // Pick the view before first paint: ?lang=, then the saved choice, then English.
+    (function () {
+      var v = "en";
+      try {
+        var q = new URLSearchParams(location.search).get("lang");
+        var s = localStorage.getItem("writing-language");
+        if (q === "zh" || q === "en") v = q; else if (s === "zh") v = "zh";
+      } catch (err) {}
+      document.documentElement.dataset.view = v;
+      document.documentElement.lang = v === "zh" ? "zh-CN" : "en";
+    })();
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     body {
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Inter", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
       color: #111;
@@ -15,504 +28,278 @@
       font-size: 15px;
       -webkit-font-smoothing: antialiased;
     }
-
-    main {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 72px 20px 96px;
-    }
-
-    nav {
-      margin-bottom: 48px;
-      font-size: 13px;
-    }
-
-    h1 {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "PingFang SC", "Noto Sans CJK SC", Arial, sans-serif;
-      font-size: 28px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    p {
-      margin-bottom: 10px;
-      font-size: 15px;
-    }
-
-    a {
-      color: #111;
-      text-decoration: underline;
-      text-underline-offset: 2px;
-    }
-
+    main { max-width: 680px; margin: 0 auto; padding: 72px 20px 96px; }
+    nav { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 48px; font-size: 13px; }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+    p { margin-bottom: 10px; font-size: 15px; }
+    a { color: #111; text-decoration: underline; text-underline-offset: 2px; }
     a:hover { opacity: 0.5; }
 
-    .intro {
-      color: #555;
-      max-width: 560px;
-    }
+    /* language view */
+    html[data-view="en"] [data-l="zh"], html[data-view="zh"] [data-l="en"] { display: none; }
+    .switch button { font: inherit; background: none; border: 0; padding: 0 2px; color: #999; cursor: pointer; }
+    .switch button[aria-pressed="true"] { color: #111; font-weight: 600; }
+    .switch button:focus-visible, .filter:focus-visible { outline: 2px solid #111; outline-offset: 2px; }
 
-    .section {
-      margin-top: 44px;
+    .intro { color: #555; max-width: 560px; }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 28px; }
+    .filter {
+      font: inherit; font-size: 13px; color: #555; background: #fff;
+      border: 1px solid #ddd; border-radius: 999px; padding: 3px 12px; cursor: pointer;
     }
+    .filter[aria-pressed="true"] { color: #fff; background: #111; border-color: #111; }
+    .filter .count { color: #999; font-size: 12px; }
+    .filter[aria-pressed="true"] .count { color: #bbb; }
+    details.legend { margin-top: 14px; font-size: 13px; color: #777; }
+    details.legend summary { cursor: pointer; color: #999; }
+    details.legend ul { list-style: none; margin-top: 8px; }
+    details.legend li { margin-bottom: 4px; }
+    details.legend b { color: #333; font-weight: 600; margin-right: 6px; }
 
+    .section { margin-top: 44px; }
     .section-title {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #999;
-      margin-bottom: 14px;
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #999; margin-bottom: 14px;
     }
-
-    .entry {
-      margin-bottom: 24px;
+    html[data-view="zh"] .section-title { letter-spacing: 0.04em; font-size: 12px; }
+    .entry { margin-bottom: 26px; }
+    .entry-title { font-size: 18px; font-weight: 600; line-height: 1.45; margin-bottom: 3px; }
+    .entry-meta { color: #999; font-size: 13px; margin-bottom: 4px; }
+    .tag {
+      display: inline-block; margin-left: 8px; padding: 0 7px; font-size: 11.5px;
+      color: #666; background: #f3f3f3; border-radius: 4px; line-height: 1.7;
     }
-
-    .entry-title {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 2px;
-    }
-
-    .entry-meta {
-      color: #999;
-      font-size: 13px;
-      margin-bottom: 4px;
-    }
-
-    .entry-desc {
-      color: #555;
-      font-size: 14px;
-      max-width: 600px;
-    }
-
-    .note {
-      color: #999;
-      font-size: 13px;
-      margin-top: 44px;
-    }
+    .entry-desc { color: #555; font-size: 14px; max-width: 600px; }
+    .entry[hidden], .section[hidden] { display: none; }
+    .note { color: #999; font-size: 13px; margin-top: 44px; }
   </style>
 </head>
 <body>
   <main>
-    <nav><a href="../">Sense Wang</a></nav>
+    <nav>
+      <a href="../">Sense Wang</a>
+      <span class="switch" role="group" aria-label="Language">
+        <button type="button" data-set="en" aria-pressed="true">English</button> ·
+        <button type="button" data-set="zh" aria-pressed="false" lang="zh-CN">中文</button>
+      </span>
+    </nav>
 
-    <h1>Writing</h1>
+    <h1><span data-l="en">Writing</span><span data-l="zh" lang="zh-CN">文章</span></h1>
     <p class="intro">
-      Technical essays and research notes on LLM pretraining and
-      infrastructure, GPU kernels, model mechanics, and robot world models.
+      <span data-l="en">Experiments, essays and paper notes on LLM pretraining and infrastructure, GPU kernels, model mechanics, and robot world models. Some posts are in English, some in Chinese, and some in both; each entry says which.</span>
+      <span data-l="zh" lang="zh-CN">关于 LLM 预训练与基础设施、GPU kernel、模型机制和机器人世界模型的实验、文章和论文笔记。有的文章是英文，有的是中文，有的两种都有；每一条都标明了语言。</span>
     </p>
 
-    <div class="section">
-      <div class="section-title">Pretraining and optimization</div>
+    <div class="filters" role="group" aria-label="Filter by type"><button type="button" class="filter" data-filter="all" aria-pressed="true"><span data-l="en">All</span><span data-l="zh" lang="zh-CN">全部</span></button><button type="button" class="filter" data-filter="experiment" aria-pressed="false"><span data-l="en">Experiment</span><span data-l="zh" lang="zh-CN">实验</span> <span class="count">3</span></button><button type="button" class="filter" data-filter="essay" aria-pressed="false"><span data-l="en">Thinking</span><span data-l="zh" lang="zh-CN">思考</span> <span class="count">3</span></button><button type="button" class="filter" data-filter="survey" aria-pressed="false"><span data-l="en">Survey</span><span data-l="zh" lang="zh-CN">综述</span> <span class="count">5</span></button><button type="button" class="filter" data-filter="paper" aria-pressed="false"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span> <span class="count">10</span></button><button type="button" class="filter" data-filter="explainer" aria-pressed="false"><span data-l="en">Explainer</span><span data-l="zh" lang="zh-CN">讲解</span> <span class="count">6</span></button><button type="button" class="filter" data-filter="map" aria-pressed="false"><span data-l="en">Map</span><span data-l="zh" lang="zh-CN">地图</span> <span class="count">4</span></button></div>
+    <details class="legend">
+      <summary><span data-l="en">What the tags mean</span><span data-l="zh" lang="zh-CN">标签说明</span></summary>
+      <ul><li><b><span data-l="en">Experiment</span><span data-l="zh" lang="zh-CN">实验</span></b> <span data-l="en">I ran the measurement or the training. New numbers.</span><span data-l="zh" lang="zh-CN">我自己跑了测量或训练，有新数据。</span></li><li><b><span data-l="en">Thinking</span><span data-l="zh" lang="zh-CN">思考</span></b> <span data-l="en">A position, a research direction, or a plan.</span><span data-l="zh" lang="zh-CN">观点、研究方向或计划。</span></li><li><b><span data-l="en">Survey</span><span data-l="zh" lang="zh-CN">综述</span></b> <span data-l="en">Many papers in one argument or frame.</span><span data-l="zh" lang="zh-CN">把多篇论文放进一个论证或框架。</span></li><li><b><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span></b> <span data-l="en">One paper or one model, explained by its mechanism.</span><span data-l="zh" lang="zh-CN">讲清一篇论文或一个模型的机制。</span></li><li><b><span data-l="en">Explainer</span><span data-l="zh" lang="zh-CN">讲解</span></b> <span data-l="en">One mechanism or one piece of math.</span><span data-l="zh" lang="zh-CN">讲清一个机制或一段数学。</span></li><li><b><span data-l="en">Map</span><span data-l="zh" lang="zh-CN">地图</span></b> <span data-l="en">Tables and lists for looking up papers.</span><span data-l="zh" lang="zh-CN">用来查论文的表格和清单。</span></li></ul>
+    </details>
 
-      <article class="entry">
-        <div class="entry-title">
-          <a href="lr-schedule-loss-curves/">给定一条学习率调度，能算出整条 loss 曲线吗？</a>
-        </div>
-        <div class="entry-meta">October 2026 · 中文</div>
-        <p class="entry-desc">
-          面积律、多幂律和函数缩放律把 loss 写成学习率调度的泛函。本文核对这些模型的预测误差、改用有效学习率后的变化、衰减终值与形状哪个更重要，以及按现有证据怎样设调度。
-        </p>
+    <section class="section" data-topic="pretrain">
+      <h2 class="section-title"><span data-l="en">Pretraining and optimization</span><span data-l="zh" lang="zh-CN">预训练与优化</span></h2>
+      <article class="entry" data-types="survey" data-langs="zh">
+        <h3 class="entry-title"><a href="lr-schedule-loss-curves/"><span data-l="en">Can a Learning-Rate Schedule Predict the Whole Loss Curve?</span><span data-l="zh" lang="zh-CN">给定一条学习率调度，能算出整条 loss 曲线吗？</span></a></h3>
+        <div class="entry-meta"><span data-l="en">October 2026</span><span data-l="zh" lang="zh-CN">2026 年 10 月</span><span class="dot"> · </span><span data-l="en">in Chinese</span><span data-l="zh" lang="zh-CN">中文</span><span class="tag"><span data-l="en">Survey</span><span data-l="zh" lang="zh-CN">综述</span></span></div>
+        <p class="entry-desc"><span data-l="en">Area laws, multi-power laws and functional scaling laws write loss as a functional of the learning-rate schedule. This survey checks their prediction errors, what changes with the effective learning rate, whether the final decay value or the shape matters more, and how to set a schedule on current evidence.</span><span data-l="zh" lang="zh-CN">面积律、多幂律和函数缩放律把 loss 写成学习率调度的泛函。本文核对这些模型的预测误差、改用有效学习率后的变化、衰减终值与形状哪个更重要，以及按现有证据怎样设调度。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="effective-learning-rate/">A Small Cosine Sets the Weight Norm under AdamW and Muon</a>
-        </div>
-        <div class="entry-meta">October 2026 · bilingual</div>
-        <p class="entry-desc">
-          Per-matrix effective learning rate in 16 GPT-2-small-shaped runs.
-          A cosine of only −0.02 to −0.06 between update and weight supplies
-          94–97% of the weight-norm growth, and a random-walk model with
-          momentum predicts its median size and the equilibrium step size.
-        </p>
+      <article class="entry" data-types="experiment" data-langs="bi">
+        <h3 class="entry-title"><a href="effective-learning-rate/"><span data-l="en">A Small Cosine Sets the Weight Norm under AdamW and Muon</span><span data-l="zh" lang="zh-CN">一个很小的余弦决定了 AdamW 和 Muon 的权重范数</span></a></h3>
+        <div class="entry-meta"><span data-l="en">October 2026</span><span data-l="zh" lang="zh-CN">2026 年 10 月</span><span class="dot"> · </span><span data-l="en">English · 中文</span><span data-l="zh" lang="zh-CN">中文 · English</span><span class="tag"><span data-l="en">Experiment</span><span data-l="zh" lang="zh-CN">实验</span></span></div>
+        <p class="entry-desc"><span data-l="en">Per-matrix effective learning rate in 16 GPT-2-small-shaped runs. A cosine of only −0.02 to −0.06 between update and weight supplies 94–97% of the weight-norm growth, and a random-walk model with momentum predicts its median size and the equilibrium step size.</span><span data-l="zh" lang="zh-CN">在 16 个 GPT-2 small 规模的 run 里逐矩阵测量有效学习率。更新与权重之间只有 −0.02 到 −0.06 的余弦，却贡献了 94–97% 的权重范数增长。带动量的随机游走模型能预测这个余弦的中位数和平衡步长。</span></p>
       </article>
-    </div>
-
-    <div class="section">
-      <div class="section-title">GPU kernels and inference systems</div>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="do-bench-dirty-l2/">Triton's do_bench L2 Flush Adds 12–20 µs to One-Row BF16 GEMMs on an A100</a>
-        </div>
-        <div class="entry-meta">October 2026</div>
-        <p class="entry-desc">
-          do_bench clears L2 by zeroing a buffer, which leaves dirty lines that
-          the next kernel must write back to HBM. Nsight Compute write-back
-          bytes, a dose-response sweep, a benchmark ranking that flips, an
-          audit of common timing tools, and a read-based flush that removes
-          the effect.
-        </p>
+    </section>
+    <section class="section" data-topic="gpu">
+      <h2 class="section-title"><span data-l="en">GPU kernels and inference systems</span><span data-l="zh" lang="zh-CN">GPU kernel 与推理系统</span></h2>
+      <article class="entry" data-types="experiment" data-langs="en">
+        <h3 class="entry-title"><a href="do-bench-dirty-l2/"><span data-l="en">Triton&#x27;s do_bench L2 Flush Adds 12–20 µs to One-Row BF16 GEMMs on an A100</span><span data-l="zh" lang="zh-CN">Triton do_bench 的 L2 清理让 A100 上的单行 BF16 GEMM 多出 12–20 µs</span></a></h3>
+        <div class="entry-meta"><span data-l="en">October 2026</span><span data-l="zh" lang="zh-CN">2026 年 10 月</span><span class="dot"> · </span><span data-l="en">English</span><span data-l="zh" lang="zh-CN">仅英文</span><span class="tag"><span data-l="en">Experiment</span><span data-l="zh" lang="zh-CN">实验</span></span></div>
+        <p class="entry-desc"><span data-l="en">do_bench clears L2 by zeroing a buffer, which leaves dirty lines that the next kernel must write back to HBM. Nsight Compute write-back bytes, a dose-response sweep, a benchmark ranking that flips, an audit of common timing tools, and a read-based flush that removes the effect.</span><span data-l="zh" lang="zh-CN">do_bench 用写零的方式清 L2，留下的脏行要由下一个 kernel 写回 HBM。本文给出 Nsight Compute 的写回字节数、剂量曲线、一个会翻转的性能排名、常用计时工具的清理方式对照，以及一种用读操作清 L2 的修正。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="attention-as-memory/">Attention Is Not Expensive. Remembering Attention Is.</a>
-        </div>
-        <div class="entry-meta">April 2026</div>
-        <p class="entry-desc">
-          A note on KV cache, MQA/GQA, MLA, and why long-context models are
-          becoming memory systems.
-        </p>
+      <article class="entry" data-types="essay" data-langs="en">
+        <h3 class="entry-title"><a href="attention-as-memory/"><span data-l="en">Attention Is Not Expensive. Remembering Attention Is.</span><span data-l="zh" lang="zh-CN">Attention 不贵，记住 Attention 才贵</span></a></h3>
+        <div class="entry-meta"><span data-l="en">April 2026</span><span data-l="zh" lang="zh-CN">2026 年 4 月</span><span class="dot"> · </span><span data-l="en">English</span><span data-l="zh" lang="zh-CN">仅英文</span><span class="tag"><span data-l="en">Thinking</span><span data-l="zh" lang="zh-CN">思考</span></span></div>
+        <p class="entry-desc"><span data-l="en">A note on KV cache, MQA/GQA, MLA, and why long-context models are becoming memory systems.</span><span data-l="zh" lang="zh-CN">关于 KV cache、MQA/GQA 和 MLA 的笔记：为什么长上下文模型正在变成存储系统。</span></p>
       </article>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Model mechanics and evaluation</div>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="olmo-3-calibration/">Which Post-Training Stage Hurts Calibration?</a>
-        </div>
-        <div class="entry-meta">October 2026</div>
-        <p class="entry-desc">
-          Stage-by-stage MMLU calibration of every public Olmo 3 7B
-          post-training checkpoint, with a matched-template control for RL
-          alone: SFT and DPO account for almost all of the rise in calibration
-          error, RLVR adds little, and one temperature removes most of it.
-        </p>
+    </section>
+    <section class="section" data-topic="mech">
+      <h2 class="section-title"><span data-l="en">Model mechanics and evaluation</span><span data-l="zh" lang="zh-CN">模型机制与评测</span></h2>
+      <article class="entry" data-types="experiment" data-langs="en">
+        <h3 class="entry-title"><a href="olmo-3-calibration/"><span data-l="en">Which Post-Training Stage Hurts Calibration?</span><span data-l="zh" lang="zh-CN">后训练的哪个阶段损害了校准？</span></a></h3>
+        <div class="entry-meta"><span data-l="en">October 2026</span><span data-l="zh" lang="zh-CN">2026 年 10 月</span><span class="dot"> · </span><span data-l="en">English</span><span data-l="zh" lang="zh-CN">仅英文</span><span class="tag"><span data-l="en">Experiment</span><span data-l="zh" lang="zh-CN">实验</span></span></div>
+        <p class="entry-desc"><span data-l="en">Stage-by-stage MMLU calibration of every public Olmo 3 7B post-training checkpoint, with a matched-template control for RL alone: SFT and DPO account for almost all of the rise in calibration error, RLVR adds little, and one temperature removes most of it.</span><span data-l="zh" lang="zh-CN">逐阶段测量 Olmo 3 7B 每个公开后训练 checkpoint 的 MMLU 校准，并对 RL 单独做了模板匹配的对照。校准误差的上升几乎全部来自 SFT 和 DPO，RLVR 增加很少，一个温度参数就能消除大部分误差。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="positional-encoding/">Positional Encoding in the Transformer</a>
-        </div>
-        <div class="entry-meta">September 2026</div>
-        <p class="entry-desc">
-          A short tutorial on the sinusoidal positional encoding in the
-          original Transformer: the formula, five figures computed from it,
-          why a shift by k is a rotation, and what adding position to word
-          embeddings mixes.
-        </p>
+      <article class="entry" data-types="explainer" data-langs="en">
+        <h3 class="entry-title"><a href="positional-encoding/"><span data-l="en">Positional Encoding in the Transformer</span><span data-l="zh" lang="zh-CN">Transformer 里的位置编码</span></a></h3>
+        <div class="entry-meta"><span data-l="en">September 2026</span><span data-l="zh" lang="zh-CN">2026 年 9 月</span><span class="dot"> · </span><span data-l="en">English</span><span data-l="zh" lang="zh-CN">仅英文</span><span class="tag"><span data-l="en">Explainer</span><span data-l="zh" lang="zh-CN">讲解</span></span></div>
+        <p class="entry-desc"><span data-l="en">A short tutorial on the sinusoidal positional encoding in the original Transformer: the formula, five figures computed from it, why a shift by k is a rotation, and what adding position to word embeddings mixes.</span><span data-l="zh" lang="zh-CN">原始 Transformer 正弦位置编码的短教程：公式、由公式算出的五张图、为什么平移 k 等于一次旋转，以及把位置加到词向量上会混入什么。</span></p>
       </article>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Robotics and world models</div>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="robot-action-space-layers/">Policy 输出的 Action 到底是什么</a>
-        </div>
-        <div class="entry-meta">July 2026</div>
-        <p class="entry-desc">
-          A short Chinese mechanism note on robot action spaces. A policy may
-          output high-level pose targets, mid-level force/compliance commands,
-          or low-level motor commands; the layer determines what the model
-          learns, what the controller must guarantee, and where safety belongs.
-        </p>
+    </section>
+    <section class="section" data-topic="robot">
+      <h2 class="section-title"><span data-l="en">Robotics and world models</span><span data-l="zh" lang="zh-CN">机器人与世界模型</span></h2>
+      <article class="entry" data-types="explainer" data-langs="zh">
+        <h3 class="entry-title"><a href="robot-action-space-layers/"><span data-l="en">What Exactly Is the Action a Policy Outputs?</span><span data-l="zh" lang="zh-CN">Policy 输出的 Action 到底是什么</span></a></h3>
+        <div class="entry-meta"><span data-l="en">July 2026</span><span data-l="zh" lang="zh-CN">2026 年 7 月</span><span class="dot"> · </span><span data-l="en">in Chinese</span><span data-l="zh" lang="zh-CN">中文</span><span class="tag"><span data-l="en">Explainer</span><span data-l="zh" lang="zh-CN">讲解</span></span></div>
+        <p class="entry-desc"><span data-l="en">A short note on robot action spaces. A policy may output high-level pose targets, mid-level force/compliance commands, or low-level motor commands; the layer determines what the model learns, what the controller must guarantee, and where safety belongs.</span><span data-l="zh" lang="zh-CN">关于机器人动作空间的短笔记。Policy 可以输出高层位姿目标、中层力或柔顺指令，或底层电机指令。输出在哪一层，决定了模型学什么、控制器必须保证什么、安全由哪一层负责。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="tdmpc-outlier/">TD-MPC 为什么是三类范式之外的 outlier</a>
-        </div>
-        <div class="entry-meta">July 2026</div>
-        <p class="entry-desc">
-          A Chinese mechanism note on why TD-MPC does not fall inside the
-          three action-prediction world-model paradigms: IDM-style,
-          VLA-style, and MoT-style. The comparison turns on where action
-          appears in the math: as the predicted object in one family, and as
-          a condition for latent future prediction and planning in TD-MPC.
-        </p>
+      <article class="entry" data-types="explainer" data-langs="zh">
+        <h3 class="entry-title"><a href="tdmpc-outlier/"><span data-l="en">Why TD-MPC Sits Outside the Three World-Model Paradigms</span><span data-l="zh" lang="zh-CN">TD-MPC 为什么是三类范式之外的 outlier</span></a></h3>
+        <div class="entry-meta"><span data-l="en">July 2026</span><span data-l="zh" lang="zh-CN">2026 年 7 月</span><span class="dot"> · </span><span data-l="en">in Chinese</span><span data-l="zh" lang="zh-CN">中文</span><span class="tag"><span data-l="en">Explainer</span><span data-l="zh" lang="zh-CN">讲解</span></span></div>
+        <p class="entry-desc"><span data-l="en">Why TD-MPC does not fall inside the three action-prediction world-model paradigms: IDM-style, VLA-style and MoT-style. The difference is where action appears in the math: as the predicted object in those families, and as a condition for latent prediction and planning in TD-MPC.</span><span data-l="zh" lang="zh-CN">TD-MPC 为什么不属于 IDM、VLA、MoT 这三类预测动作的世界模型范式。区别在于动作在数学里的位置：在这三类里，动作是被预测的对象；在 TD-MPC 里，动作是潜空间预测和规划的条件。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="world-model-paradigms-math/">三类机器人 World Model 范式的底层数学</a>
-        </div>
-        <div class="entry-meta">July 2026</div>
-        <p class="entry-desc">
-          A Chinese tutorial-style breakdown of three robot world-model
-          paradigms: Future-conditioned / IDM-style, Single-backbone /
-          VLA-style, and Shared-attention + Specialized Experts / MoT-style.
-          The article traces the math from conditional policies and
-          marginalization to neural-network optimization, shared
-          representations, experts, and the TD-MPC boundary.
-        </p>
+      <article class="entry" data-types="explainer" data-langs="zh">
+        <h3 class="entry-title"><a href="world-model-paradigms-math/"><span data-l="en">The Math Under Three Robot World-Model Paradigms</span><span data-l="zh" lang="zh-CN">三类机器人 World Model 范式的底层数学</span></a></h3>
+        <div class="entry-meta"><span data-l="en">July 2026</span><span data-l="zh" lang="zh-CN">2026 年 7 月</span><span class="dot"> · </span><span data-l="en">in Chinese</span><span data-l="zh" lang="zh-CN">中文</span><span class="tag"><span data-l="en">Explainer</span><span data-l="zh" lang="zh-CN">讲解</span></span></div>
+        <p class="entry-desc"><span data-l="en">A tutorial on three robot world-model paradigms: future-conditioned / IDM-style, single-backbone / VLA-style, and shared-attention with specialized experts / MoT-style. It traces the math from conditional policies and marginalization to optimization, shared representations, experts, and the TD-MPC boundary.</span><span data-l="zh" lang="zh-CN">教程式拆解三类机器人世界模型范式：未来条件 / IDM 式、单主干 / VLA 式、共享注意力加专家 / MoT 式。从条件策略和边缘化讲到优化、共享表示、专家结构，以及 TD-MPC 的边界。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="long-horizon-research-direction/">Long Horizon：三个值得讨论的研究方向</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          A Chinese research-direction essay that reorganizes the
-          long-horizon robot world-model question around three objects:
-          planner, verifier, and model / backbone.
-        </p>
+      <article class="entry" data-types="essay" data-langs="zh">
+        <h3 class="entry-title"><a href="long-horizon-research-direction/"><span data-l="en">Long Horizon: Three Research Directions Worth Discussing</span><span data-l="zh" lang="zh-CN">Long Horizon：三个值得讨论的研究方向</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">in Chinese</span><span data-l="zh" lang="zh-CN">中文</span><span class="tag"><span data-l="en">Thinking</span><span data-l="zh" lang="zh-CN">思考</span></span></div>
+        <p class="entry-desc"><span data-l="en">Reorganizes the long-horizon robot world-model question around three objects: planner, verifier, and model / backbone.</span><span data-l="zh" lang="zh-CN">围绕 planner、verifier 和模型主干这三个对象，重新组织长程机器人世界模型的问题。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="world-model-transition-operator/">World Model 的 Transition Operator：VLWM 和 PRISM-WM 改了同一个接口</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          A Chinese mechanism note on the transition operator inside learned
-          world models. VLWM changes the temporal scale of the dynamics
-          interface; PRISM-WM changes its physical regime structure. Both
-          pressure the same assumption: one smooth monolithic transition
-          function can serve every planning rollout.
-        </p>
+      <article class="entry" data-types="explainer" data-langs="zh">
+        <h3 class="entry-title"><a href="world-model-transition-operator/"><span data-l="en">The Transition Operator of a World Model: VLWM and PRISM-WM Change the Same Interface</span><span data-l="zh" lang="zh-CN">World Model 的 Transition Operator：VLWM 和 PRISM-WM 改了同一个接口</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">in Chinese</span><span data-l="zh" lang="zh-CN">中文</span><span class="tag"><span data-l="en">Explainer</span><span data-l="zh" lang="zh-CN">讲解</span></span></div>
+        <p class="entry-desc"><span data-l="en">VLWM changes the temporal scale of the dynamics interface; PRISM-WM changes its physical regime structure. Both question the same assumption: that one smooth transition function can serve every planning rollout.</span><span data-l="zh" lang="zh-CN">VLWM 改变了动力学接口的时间尺度，PRISM-WM 改变了它的物理分段结构。两者质疑同一个假设：一个平滑的整体转移函数能支撑所有规划 rollout。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="grasp-gradient-planning/">GRASP: planning by optimizing the states in between</a>
-        </div>
-        <div class="entry-meta">June 2026 · bilingual</div>
-        <p class="entry-desc">
-          A bilingual paper note on GRASP. In a standard rollout, intermediate
-          states are computed by the world model. In GRASP, they become virtual
-          states optimized with actions and checked by dynamics consistency.
-        </p>
+      <article class="entry" data-types="paper" data-langs="bi">
+        <h3 class="entry-title"><a href="grasp-gradient-planning/"><span data-l="en">GRASP: planning by optimizing the states in between</span><span data-l="zh" lang="zh-CN">GRASP：把中间状态也变成规划变量</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">English · 中文</span><span data-l="zh" lang="zh-CN">中文 · English</span><span class="tag"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span></span></div>
+        <p class="entry-desc"><span data-l="en">A paper note on GRASP. In a standard rollout, the world model computes the intermediate states. In GRASP, they become virtual states optimized with the actions and checked by dynamics consistency.</span><span data-l="zh" lang="zh-CN">GRASP 论文笔记。标准 rollout 里，中间状态由世界模型算出。GRASP 把它们变成虚拟状态，与动作一起优化，并用动力学一致性检验。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="weaver-world-model/">WEAVER: a world model that is faithful, consistent, and fast at once</a>
-        </div>
-        <div class="entry-meta">June 2026 · bilingual</div>
-        <p class="entry-desc">
-          A bilingual paper note on WEAVER, a multi-view latent world model for
-          robotic manipulation. It targets fidelity, long-horizon consistency,
-          and efficiency at once, so one model can serve policy evaluation,
-          policy improvement, and test-time planning on real hardware.
-        </p>
+      <article class="entry" data-types="paper" data-langs="bi">
+        <h3 class="entry-title"><a href="weaver-world-model/"><span data-l="en">WEAVER: a world model that is faithful, consistent, and fast at once</span><span data-l="zh" lang="zh-CN">WEAVER：一个同时做到保真、一致、快的世界模型</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">English · 中文</span><span data-l="zh" lang="zh-CN">中文 · English</span><span class="tag"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span></span></div>
+        <p class="entry-desc"><span data-l="en">A paper note on WEAVER, a multi-view latent world model for robotic manipulation. It targets fidelity, long-horizon consistency and efficiency at once, so one model can serve policy evaluation, policy improvement and test-time planning on real hardware.</span><span data-l="zh" lang="zh-CN">WEAVER 论文笔记。这是一个用于机器人操作的多视角潜空间世界模型，同时追求保真、长程一致和效率，使一个模型能在真机上用于策略评估、策略改进和测试时规划。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="wav-forward-inverse-asymmetry/">WAV: verifying actions through forward-inverse asymmetry</a>
-        </div>
-        <div class="entry-meta">June 2026 · bilingual</div>
-        <p class="entry-desc">
-          A bilingual paper note on WAV. Action-conditioned prediction is split
-          into two independently verifiable factors — state plausibility and
-          action reachability — exploiting the forward-inverse asymmetry so a
-          world model can find its own errors and choose which interactions to
-          collect next.
-        </p>
+      <article class="entry" data-types="paper" data-langs="bi">
+        <h3 class="entry-title"><a href="wav-forward-inverse-asymmetry/"><span data-l="en">WAV: verifying actions through forward-inverse asymmetry</span><span data-l="zh" lang="zh-CN">WAV：用 forward-inverse asymmetry 验证动作</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">English · 中文</span><span data-l="zh" lang="zh-CN">中文 · English</span><span class="tag"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span></span></div>
+        <p class="entry-desc"><span data-l="en">A paper note on WAV. Action-conditioned prediction is split into two factors that can be checked separately, state plausibility and action reachability, so a world model can find its own errors and choose which interactions to collect next.</span><span data-l="zh" lang="zh-CN">WAV 论文笔记。它把动作条件预测拆成两个可以分别检验的因子：状态是否合理，动作能否到达。这样世界模型能发现自己的错误，并决定下一步收集哪些交互。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="ev-wm-event-verifier/">EV-WM: verifying events, not features</a>
-        </div>
-        <div class="entry-meta">June 2026 · bilingual</div>
-        <p class="entry-desc">
-          A bilingual paper note on EV-WM (long-horizon robotic manipulation).
-          A feature-space world model is scored not by how close its predicted
-          features land to a goal, but by a verifier that decodes each imagined
-          future into task predicates and checks whether the event actually
-          happened — guiding CEM planning and gating candidate actions.
-        </p>
+      <article class="entry" data-types="paper" data-langs="bi">
+        <h3 class="entry-title"><a href="ev-wm-event-verifier/"><span data-l="en">EV-WM: verifying events, not features</span><span data-l="zh" lang="zh-CN">EV-WM：验证事件，不验特征</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">English · 中文</span><span data-l="zh" lang="zh-CN">中文 · English</span><span class="tag"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span></span></div>
+        <p class="entry-desc"><span data-l="en">A paper note on EV-WM for long-horizon manipulation. A verifier decodes each imagined future into task predicates and checks whether the event happened, instead of scoring feature distance to a goal. It guides CEM planning and gates candidate actions.</span><span data-l="zh" lang="zh-CN">EV-WM 论文笔记，面向长程操作任务。它不按预测特征到目标的距离打分，而是用 verifier 把每个想象的未来解码成任务谓词，检查事件是否发生，并用结果引导 CEM 规划、筛选候选动作。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="neubay-long-rollouts/">Long-horizon rollouts as overestimation control</a>
-        </div>
-        <div class="entry-meta">June 2026 · bilingual</div>
-        <p class="entry-desc">
-          A bilingual paper note on NEUBAY (offline model-based RL): it removes
-          explicit conservatism and lets long-horizon rollouts control value
-          overestimation. A posterior over world models decides how far to roll
-          out, and the discount factor demotes the bootstrapped terminal value,
-          the one term prone to overestimation.
-        </p>
+      <article class="entry" data-types="paper" data-langs="bi">
+        <h3 class="entry-title"><a href="neubay-long-rollouts/"><span data-l="en">Long-horizon rollouts as overestimation control</span><span data-l="zh" lang="zh-CN">想象得越长，价值高估反而越小</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">English · 中文</span><span data-l="zh" lang="zh-CN">中文 · English</span><span class="tag"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span></span></div>
+        <p class="entry-desc"><span data-l="en">A paper note on NEUBAY for offline model-based RL. It removes explicit conservatism and lets long rollouts control value overestimation: a posterior over world models sets the rollout length, and the discount reduces the weight of the bootstrapped terminal value.</span><span data-l="zh" lang="zh-CN">NEUBAY 论文笔记，属于离线基于模型的强化学习。它去掉显式的保守项，改用长 rollout 控制价值高估：世界模型的后验决定 rollout 长度，折扣因子降低自举终端价值的权重。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="long-horizon-world-model-basemap/">机器人世界模型的闭环底图：long-horizon 论文都在改哪个零件</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          A Chinese research map built around one closed loop — a robot choosing
-          actions with a learned imagination model. Fifty recent (2026 H1)
-          world-model and long-horizon papers from top labs, each placed on one
-          of seven parts of the loop: state representation, memory, dynamics,
-          event verification, trust horizon, planner–model coupling, and the
-          action/evaluation/data interface.
-        </p>
+      <article class="entry" data-types="map" data-langs="zh">
+        <h3 class="entry-title"><a href="long-horizon-world-model-basemap/"><span data-l="en">A Closed-Loop Map of Robot World Models: Which Part Each Long-Horizon Paper Changes</span><span data-l="zh" lang="zh-CN">机器人世界模型的闭环底图：long-horizon 论文都在改哪个零件</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">in Chinese</span><span data-l="zh" lang="zh-CN">中文</span><span class="tag"><span data-l="en">Map</span><span data-l="zh" lang="zh-CN">地图</span></span></div>
+        <p class="entry-desc"><span data-l="en">A research map built around one closed loop: a robot choosing actions with a learned model. Fifty world-model and long-horizon papers from 2026 H1, each placed on one of seven parts of the loop, from state representation and memory to the action, evaluation and data interface.</span><span data-l="zh" lang="zh-CN">围绕一个闭环组织的研究地图：机器人用学到的模型选择动作。2026 上半年的 50 篇世界模型和长程论文，各自归到闭环的七个部分之一，从状态表示、记忆，到动作、评测和数据接口。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="long-horizon-world-model-basemap-interactive/">Long-horizon world model 论文地图（可交互速查）</a>
-        </div>
-        <div class="entry-meta">June 2026 · interactive</div>
-        <p class="entry-desc">
-          A searchable companion to the closed-loop basemap: 142 papers grouped
-          by the part of the long-horizon robot execution loop they modify.
-        </p>
+      <article class="entry" data-types="map" data-langs="zh">
+        <h3 class="entry-title"><a href="long-horizon-world-model-basemap-interactive/"><span data-l="en">Long-Horizon World Model Paper Map (Interactive)</span><span data-l="zh" lang="zh-CN">Long-horizon world model 论文地图（可交互速查）</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">in Chinese</span><span data-l="zh" lang="zh-CN">中文</span><span class="tag"><span data-l="en">Map</span><span data-l="zh" lang="zh-CN">地图</span></span></div>
+        <p class="entry-desc"><span data-l="en">A searchable companion to the closed-loop map: 142 papers grouped by the part of the robot execution loop they change.</span><span data-l="zh" lang="zh-CN">闭环底图的可搜索版本：142 篇论文按它们修改的执行闭环部分分组。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="long-horizon-failure-modes/">Long Horizon Is Not One Problem</a>
-        </div>
-        <div class="entry-meta">June 2026 · bilingual</div>
-        <p class="entry-desc">
-          An overview of the long-horizon line in one frame: six failure modes
-          crossed against five recurring moves in a single matrix, the
-          robot–agent isomorphism, and the open trust-horizon question. A
-          synthesis of the rollout-drift, interfaces, and map notes below.
-        </p>
+      <article class="entry" data-types="survey" data-langs="bi">
+        <h3 class="entry-title"><a href="long-horizon-failure-modes/"><span data-l="en">Long Horizon Is Not One Problem</span><span data-l="zh" lang="zh-CN">长程：六种失败，五种应对</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">English · 中文</span><span data-l="zh" lang="zh-CN">中文 · English</span><span class="tag"><span data-l="en">Survey</span><span data-l="zh" lang="zh-CN">综述</span></span></div>
+        <p class="entry-desc"><span data-l="en">The long-horizon line in one frame: six failure modes crossed with five recurring fixes in one matrix, the robot–agent correspondence, and the open trust-horizon question.</span><span data-l="zh" lang="zh-CN">用一个框架概括长程问题：六种失败模式和五种常见应对组成一个矩阵，加上机器人与 agent 的对应关系，以及尚未解决的可信 horizon 问题。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="long-horizon-world-model-interfaces/">Long-horizon world model 的五个接口</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          A Chinese research note that splits long-horizon world-model work
-          into five system interfaces: planner usage, rollout fidelity,
-          event memory, action hierarchy, and evaluation/data infrastructure.
-        </p>
+      <article class="entry" data-types="survey" data-langs="zh">
+        <h3 class="entry-title"><a href="long-horizon-world-model-interfaces/"><span data-l="en">Five Interfaces of a Long-Horizon World Model</span><span data-l="zh" lang="zh-CN">Long-horizon world model 的五个接口</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">in Chinese</span><span data-l="zh" lang="zh-CN">中文</span><span class="tag"><span data-l="en">Survey</span><span data-l="zh" lang="zh-CN">综述</span></span></div>
+        <p class="entry-desc"><span data-l="en">Splits long-horizon world-model work into five system interfaces: planner usage, rollout fidelity, event memory, action hierarchy, and evaluation / data infrastructure.</span><span data-l="zh" lang="zh-CN">把长程世界模型的工作拆成五个系统接口：planner 的用法、rollout 保真度、事件记忆、动作层级、评测与数据基础设施。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="long-horizon-experiment-logic/">Long Horizon World Models：从主张到实验</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          A Chinese research note on how to turn long-horizon world-model
-          claims into tasks, metrics, baselines, ablations, and a verifier-MPC
-          experiment.
-        </p>
+      <article class="entry" data-types="essay" data-langs="zh">
+        <h3 class="entry-title"><a href="long-horizon-experiment-logic/"><span data-l="en">Long-Horizon World Models: From Claims to Experiments</span><span data-l="zh" lang="zh-CN">Long Horizon World Models：从主张到实验</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">in Chinese</span><span data-l="zh" lang="zh-CN">中文</span><span class="tag"><span data-l="en">Thinking</span><span data-l="zh" lang="zh-CN">思考</span></span></div>
+        <p class="entry-desc"><span data-l="en">How to turn long-horizon world-model claims into tasks, metrics, baselines, ablations, and a verifier-MPC experiment.</span><span data-l="zh" lang="zh-CN">怎样把长程世界模型的主张变成任务、指标、基线、消融，以及一个 verifier-MPC 实验。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="long-horizon-research-matrix/">Long Horizon：机器人世界模型的研究矩阵</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          A Chinese research matrix for long-horizon robot world models and
-          policies: rollout drift, closed-loop planning, trust horizon, event
-          verification, temporal abstraction, and object/state persistence.
-        </p>
+      <article class="entry" data-types="map" data-langs="zh">
+        <h3 class="entry-title"><a href="long-horizon-research-matrix/"><span data-l="en">Long Horizon: A Research Matrix for Robot World Models</span><span data-l="zh" lang="zh-CN">Long Horizon：机器人世界模型的研究矩阵</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">in Chinese</span><span data-l="zh" lang="zh-CN">中文</span><span class="tag"><span data-l="en">Map</span><span data-l="zh" lang="zh-CN">地图</span></span></div>
+        <p class="entry-desc"><span data-l="en">A research matrix for long-horizon robot world models and policies: rollout drift, closed-loop planning, trust horizon, event verification, temporal abstraction, and object / state persistence.</span><span data-l="zh" lang="zh-CN">长程机器人世界模型与策略的研究矩阵：rollout 漂移、闭环规划、可信 horizon、事件验证、时间抽象、物体与状态的持续性。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="long-horizon-paper-tiers/">Long Horizon：152 篇世界模型论文阅读梯队</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          A Chinese reading-priority table for 152 long-horizon and world-model
-          papers, scored by importance, world-model relevance, long-horizon
-          relevance, organization signal, and source-check status.
-        </p>
+      <article class="entry" data-types="map" data-langs="zh">
+        <h3 class="entry-title"><a href="long-horizon-paper-tiers/"><span data-l="en">Long Horizon: Reading Tiers for 152 World-Model Papers</span><span data-l="zh" lang="zh-CN">Long Horizon：152 篇世界模型论文阅读梯队</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">in Chinese</span><span data-l="zh" lang="zh-CN">中文</span><span class="tag"><span data-l="en">Map</span><span data-l="zh" lang="zh-CN">地图</span></span></div>
+        <p class="entry-desc"><span data-l="en">A reading-priority table for 152 long-horizon and world-model papers, scored by importance, world-model relevance, long-horizon relevance, organization signal, and source-check status.</span><span data-l="zh" lang="zh-CN">152 篇长程与世界模型论文的阅读优先级表，按重要性、与世界模型的相关性、与长程的相关性、机构信号和来源核对状态打分。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="long-horizon-map/">From Rollout to Context</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          A bilingual research map of the long-horizon problem across robot
-          world models, robot policies, and language-model agents.
-        </p>
+      <article class="entry" data-types="survey" data-langs="bi">
+        <h3 class="entry-title"><a href="long-horizon-map/"><span data-l="en">From Rollout to Context</span><span data-l="zh" lang="zh-CN">从 Rollout 到 Context</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">English · 中文</span><span data-l="zh" lang="zh-CN">中文 · English</span><span class="tag"><span data-l="en">Survey</span><span data-l="zh" lang="zh-CN">综述</span></span></div>
+        <p class="entry-desc"><span data-l="en">A research map of the long-horizon problem across robot world models, robot policies, and language-model agents.</span><span data-l="zh" lang="zh-CN">长程问题的研究地图，覆盖机器人世界模型、机器人策略和语言模型 agent。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="qwen-agentworld/">Qwen-AgentWorld：文本世界模型的边界</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          A Chinese research note on language world models, digital-agent
-          simulators, next-observation prediction, and why a text model can
-          still satisfy the world-model interface.
-        </p>
+      <article class="entry" data-types="paper" data-langs="zh">
+        <h3 class="entry-title"><a href="qwen-agentworld/"><span data-l="en">Qwen-AgentWorld: The Limits of a Text World Model</span><span data-l="zh" lang="zh-CN">Qwen-AgentWorld：文本世界模型的边界</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">in Chinese</span><span data-l="zh" lang="zh-CN">中文</span><span class="tag"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span></span></div>
+        <p class="entry-desc"><span data-l="en">On language world models, digital-agent simulators and next-observation prediction, and why a text model can still meet the world-model interface.</span><span data-l="zh" lang="zh-CN">关于语言世界模型、数字 agent 模拟器和下一观测预测，以及为什么一个文本模型也能满足世界模型的接口。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="long-horizon/">Two Long Horizons</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          The phrase "long horizon" names a reliability problem in
-          language-model agents and a fidelity problem in world models. A
-          bilingual comparison across METR's time horizon, self-conditioning,
-          MBPO compounding error, Dreamer/TD-MPC planning, and Genie-style drift.
-        </p>
+      <article class="entry" data-types="survey" data-langs="bi">
+        <h3 class="entry-title"><a href="long-horizon/"><span data-l="en">Two Long Horizons</span><span data-l="zh" lang="zh-CN">两个 Long Horizon</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">English · 中文</span><span data-l="zh" lang="zh-CN">中文 · English</span><span class="tag"><span data-l="en">Survey</span><span data-l="zh" lang="zh-CN">综述</span></span></div>
+        <p class="entry-desc"><span data-l="en">&quot;Long horizon&quot; names a reliability problem in language-model agents and a fidelity problem in world models. A comparison across METR&#x27;s time horizon, self-conditioning, MBPO compounding error, Dreamer / TD-MPC planning, and Genie-style drift.</span><span data-l="zh" lang="zh-CN">&quot;long horizon&quot; 在语言模型 agent 里指可靠性问题，在世界模型里指保真度问题。本文对比 METR 的时间 horizon、自我条件化、MBPO 的累积误差、Dreamer / TD-MPC 的规划，以及 Genie 式的漂移。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="puppeteer/">Puppeteer：把 humanoid 控制拆成两层 world model</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          A Chinese technical breakdown of Puppeteer, hierarchical world
-          models, MoCap-trained motion priors, end-effector commands, and
-          naturalness evaluation for humanoid control.
-        </p>
+      <article class="entry" data-types="paper" data-langs="zh">
+        <h3 class="entry-title"><a href="puppeteer/"><span data-l="en">Puppeteer: Splitting Humanoid Control into Two World Models</span><span data-l="zh" lang="zh-CN">Puppeteer：把 humanoid 控制拆成两层 world model</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">in Chinese</span><span data-l="zh" lang="zh-CN">中文</span><span class="tag"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span></span></div>
+        <p class="entry-desc"><span data-l="en">A breakdown of Puppeteer: hierarchical world models, MoCap-trained motion priors, end-effector commands, and naturalness evaluation for humanoid control.</span><span data-l="zh" lang="zh-CN">拆解 Puppeteer：分层世界模型、用动捕数据训练的运动先验、末端执行器指令，以及人形机器人控制的自然度评测。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="diffusion-path/">Diffusion：从噪声到数据的一条路径</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          A bilingual mechanism note on diffusion as iterative denoising,
-          score estimation, latent-space generation, guidance, video diffusion,
-          and the connection to Cosmos Policy.
-        </p>
+      <article class="entry" data-types="explainer" data-langs="bi">
+        <h3 class="entry-title"><a href="diffusion-path/"><span data-l="en">Diffusion: Learning a Path from Noise to Data</span><span data-l="zh" lang="zh-CN">Diffusion：从噪声到数据的一条路径</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">English · 中文</span><span data-l="zh" lang="zh-CN">中文 · English</span><span class="tag"><span data-l="en">Explainer</span><span data-l="zh" lang="zh-CN">讲解</span></span></div>
+        <p class="entry-desc"><span data-l="en">Diffusion as iterative denoising, score estimation, latent-space generation, guidance and video diffusion, and the link to Cosmos Policy.</span><span data-l="zh" lang="zh-CN">把 diffusion 讲成迭代去噪、score 估计、潜空间生成、引导和视频扩散，并连到 Cosmos Policy。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="cosmos-policy/">Cosmos Policy：视频模型怎样输出机器人动作</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          A bilingual mechanism note on latent slots, diffusion denoising,
-          and how Cosmos Policy fine-tunes a video world model to output
-          action, future state, and value.
-        </p>
+      <article class="entry" data-types="paper" data-langs="bi">
+        <h3 class="entry-title"><a href="cosmos-policy/"><span data-l="en">Cosmos Policy: How a Video Model Outputs Actions</span><span data-l="zh" lang="zh-CN">Cosmos Policy：视频模型怎样输出机器人动作</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">English · 中文</span><span data-l="zh" lang="zh-CN">中文 · English</span><span class="tag"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span></span></div>
+        <p class="entry-desc"><span data-l="en">Latent slots, diffusion denoising, and how Cosmos Policy fine-tunes a video world model to output action, future state and value.</span><span data-l="zh" lang="zh-CN">潜变量槽位、扩散去噪，以及 Cosmos Policy 怎样微调视频世界模型，让它输出动作、未来状态和价值。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="prism-wm/">PRISM-WM：世界模型不能把接触平均掉</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          A Chinese technical breakdown of PRISM-WM, TD-MPC-style latent
-          dynamics, hybrid systems, orthogonalized MoE, and long-horizon
-          rollout fidelity.
-        </p>
+      <article class="entry" data-types="paper" data-langs="bi">
+        <h3 class="entry-title"><a href="prism-wm/"><span data-l="en">PRISM-WM: A World Model Should Not Average Contact Away</span><span data-l="zh" lang="zh-CN">PRISM-WM：世界模型不能把接触平均掉</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">English · 中文</span><span data-l="zh" lang="zh-CN">中文 · English</span><span class="tag"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span></span></div>
+        <p class="entry-desc"><span data-l="en">A breakdown of PRISM-WM: TD-MPC-style latent dynamics, hybrid systems, orthogonalized mixture of experts, and long-horizon rollout fidelity.</span><span data-l="zh" lang="zh-CN">拆解 PRISM-WM：TD-MPC 式的潜空间动力学、混合系统、正交化的专家混合，以及长程 rollout 的保真度。</span></p>
       </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="td-mpc-world-model/">TD-MPC：世界模型不必还原世界</a>
-        </div>
-        <div class="entry-meta">June 2026</div>
-        <p class="entry-desc">
-          A Chinese paper note on TD-MPC, task-oriented latent dynamics,
-          reconstruction quality, action quality, short-horizon planning,
-          and terminal value estimation.
-        </p>
+      <article class="entry" data-types="paper" data-langs="bi">
+        <h3 class="entry-title"><a href="td-mpc-world-model/"><span data-l="en">TD-MPC: A World Model for Action</span><span data-l="zh" lang="zh-CN">TD-MPC：世界模型不必还原世界</span></a></h3>
+        <div class="entry-meta"><span data-l="en">June 2026</span><span data-l="zh" lang="zh-CN">2026 年 6 月</span><span class="dot"> · </span><span data-l="en">English · 中文</span><span data-l="zh" lang="zh-CN">中文 · English</span><span class="tag"><span data-l="en">Paper note</span><span data-l="zh" lang="zh-CN">论文笔记</span></span></div>
+        <p class="entry-desc"><span data-l="en">A paper note on TD-MPC: task-oriented latent dynamics, reconstruction quality versus action quality, short-horizon planning, and terminal value estimation.</span><span data-l="zh" lang="zh-CN">TD-MPC 论文笔记：面向任务的潜空间动力学、重建质量与动作质量的区别、短 horizon 规划和终端价值估计。</span></p>
       </article>
-    </div>
+    </section>
 
-    <p class="note">Work in public, but keep the bar high.</p>
+    <p class="note"><span data-l="en">Work in public, but keep the bar high.</span><span data-l="zh" lang="zh-CN">公开工作，但保持高标准。</span></p>
   </main>
+  <script>
+    (function () {
+      var docEl = document.documentElement;
+      var langButtons = document.querySelectorAll(".switch button");
+      function setView(v, save) {
+        docEl.dataset.view = v;
+        docEl.lang = v === "zh" ? "zh-CN" : "en";
+        document.title = v === "zh" ? "文章 — Sense Wang" : "Writing — Sense Wang";
+        langButtons.forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.set === v)); });
+        if (!save) return;
+        // Posts read these keys, so a post opens in the language chosen here.
+        try {
+          localStorage.setItem("writing-language", v);
+          localStorage.setItem("elr-blog-language", v);
+          localStorage.setItem("sense-lang-long-horizon-map", v);
+        } catch (err) {}
+      }
+      langButtons.forEach(function (b) { b.addEventListener("click", function () { setView(b.dataset.set, true); }); });
+      setView(docEl.dataset.view, false);
+
+      var filters = document.querySelectorAll(".filter");
+      function applyFilter(t) {
+        filters.forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.filter === t)); });
+        document.querySelectorAll(".section").forEach(function (sec) {
+          var shown = 0;
+          sec.querySelectorAll(".entry").forEach(function (en) {
+            var ok = t === "all" || en.dataset.types.split(" ").indexOf(t) >= 0;
+            en.hidden = !ok; if (ok) shown++;
+          });
+          sec.hidden = shown === 0;
+        });
+      }
+      filters.forEach(function (b) { b.addEventListener("click", function () { applyFilter(b.dataset.filter); }); });
+    })();
+  </script>
 </body>
 </html>
