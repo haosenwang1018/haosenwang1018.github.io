@@ -4,18 +4,30 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>给定一条学习率调度，能算出整条 loss 曲线吗？ - Sense Wang</title>
-  <meta name="description" content="面积律、多幂律和函数缩放律把 loss 写成学习率调度的泛函；改用有效学习率后预测误差下降；有效学习率调度的一部分由权重范数的平衡决定；在 loss 上，衰减到多低通常比形状影响更大。">
-  <link rel="stylesheet" href="reader.css">
+  <meta name="description" content="同一规模下，用两三条较短的训练拟合面积律或多幂律，就能预测没见过的调度下的 loss 曲线；跨规模还缺证据。改用有效学习率后预测误差下降；在 loss 上，衰减到多低通常比形状影响更大。">
+  <link rel="canonical" href="https://sensewang.com/writing/lr-schedule-loss-curves/">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Sense Wang">
+  <meta property="og:title" content="给定一条学习率调度，能算出整条 loss 曲线吗？">
+  <meta property="og:description" content="同一规模下，用两三条较短的训练拟合面积律或多幂律，就能预测没见过的调度下的 loss 曲线；跨规模还缺证据。改用有效学习率后预测误差下降；在 loss 上，衰减到多低通常比形状影响更大。">
+  <meta property="og:url" content="https://sensewang.com/writing/lr-schedule-loss-curves/">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="article:published_time" content="2026-10-30">
+  <meta property="article:author" content="Sense Wang">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="给定一条学习率调度，能算出整条 loss 曲线吗？">
+  <meta name="twitter:description" content="同一规模下，用两三条较短的训练拟合面积律或多幂律，就能预测没见过的调度下的 loss 曲线；跨规模还缺证据。改用有效学习率后预测误差下降；在 loss 上，衰减到多低通常比形状影响更大。">
+  <link rel="stylesheet" href="reader.css?v=1">
   <script>
     window.MathJax = {
       tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
       svg: { fontCache: 'global' }
     };
   </script>
-  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
   <style>
-    main { padding-top: 40px; }
-    .site-nav { max-width: 1440px; margin: 0 auto 80px; padding-inline: var(--gutter); font-size: 14px; line-height: 20px; color: var(--muted); letter-spacing: normal; }
+    .site-nav { max-width: 1440px; margin: 0 auto 48px; padding: 24px var(--gutter) 0; font-size: 14px; line-height: 20px; color: var(--muted); letter-spacing: normal; }
+    .site-nav a { color: inherit; }
     .equation { display: block; margin-block: 28px; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-block: 8px; }
     mjx-container[display="true"] { margin: 0 !important; }
     .table-caption { margin: 16px 0 0; font-size: 14px; line-height: 22.96px; letter-spacing: normal; color: var(--muted); }
@@ -26,17 +38,16 @@
     th.src, td.src { white-space: nowrap; }
     .table-wrap { max-width: 100%; }
     @media (max-width: 767px) { .equation { font-size: 13px; } table { font-size: 13px; } th, td { padding-right: 10px; } table.t1 th:first-child, table.t1 td:first-child { min-width: 6.5em; } }
-    @media (min-width: 768px) { main { padding-top: 48px; } .site-nav { margin-bottom: 96px; } }
   </style>
 </head>
 <body>
 <a class="skip" href="#article">跳到正文</a>
+<nav class="site-nav"><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
 <main id="article">
-  <nav class="site-nav"><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
 
   <header class="article-header">
     <h1>给定一条学习率调度，能算出整条 loss 曲线吗？</h1>
-    <p class="deck">面积律、多幂律和函数缩放律已经能用两三条训练曲线，预测没见过的调度下的 loss 曲线。把自变量从学习率换成有效学习率，预测误差继续下降。有效学习率调度的一部分由权重范数的平衡决定。在 loss 上，衰减到多低通常比衰减的形状影响更大。</p>
+    <p class="deck">同一规模下基本可以：用两三条较短的训练拟合面积律或多幂律，就能预测没见过的调度下的 loss 曲线。跨规模还缺证据：现有拟合都在 1B 参数以内。把学习率换成有效学习率后，预测误差继续下降。在 loss 上，衰减到多低通常比衰减的形状影响更大。</p>
     <p class="metadata">Sense Wang · 2026 年 10 月</p>
   </header>
 
@@ -60,12 +71,12 @@
       <p>Luo 等人的多幂律模型（MPL）保留第一项，换掉了衰减项 <sup><a href="#ref-5">[5]</a></sup>：</p>
       <div class="equation">\[ L(t) = L_{0} + A\left(S_{1}(t) + S_{W}\right)^{-\alpha} - \mathrm{LD}(t) \]</div>
       <div class="equation">\[ \mathrm{LD}(t) = B \sum_{k=1}^{t} \left(\eta_{k-1} - \eta_{k}\right) G\!\left(\eta_{k}^{-\gamma} S_{k}(t)\right) \]</div>
-      <div class="equation">\[ S_{k}(t) = \sum_{\tau=k}^{t} \eta_{\tau}, \qquad G(x) = 1 - (Cx + 1)^{-\beta} \]</div>
-      <p>\(S_{W}\) 是预热阶段的学习率累加。每一次降幅带来的 loss 下降随之后的学习率累加逐步出现，并按幂律饱和。作者用 25M、100M 和 400M 的 Llama2 模型做实验。每个规模用最多 3 条调度拟合。测试集包括没见过的调度形状，以及长度为拟合集 3 倍的训练。在三个规模上，MPL 的测试误差都低于面积律，见下一节表 1 的前三行。</p>
+      <div class="equation">\[ S_{k}(t) = \sum_{\tau=k}^{t} \eta_{\tau}, \qquad G(x) = 1 - (Cx + 1)^{-\zeta} \]</div>
+      <p>\(S_{W}\) 是预热阶段的学习率累加。指数 \(\zeta\) 在原文中记为 β，本文把 β 留给 Adam 的动量系数。每一次降幅带来的 loss 下降随之后的学习率累加逐步出现，并按幂律饱和。作者用 25M、100M 和 400M 的 Llama2 模型做实验。每个规模用最多 3 条调度拟合。测试集包括没见过的调度形状，以及长度为拟合集 3 倍的训练。在三个规模上，MPL 的测试误差都低于面积律，见下一节表 1 的前三行。</p>
       <p>作者最小化 MPL 预测的最终 loss，得到一条接近 WSD 的调度。它的最终 loss 比调好的 WSD 略低，比 cosine 低 0.02 以上。这项工作有三个限制。所有实验都用 AdamW 和 0.1 的权重衰减。峰值学习率提高时，拟合精度下降。理论推导只覆盖二次 loss 上的 SGD。</p>
       <p>Li 等人从理论一侧推出函数缩放律（FSL）<sup><a href="#ref-6">[6]</a></sup>。设定是幂律核回归上的 SGD。关键变量是内禀时间 \(t\)，它是调度的累加。在一定条件下，期望风险满足：</p>
-      <div class="equation">\[ \begin{aligned} \mathbb{E}\left[\mathcal{R}_{t}\right] - \frac{\sigma^{2}}{2} \asymp\; & M^{-s\beta} + e(t) \\ & + \int_{0}^{t} \mathcal{K}(t - z)\left[e(z) + \sigma^{2}\right] \gamma(z)\,\mathrm{d}z \end{aligned} \]</div>
-      <p>这里 \(\gamma\) 由学习率除以批量大小得到，再用内禀时间表示。\(e(t)\) 是无噪声时的信号学习项，\(\mathcal{K}\) 是遗忘核，\(M\) 是模型规模。调度通过最后一项的卷积进入 loss：在时刻 \(z\) 注入的梯度噪声与 \(\gamma(z)\) 成正比，之后按 \(\mathcal{K}\) 减小。作者在 0.1B 到 1B 的语言模型上用 FSL 拟合 loss 轨迹。</p>
+      <div class="equation">\[ \begin{aligned} \mathbb{E}\left[\mathcal{R}_{t}\right] - \frac{\sigma^{2}}{2} \asymp\; & M^{-sq} + e(t) \\ & + \int_{0}^{t} \mathcal{K}(t - z)\left[e(z) + \sigma^{2}\right] \gamma(z)\,\mathrm{d}z \end{aligned} \]</div>
+      <p>这里 \(\sigma^{2}\) 是标签噪声的方差，\(\sigma^{2}/2\) 是不可约误差。\(s\) 描述任务难度，\(s\) 越小任务越难。\(q\) 是容量指数，描述特征谱按幂律衰减的速度；原文记为 β。\(\gamma\) 由学习率除以批量大小得到，再用内禀时间表示。\(e(t)\) 是无噪声时的信号学习项，\(\mathcal{K}\) 是遗忘核，\(M\) 是模型规模。调度通过最后一项的卷积进入 loss：在时刻 \(z\) 注入的梯度噪声与 \(\gamma(z)\) 成正比，之后按 \(\mathcal{K}\) 减小。作者在 0.1B 到 1B 的语言模型上用 FSL 拟合 loss 轨迹。</p>
       <p>这些 loss 模型有相同的结构。一项随学习率累加单调下降，描述训练进度。另一项在学习率降低后出现，描述衰减阶段的额外下降。机制研究也支持这种分解。Wen 等人把 loss 地形描述为 river valley：高学习率时参数在陡峭方向大幅振荡，学习率降低后振荡减小，loss 随之下降 <sup><a href="#ref-2">[2]</a></sup>。凸优化的收敛界和 SGD 噪声模型也给出一致的结果 <sup><a href="#ref-7">[7]</a></sup><sup><a href="#ref-8">[8]</a></sup>。</p>
     </div></div>
   </section>
@@ -81,7 +92,7 @@
       <p>混元团队用一个 4 参数的简化 MPL 检验 ELR <sup><a href="#ref-11">[11]</a></sup>。简化式的衰减项是 \(-B\) 乘以全部降幅之和。这个和等于 \(\eta_{0} - \eta_{t}\)，所以衰减项等于 \(-B\eta_{0} + B\eta_{t}\)。常数 \(-B\eta_{0}\) 并入 \(L_{0}'\)，得到：</p>
       <div class="equation">\[ L(t) = L_{0}' + A\left(\sum_{i=1}^{t} \eta_{i} + S_{w}\right)^{-\alpha} + B\,\eta_{t} \]</div>
       <p>原页面最后一步写作 \(-B\,\eta_{t}\)，符号有误。拟合时 \(B\) 的符号不受限制，所以数值结果不一定受影响。数据是 65 次 Muon 训练，来自线性和 WSD 调度的扫描。把 \(\eta\) 换成 \(\eta^{\star}\) 后，样本内拟合更准；依次留出 6 次指定训练时，ELR 版本每次都更准。测试调度都与拟合集属于同一类调度。</p>
-      <p>Liu 等人直接检验了 ELR <sup><a href="#ref-10">[10]</a></sup>。他们让两次训练的 ELR 序列相同，学习率和权重范数不同，然后比较 loss 轨迹。下文把两条 loss 轨迹的平均差叫作轨迹误差。在 26 组比较中，轨迹误差的中位数为 \(2.5 \times 10^{-3}\)，全部低于 \(5 \times 10^{-3}\)。比较覆盖三种优化器：AdamW、Muon 和 Signum。架构包括稠密、MoE 和线性注意力，规模从 100M 到 1B。</p>
+      <p>Liu 等人直接检验了 ELR <sup><a href="#ref-10">[10]</a></sup>。他们让两次训练的 ELR 序列相同，学习率和权重范数不同，然后比较 loss 轨迹。下文把两条 loss 轨迹逐步差值的绝对值平均叫作轨迹误差，单位与 loss 相同。作为对照，在 124M 模型上只换初始化种子，轨迹误差约为 \(1.1 \times 10^{-2}\)；Liu 等人也指出，优化器研究通常用 \(10^{-2}\) 量级的 loss 差来区分不同选择。在 26 组比较中，轨迹误差的中位数为 \(2.5 \times 10^{-3}\)，全部低于 \(5 \times 10^{-3}\)。比较覆盖三种优化器：AdamW、Muon 和 Signum。架构包括稠密、MoE 和线性注意力，规模从 100M 到 1B。</p>
       <p>他们再把 FSL 的输入从学习率换成 ELR。这里用的是 FSL 的一个 7 参数拟合形式。拟合集是 4 条 124M 的 Adam 曲线，权重衰减系数为 0 或 0.1。在 4 条同类留出曲线上，预测误差从 0.0239 降到 0.0133。在 2 条 Hyperball 曲线上，学习率版本出现系统偏差，误差为 0.2508。ELR 版本为 0.0212，约低 11.8 倍。这只是一个 124M 模型上的结果。Hyperball 训练的名义学习率与普通训练含义不同，峰值分别为 \(2 \times 10^{-3}\) 和 \(6 \times 10^{-4}\)，所以学习率版本是一个弱基线。</p>
       <p>Puro-2B 的报告用两条 Muon 曲线拟合 MPL，留出每条的最后 20% <sup><a href="#ref-13">[13]</a></sup>。ELR 版本的平均误差从 0.0265 降到 0.0210。改进来自一条曲线，0.0422 降到 0.0270；另一条曲线上 ELR 版本更差，0.0108 升到 0.0149。拟合只用了 170M 模型中 FC2 矩阵组的 ELR。</p>
     </div></div>
@@ -116,10 +127,10 @@
       <div class="equation">\[ \lVert W \rVert_{\mathrm{eq}} \approx \sqrt{\frac{\eta d}{2\lambda}}, \qquad \hat{\eta}_{r} \approx \sqrt{2\eta\lambda\,\frac{1 - \beta_{1}}{1 + \beta_{1}}} \]</div>
       <p>这里 \(d\) 是权重向量的维度，\(\lambda\) 是权重衰减系数，\(\beta_{1}\) 是一阶动量系数。下文的“转角”都指 \(\hat{\eta}_{r}\)，即每步权重方向的变化。混元团队用梯度下降推出同一个标度：平衡时转角约为 \(\sqrt{2\eta\lambda}\) <sup><a href="#ref-11">[11]</a></sup>。</p>
       <p>在平衡区，转角与 \(\eta\) 的平方根成正比。名义学习率降低 10 倍，平衡转角只降低 \(\sqrt{10} \approx 3.16\) 倍。在对数坐标中，ELR 的变化是名义学习率变化的一半，另一半被范数的变化抵消。这个关系适用于转角。在 Adam、Muon 这类更新量范数与权重范数无关的优化器下，它也适用于 \(\eta / \lVert W \rVert\)。它只在步数远大于 \(1/(\eta\lambda)\) 的平衡区成立。这是由上式推出的结论，没有论文直接测量它。</p>
-      <p>平衡需要时间。Wang 与 Aitchison 把 AdamW 的权重写成近期更新量的指数滑动平均，时间尺度是 \(1/(\eta\lambda)\) 步 <sup><a href="#ref-16">[16]</a></sup>。学习率降低后，权重衰减每步缩小范数的幅度也变小。范数在剩余步数内到达不了新的平衡值。Kosson 等人在 cosine 调度的后期观察到了这种偏离 <sup><a href="#ref-15">[15]</a></sup>。这时范数近似不变，ELR 跟随名义调度的形状。</p>
+      <p>平衡需要时间。Wang 与 Aitchison 把 AdamW 的权重写成近期更新量的指数滑动平均，时间尺度是 \(1/(\eta\lambda)\) 步 <sup><a href="#ref-16">[16]</a></sup>。例如，AdamW 取 \(\eta = 3 \times 10^{-4}\)、\(\lambda = 0.1\) 时，\(1/(\eta\lambda) \approx 3.3 \times 10^{4}\) 步，平衡区要求训练步数远多于这个值。学习率降低后，权重衰减每步缩小范数的幅度也变小。范数在剩余步数内到达不了新的平衡值。Kosson 等人在 cosine 调度的后期观察到了这种偏离 <sup><a href="#ref-15">[15]</a></sup>。这时范数近似不变，ELR 跟随名义调度的形状。</p>
       <p>混元团队的测量与这两段推理一致 <sup><a href="#ref-11">[11]</a></sup>。在 WSD、cosine 和线性调度下，不同调度的转角轨迹非常接近，训练早期尤其接近。早期转角先快速上升，再急剧下降，上升阶段比名义预热更短。后期转角跟随名义调度的形状。在 16 次 GPT 训练中用 AdamW 和 Muon 实测的权重范数变化，见英文文章 <a href="https://sensewang.com/writing/effective-learning-rate/">A Small Cosine Sets the Weight Norm under AdamW and Muon</a>。</p>
       <p>干预实验检验了这个机制。Liu 等人先用权重衰减或 Hyperball 完成一次目标训练，再只调整另一次训练的名义学习率，使两者的 ELR 相同 <sup><a href="#ref-10">[10]</a></sup>。轨迹误差分别为 \(4.8 \times 10^{-3}\) 和 \(1.2 \times 10^{-3}\)。后者从第 7.5k 步开始计算，排除了开始匹配时的瞬态。Xiao 等人只改学习率调度，就使 MuonH 和带权重衰减的 Muon 复现对方的曲线 <sup><a href="#ref-12">[12]</a></sup>。HyperTransfer 用初始化和学习率调度构造出复现基础优化器轨迹的 Hyperball 优化器，反方向也成立 <sup><a href="#ref-17">[17]</a></sup>。</p>
-      <p>在 1.2B 以下的 Qwen3 式模型上，MuonH 比带权重衰减的 Muon 有 20% 到 30% 的 token 等效加速 <sup><a href="#ref-9">[9]</a></sup>。干预实验提示，这个差距可能主要来自两者的 ELR 调度不同。这是本文的推断，干预实验的规模小于 1.2B，原论文没有做这个归因。Xiao 等人的结论是：Hyperball 没有消除调度问题；更激进的衰减在训练前期有利，在后期可能有害 <sup><a href="#ref-12">[12]</a></sup>。</p>
+      <p>在 1.2B 以下的 Qwen3 式模型上，MuonH（用 Hyperball 包装的 Muon）比带权重衰减的 Muon 有 20% 到 30% 的 token 等效加速 <sup><a href="#ref-9">[9]</a></sup>。干预实验提示，这个差距可能主要来自两者的 ELR 调度不同。这是本文的推断，干预实验的规模小于 1.2B，原论文没有做这个归因。Xiao 等人的结论是：Hyperball 没有消除调度问题；更激进的衰减在训练前期有利，在后期可能有害 <sup><a href="#ref-12">[12]</a></sup>。</p>
       <p>早期的 ELR 峰值和平方根关系由范数平衡决定，后期的衰减主要由名义调度决定。本文引用的工作中，没有一篇测量这两部分在整个训练中各占多少。</p>
     </div></div>
   </section>
@@ -135,7 +146,8 @@
         <thead><tr><th>比较</th><th>规模</th><th>结果</th><th class="src">来源</th></tr></thead>
         <tbody>
           <tr><td>线性衰减到 0，对比线性衰减到峰值的 10%</td><td>610M</td><td>80 TPP 的前者 loss 低于 200 TPP 的后者，约省 60% 算力</td><td class="src"><a href="#ref-18">[18]</a></td></tr>
-          <tr><td>衰减阶段 20% 的 1-sqrt / 线性；cosine 到 10% / cosine 到 0</td><td>1B，100B token，下游均分</td><td>46.23 / 46.20；46.26 / 45.88</td><td class="src"><a href="#ref-3">[3]</a></td></tr>
+          <tr><td>衰减阶段 20%：1-sqrt 对比线性</td><td>1B，100B token，下游均分</td><td>46.23 对比 46.20</td><td class="src"><a href="#ref-3">[3]</a></td></tr>
+          <tr><td>cosine：衰减到峰值的 10% 对比衰减到 0</td><td>同上</td><td>46.26 对比 45.88</td><td class="src"><a href="#ref-3">[3]</a></td></tr>
           <tr><td>MPL 优化出的调度，对比调好的 WSD</td><td>25M 到 400M</td><td>最终 loss 略低</td><td class="src"><a href="#ref-5">[5]</a></td></tr>
           <tr><td>1-sqrt 对比线性，MuonH；峰值和预热也不同</td><td>Modded-nanoGPT Track 3</td><td>达到验证 loss 3.28 用 3175 步，对比 3250 步</td><td class="src"><a href="#ref-11">[11]</a></td></tr>
           <tr><td>0.4 次幂对比 1-sqrt，MuonH，峰值相同</td><td>同上</td><td>3150 步，对比 3175 步</td><td class="src"><a href="#ref-11">[11]</a></td></tr>
@@ -148,7 +160,7 @@
     </div></div>
 
     <div class="layout block"><div class="prose">
-      <p>按现有比较，影响从大到小分成三层。这个排序是定性的：各层来自不同的模型、训练长度和度量，数字不能跨层比较。第一层是终值。Bergsma 等人在 610M 模型上比较了线性衰减到 0 和线性衰减到峰值的 10% <sup><a href="#ref-18">[18]</a></sup>。两者形状相同，只有终值不同。80 TPP 的前者比 200 TPP 的后者 loss 更低，约省 60% 算力。原文报告这个收益随 TPP 增大而增大，所以 60% 只代表这一设置。他们把 AdamW 的权重看作更新量的指数滑动平均：衰减到 0 时，后期平均更多步的更新，梯度噪声更低。第二层是范数控制方式。它通过上一节的机制改变 ELR 调度。</p>
+      <p>按现有比较，影响从大到小分成三层。这个排序是定性的：各层来自不同的模型、训练长度和度量，数字不能跨层比较。第一层是终值。Bergsma 等人在 610M 模型上比较了线性衰减到 0 和线性衰减到峰值的 10% <sup><a href="#ref-18">[18]</a></sup>。两者形状相同，只有终值不同。80 TPP 的前者比 200 TPP 的后者 loss 更低，约省 60% 算力。原文报告这个收益随 TPP 增大而增大，所以 60% 只代表这一设置。他们把 AdamW 的权重看作更新量的指数滑动平均：衰减到 0 时，后期平均更多步的更新，梯度噪声更低。第二层是范数控制方式。它通过上一节的机制改变 ELR 调度，见表 1 第 6 行和上一节的 Hyperball 结果。</p>
       <p>第三层是衰减的形状。Hägele 等人的 1B 模型中，衰减阶段占 20% 的 1-sqrt 和线性衰减，下游均分相差 0.03 分 <sup><a href="#ref-3">[3]</a></sup>。在 loss 上，Hägele 等人发现 1-sqrt 一致优于线性衰减，原文没有给出差距的数值。1-sqrt 衰减指学习率按 \(1 - \sqrt{x}\) 下降，\(x\) 是衰减阶段内的相对进度。在 Modded-nanoGPT Track 3 上，峰值相同的 0.4 次幂和 1-sqrt 两条 MuonH 调度只差约 0.8% 的步数 <sup><a href="#ref-11">[11]</a></sup>。混元的 1-sqrt 调度比线性基线少用 2.3% 的步数，但它同时提高了峰值、缩短了预热，所以 2.3% 不能只归于形状。Dremov 等人在 210M 模型上发现，选衰减形状的收益与调 AdamW 超参数的收益同一量级 <sup><a href="#ref-19">[19]</a></sup>。他们还发现，在衰减阶段提高 \(\beta_{2}\) 一致有益。</p>
       <p>理论结果支持同一结论。Defazio 等人证明，最坏情况下的最优调度是线性衰减 \(1 - t/T\) <sup><a href="#ref-22">[22]</a></sup>。Li 等人在 FSL 框架下证明，一大类衰减形状都达到相同的最优收敛阶，末段衰减过慢会使结果变差 <sup><a href="#ref-23">[23]</a></sup>。</p>
       <p>下游指标给出一个反例。Hägele 等人的 1B 实验中，cosine 衰减到峰值的 10%，与两种衰减到 0 的衰减阶段下游均分几乎相同 <sup><a href="#ref-3">[3]</a></sup>。cosine 衰减到 0 的 loss 更低，下游均分却最低。作者认为原因是模型在训练结束前已经饱和。所以衰减到 0 对 loss 的收益明确，对下游指标的收益要单独检查。</p>
@@ -167,13 +179,14 @@
       <p>批量大小也可以调度。Seesaw 在简化设定下证明学习率衰减与批量增大等价，对 Adam 只用归一化 SGD 作近似 <sup><a href="#ref-28">[28]</a></sup>。Li 与 Maddison 的 loss 模型可以处理变化的批量 <sup><a href="#ref-29">[29]</a></sup>。所以“loss 由学习率调度决定”只在批量大小固定时成立。</p>
       <p>在这个范围内，现有证据支持以下做法：</p>
       <ol>
-        <li>衰减到接近 0。在 610M 模型上，线性衰减到 0 优于衰减到峰值的 10% <sup><a href="#ref-18">[18]</a></sup>。在 1B 模型上，衰减到 0 不一定提高下游均分 <sup><a href="#ref-3">[3]</a></sup>。</li>
-        <li>用 WSD 时，衰减阶段取总步数的 10% 到 20%。面积律在 594M 模型上由拟合公式给出这个比例 <sup><a href="#ref-4">[4]</a></sup>；Hägele 等人在 1B 以下的模型上用 20% 的衰减阶段达到 cosine 的水平 <sup><a href="#ref-3">[3]</a></sup>。</li>
-        <li>形状的差别小于终值的差别。在 Hägele 等人的实验中，1-sqrt 的 loss 低于线性衰减；在 1B 模型的下游均分上，两者只差 0.03 分 <sup><a href="#ref-3">[3]</a></sup>。要比较形状，就用多个种子，或用 loss 模型做成对比较。</li>
-        <li>在衰减阶段提高 \(\beta_{2}\)。这个结果来自 210M 模型 <sup><a href="#ref-19">[19]</a></sup>。</li>
-        <li>总步数未知时，恒定学习率加权重平均是一个可用的起点。在 150M 和 300M 模型上，它的最终 loss 与调好的 cosine 相当 <sup><a href="#ref-20">[20]</a></sup>。在 210M 模型上，权重平均缩小了与学习率衰减的差距，但没有消除差距 <sup><a href="#ref-3">[3]</a></sup>。</li>
-        <li>更换范数控制方式时，按 ELR 重新设学习率。同一个名义学习率在权重衰减和 Hyperball 下对应不同的 ELR。这个结果来自 124M 模型 <sup><a href="#ref-10">[10]</a></sup>。</li>
-        <li>在小规模上选出的调度，到大规模上要重新验证。在最大 6B MoE 的缩放阶梯上，1-sqrt 的优势随算力增大而变小 <sup><a href="#ref-11">[11]</a></sup>。</li>
+        <li>在训练前比较候选调度时，先拟合一个 loss 模型。用目标模型跑 2 到 3 条较短的训练，例如一条恒定、一条 cosine，拟合 MPL 或面积律，再比较候选调度的预测最终 loss。MPL 在 25M 到 400M 上用最多 3 条调度拟合，预测的长度可到拟合集的 3 倍 <sup><a href="#ref-5">[5]</a></sup>；面积律在 594M 上用 2 条 2 万步的曲线预测 6 万步 <sup><a href="#ref-4">[4]</a></sup>。用小模型的拟合结果为大模型选调度，还没有检验过。</li>
+        <li>总步数事先确定时，线性衰减到 0。在 610M 模型上，它优于线性衰减到峰值的 10% <sup><a href="#ref-18">[18]</a></sup>。在 1B 模型上，衰减到 0 不一定提高下游均分，所以要单独检查下游指标 <sup><a href="#ref-3">[3]</a></sup>。</li>
+        <li>需要在多个步数结束或从中间分支续训时，用 WSD，衰减阶段取总步数的 10% 到 20%。面积律在 594M 模型上由拟合公式给出这个比例 <sup><a href="#ref-4">[4]</a></sup>；Hägele 等人在 1B 以下的模型上用 20% 的衰减阶段达到 cosine 的水平，并发现 1-sqrt 的 loss 低于线性 <sup><a href="#ref-3">[3]</a></sup>。</li>
+        <li>比较两种形状时，用多个种子（MPL 论文用 3 个），或用拟合好的 loss 模型做成对比较。形状之间的差别小于终值的差别，在 1B 模型的下游均分上只差 0.03 分 <sup><a href="#ref-3">[3]</a></sup>。</li>
+        <li>在衰减阶段把 Adam 的 \(\beta_{2}\) 从 0.95 调高，具体值需要扫描。这个结果来自 210M 模型 <sup><a href="#ref-19">[19]</a></sup>。</li>
+        <li>总步数未知时，可以从恒定学习率加权重平均开始。在 150M 和 300M 模型上，它的最终 loss 与调好的 cosine 相当 <sup><a href="#ref-20">[20]</a></sup>。在 210M 模型上，每 500 步一个窗口的权重平均缩小了与衰减的差距，但没有消除差距 <sup><a href="#ref-3">[3]</a></sup>。</li>
+        <li>只改权重衰减系数时，保持 \(\eta\lambda\) 不变。在平衡区，转角约为 \(\sqrt{2\eta\lambda}\)，所以这样做保持平衡转角；这条规则由第 3 节的公式推出，只适用于平衡区。换到 Hyperball 时，先测量原训练的 \(\eta / \lVert W \rVert\)，再调新训练的学习率去匹配它。Liu 等人在 124M 模型上用这种匹配复现了原训练的 loss 曲线 <sup><a href="#ref-10">[10]</a></sup>。</li>
+        <li>到大规模前，在 2 到 3 个规模上比较候选调度，检查优势是否随算力缩小。在最大 6B MoE 的缩放阶梯上，1-sqrt 的优势随算力增大而变小 <sup><a href="#ref-11">[11]</a></sup>。</li>
       </ol>
     </div></div>
   </section>
