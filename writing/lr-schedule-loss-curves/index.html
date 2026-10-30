@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>给定一条学习率调度，能算出整条 loss 曲线吗？ - Sense Wang</title>
+  <meta name="description" content="面积律、多幂律和函数缩放律把 loss 写成学习率调度的泛函；改用有效学习率后预测误差下降；有效学习率调度的一部分由权重范数的平衡决定；在 loss 上，衰减到多低通常比形状影响更大。">
+  <link rel="stylesheet" href="reader.css">
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+  <style>
+    main { padding-top: 40px; }
+    .site-nav { max-width: 1440px; margin: 0 auto 80px; padding-inline: var(--gutter); font-size: 14px; line-height: 20px; color: var(--muted); letter-spacing: normal; }
+    .equation { display: block; margin-block: 28px; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-block: 8px; }
+    mjx-container[display="true"] { margin: 0 !important; }
+    .table-caption { margin: 16px 0 0; font-size: 14px; line-height: 22.96px; letter-spacing: normal; color: var(--muted); }
+    th { border-bottom-color: #bbb; }
+    td.num, th.num { text-align: right; white-space: nowrap; }
+    .footnotes li { overflow-wrap: anywhere; }
+    .refs-note { margin-top: 20px; }
+    th.src, td.src { white-space: nowrap; }
+    .table-wrap { max-width: 100%; }
+    @media (max-width: 767px) { .equation { font-size: 13px; } table { font-size: 13px; } th, td { padding-right: 10px; } table.t1 th:first-child, table.t1 td:first-child { min-width: 6.5em; } }
+    @media (min-width: 768px) { main { padding-top: 48px; } .site-nav { margin-bottom: 96px; } }
+  </style>
+</head>
+<body>
+<a class="skip" href="#article">跳到正文</a>
+<main id="article">
+  <nav class="site-nav"><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+
+  <header class="article-header">
+    <h1>给定一条学习率调度，能算出整条 loss 曲线吗？</h1>
+    <p class="deck">面积律、多幂律和函数缩放律已经能用两三条训练曲线，预测没见过的调度下的 loss 曲线。把自变量从学习率换成有效学习率，预测误差继续下降。有效学习率调度的一部分由权重范数的平衡决定。在 loss 上，衰减到多低通常比衰减的形状影响更大。</p>
+    <p class="metadata">Sense Wang · 2026 年 10 月</p>
+  </header>
+
+  <section class="chapter" aria-label="引言">
+    <div class="layout block"><div class="prose">
+      <p>WSD（warmup-stable-decay）调度由 MiniCPM 提出 <sup><a href="#ref-1">[1]</a></sup>。它有三段：预热、恒定、衰减。用 WSD 训练语言模型时，loss 在恒定段下降很慢，在最后的衰减阶段快速下降 <sup><a href="#ref-2">[2]</a></sup><sup><a href="#ref-3">[3]</a></sup>。只改学习率调度，最终 loss 也会改变。</p>
+      <p>对做大规模训练的人，问题有两层。第一层：在同一规模下，能否用几条短训练拟合一个公式，在训练开始前比较候选调度？第二层：在小模型上拟合的公式，能否为大模型的长训练选出调度？2024 年以来的工作对第一层给出了基本肯定的回答。第二层的证据还不足。</p>
+      <p>本文中，“调度”指每一步的学习率序列 \(\eta_{t}\)。“名义学习率”指写在优化器配置里的 \(\eta_{t}\)。“衰减阶段”指学习率从峰值降到终值的阶段。“loss 模型”指把 loss 写成调度函数的公式。下文的 loss 模型都假设批量大小和数据分布在训练中不变。各公式中的系数只在该公式内有效。</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s1">
+    <div class="layout block"><div class="prose">
+      <h2 id="s1">把 loss 写成调度的泛函</h2>
+      <p>Tissue 等人提出面积律 <sup><a href="#ref-4">[4]</a></sup>。它用两个量描述一条调度。第一个量 \(S_{1}\) 是学习率曲线下的面积，也就是学习率的累加。第二个量 \(S_{2}\) 是衰减面积：每一步的学习率降幅进入一个累加器，累加器每步乘以 \(\mu\)，再对累加器求和。</p>
+      <div class="equation">\[ L(s) = L_{0} + A\,S_{1}^{-\alpha} - C\,S_{2} \]</div>
+      <div class="equation">\[ S_{1} = \sum_{i=1}^{s} \eta_{i}, \qquad S_{2} = \sum_{i=1}^{s} m_{i} \]</div>
+      <div class="equation">\[ m_{i} = \mu\, m_{i-1} + \left(\eta_{i-1} - \eta_{i}\right) \]</div>
+      <p>原文把 \(\mu\) 记为 λ。本文把 λ 留给权重衰减系数。第一项描述累计的训练进度。第二项描述衰减阶段的额外下降，它使 loss 的变化滞后于学习率的变化。</p>
+      <p>作者用一个 594M 非嵌入参数的语言模型检验这个式子。他们用 2 万步的恒定和 cosine 两条曲线拟合，再预测 4 条没见过的 6 万步调度。平均预测误差为 0.2%，拟合的 \(R^{2}\) 大于 0.999。同一个式子还给出 WSD 的最优衰减比例。在论文所用的 \(\mu = 0.999\) 下，这个比例约为总步数的 10% 到 20%，并随 \(\mu\) 变化。</p>
+      <p>Luo 等人的多幂律模型（MPL）保留第一项，换掉了衰减项 <sup><a href="#ref-5">[5]</a></sup>：</p>
+      <div class="equation">\[ L(t) = L_{0} + A\left(S_{1}(t) + S_{W}\right)^{-\alpha} - \mathrm{LD}(t) \]</div>
+      <div class="equation">\[ \mathrm{LD}(t) = B \sum_{k=1}^{t} \left(\eta_{k-1} - \eta_{k}\right) G\!\left(\eta_{k}^{-\gamma} S_{k}(t)\right) \]</div>
+      <div class="equation">\[ S_{k}(t) = \sum_{\tau=k}^{t} \eta_{\tau}, \qquad G(x) = 1 - (Cx + 1)^{-\beta} \]</div>
+      <p>\(S_{W}\) 是预热阶段的学习率累加。每一次降幅带来的 loss 下降随之后的学习率累加逐步出现，并按幂律饱和。作者用 25M、100M 和 400M 的 Llama2 模型做实验。每个规模用最多 3 条调度拟合。测试集包括没见过的调度形状，以及长度为拟合集 3 倍的训练。在三个规模上，MPL 的测试误差都低于面积律，见下一节表 1 的前三行。</p>
+      <p>作者最小化 MPL 预测的最终 loss，得到一条接近 WSD 的调度。它的最终 loss 比调好的 WSD 略低，比 cosine 低 0.02 以上。这项工作有三个限制。所有实验都用 AdamW 和 0.1 的权重衰减。峰值学习率提高时，拟合精度下降。理论推导只覆盖二次 loss 上的 SGD。</p>
+      <p>Li 等人从理论一侧推出函数缩放律（FSL）<sup><a href="#ref-6">[6]</a></sup>。设定是幂律核回归上的 SGD。关键变量是内禀时间 \(t\)，它是调度的累加。在一定条件下，期望风险满足：</p>
+      <div class="equation">\[ \begin{aligned} \mathbb{E}\left[\mathcal{R}_{t}\right] - \frac{\sigma^{2}}{2} \asymp\; & M^{-s\beta} + e(t) \\ & + \int_{0}^{t} \mathcal{K}(t - z)\left[e(z) + \sigma^{2}\right] \gamma(z)\,\mathrm{d}z \end{aligned} \]</div>
+      <p>这里 \(\gamma\) 由学习率除以批量大小得到，再用内禀时间表示。\(e(t)\) 是无噪声时的信号学习项，\(\mathcal{K}\) 是遗忘核，\(M\) 是模型规模。调度通过最后一项的卷积进入 loss：在时刻 \(z\) 注入的梯度噪声与 \(\gamma(z)\) 成正比，之后按 \(\mathcal{K}\) 减小。作者在 0.1B 到 1B 的语言模型上用 FSL 拟合 loss 轨迹。</p>
+      <p>这些 loss 模型有相同的结构。一项随学习率累加单调下降，描述训练进度。另一项在学习率降低后出现，描述衰减阶段的额外下降。机制研究也支持这种分解。Wen 等人把 loss 地形描述为 river valley：高学习率时参数在陡峭方向大幅振荡，学习率降低后振荡减小，loss 随之下降 <sup><a href="#ref-2">[2]</a></sup>。凸优化的收敛界和 SGD 噪声模型也给出一致的结果 <sup><a href="#ref-7">[7]</a></sup><sup><a href="#ref-8">[8]</a></sup>。</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s2">
+    <div class="layout block"><div class="prose">
+      <h2 id="s2">有效学习率作为自变量</h2>
+      <p>上面的 loss 模型都以名义学习率为输入。现代 Transformer 有大量归一化层。假设一个权重矩阵 \(W\) 满足尺度不变性，即 loss 对 \(cW\) 和 \(W\) 取相同的值。这个假设在常见架构中只部分成立，本节最后讨论。这时 \(W\) 的范数不改变输出，只改变一步更新使 \(W\) 转动的角度。</p>
+      <p>下文把限制权重范数的手段叫作范数控制方式，例如权重衰减系数取 0 或 0.1，或者使用 Hyperball。Hyperball 是一个优化器包装。它把每个权重矩阵和对应更新量的 Frobenius 范数都设为固定常数 <sup><a href="#ref-9">[9]</a></sup>。使用 Hyperball 的 Muon 记作 MuonH。</p>
+      <p>有效学习率（ELR）把范数放进学习率。常见定义有两种。Liu 等人用学习率除以权重的 Frobenius 范数 <sup><a href="#ref-10">[10]</a></sup>。腾讯混元预训练团队再乘上优化器更新量的范数 <sup><a href="#ref-11">[11]</a></sup>：</p>
+      <div class="equation">\[ \eta^{\mathrm{eff}}_{t} = \frac{\eta_{t}}{\lVert W_{t} \rVert_{F}}, \qquad \eta^{\star}_{t} = \frac{\eta_{t}\,\lVert \mathrm{Opt}_{t} \rVert}{\lVert W_{t} \rVert} \]</div>
+      <p>对 Hyperball，权重范数固定，Liu 等人的定义化为学习率除以更新量范数。两个定义都描述一步更新相对于权重的大小。设更新量与权重近似正交，且一步前后权重范数近似不变。这时 \(\eta^{\star}_{t}\) 近似等于每一步权重方向的转角。Xiao 等人保留了更新量与权重的内积项，推出一个角度形式的定义 <sup><a href="#ref-12">[12]</a></sup>。下文的每个结论只在其原论文的定义下成立。</p>
+      <p>混元团队用一个 4 参数的简化 MPL 检验 ELR <sup><a href="#ref-11">[11]</a></sup>。简化式的衰减项是 \(-B\) 乘以全部降幅之和。这个和等于 \(\eta_{0} - \eta_{t}\)，所以衰减项等于 \(-B\eta_{0} + B\eta_{t}\)。常数 \(-B\eta_{0}\) 并入 \(L_{0}'\)，得到：</p>
+      <div class="equation">\[ L(t) = L_{0}' + A\left(\sum_{i=1}^{t} \eta_{i} + S_{w}\right)^{-\alpha} + B\,\eta_{t} \]</div>
+      <p>原页面最后一步写作 \(-B\,\eta_{t}\)，符号有误。拟合时 \(B\) 的符号不受限制，所以数值结果不一定受影响。数据是 65 次 Muon 训练，来自线性和 WSD 调度的扫描。把 \(\eta\) 换成 \(\eta^{\star}\) 后，样本内拟合更准；依次留出 6 次指定训练时，ELR 版本每次都更准。测试调度都与拟合集属于同一类调度。</p>
+      <p>Liu 等人直接检验了 ELR <sup><a href="#ref-10">[10]</a></sup>。他们让两次训练的 ELR 序列相同，学习率和权重范数不同，然后比较 loss 轨迹。下文把两条 loss 轨迹的平均差叫作轨迹误差。在 26 组比较中，轨迹误差的中位数为 \(2.5 \times 10^{-3}\)，全部低于 \(5 \times 10^{-3}\)。比较覆盖三种优化器：AdamW、Muon 和 Signum。架构包括稠密、MoE 和线性注意力，规模从 100M 到 1B。</p>
+      <p>他们再把 FSL 的输入从学习率换成 ELR。这里用的是 FSL 的一个 7 参数拟合形式。拟合集是 4 条 124M 的 Adam 曲线，权重衰减系数为 0 或 0.1。在 4 条同类留出曲线上，预测误差从 0.0239 降到 0.0133。在 2 条 Hyperball 曲线上，学习率版本出现系统偏差，误差为 0.2508。ELR 版本为 0.0212，约低 11.8 倍。这只是一个 124M 模型上的结果。Hyperball 训练的名义学习率与普通训练含义不同，峰值分别为 \(2 \times 10^{-3}\) 和 \(6 \times 10^{-4}\)，所以学习率版本是一个弱基线。</p>
+      <p>Puro-2B 的报告用两条 Muon 曲线拟合 MPL，留出每条的最后 20% <sup><a href="#ref-13">[13]</a></sup>。ELR 版本的平均误差从 0.0265 降到 0.0210。改进来自一条曲线，0.0422 降到 0.0270；另一条曲线上 ELR 版本更差，0.0108 升到 0.0149。拟合只用了 170M 模型中 FC2 矩阵组的 ELR。</p>
+    </div></div>
+
+    <div class="layout block"><div class="prose">
+      <div class="table-wrap"><table class="t1">
+        <thead><tr><th>改动</th><th>设置</th><th class="num">基线</th><th class="num">改动后</th><th class="num">比值</th></tr></thead>
+        <tbody>
+          <tr><td>面积律 → MPL</td><td>25M <sup><a href="#ref-5">[5]</a></sup></td><td class="num">0.0060</td><td class="num">0.0046</td><td class="num">1.30</td></tr>
+          <tr><td>面积律 → MPL</td><td>100M</td><td class="num">0.0095</td><td class="num">0.0051</td><td class="num">1.86</td></tr>
+          <tr><td>面积律 → MPL</td><td>400M</td><td class="num">0.0094</td><td class="num">0.0070</td><td class="num">1.34</td></tr>
+          <tr><td>MPL：学习率 → ELR</td><td>170M <sup><a href="#ref-13">[13]</a></sup></td><td class="num">0.0265</td><td class="num">0.0210</td><td class="num">1.26</td></tr>
+          <tr><td>FSL：学习率 → ELR</td><td>124M <sup><a href="#ref-10">[10]</a></sup></td><td class="num">0.0239</td><td class="num">0.0133</td><td class="num">1.80</td></tr>
+          <tr><td>FSL：学习率 → ELR</td><td>124M，Hyperball</td><td class="num">0.2508</td><td class="num">0.0212</td><td class="num">11.8</td></tr>
+        </tbody>
+      </table></div>
+      <p class="table-caption">表 1. loss 模型在留出数据上的预测误差（RMSE），只能在行内比较。前三行比较 loss 模型的形式，MPL 原文把面积律叫作 Momentum Law。后三行比较自变量。第 4 行是两条 Muon 曲线的平均，其中一条变差。第 5 行的范数控制方式在拟合集中出现过，第 6 行的没有。比值由本文计算；第 6 行，Liu 等人正文写作 11.83 倍，图注写作 12.9 倍。</p>
+    </div></div>
+
+    <div class="layout block"><div class="prose">
+      <p>按表 1，范数控制方式在拟合集中出现过时，改用 ELR 使平均误差降到原来的 1/1.3 到 1/1.8；不在拟合集中时，降到约 1/12。原因是：在不同范数控制方式下，同一个名义学习率对应差别很大的 ELR。</p>
+      <p>ELR 的理论基础也有争议。苏剑林指出，在 pre-norm 架构里，单个矩阵的尺度不变性几乎都不成立 <sup><a href="#ref-14">[14]</a></sup>。例外是使用 QK-Norm 时的 \(W_{q}\) 和 \(W_{k}\)。普遍成立的是联合对称性：一对参数一个乘以 \(c\)、另一个除以 \(c\)，loss 不变。这样的参数对包括 \((W_{q}, W_{k})\)、\((W_{v}, W_{o})\)、\((W_{\mathrm{up}}, W_{\mathrm{down}})\)，以及 RMSNorm 的增益 \(g\) 与它后面整组输入矩阵。</p>
+      <p>Liu 等人的消融结果与这个分析一致：去掉 QK-Norm 后，轨迹误差从 \(2.3 \times 10^{-3}\) 升到 \(5.2 \times 10^{-3}\)；再固定 RMSNorm 增益，误差升到 \(1.84 \times 10^{-2}\) <sup><a href="#ref-10">[10]</a></sup>。所以 ELR 作为自变量有多准，取决于架构。</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s3">
+    <div class="layout block"><div class="prose">
+      <h2 id="s3">ELR 调度的一部分由权重范数的平衡决定</h2>
+      <p>换成 ELR 以后，问题变成：什么决定 ELR 调度？分子 \(\eta_{t}\) 由人设定。分母 \(\lVert W_{t} \rVert\) 由训练决定，权重衰减使它趋于一个平衡值。</p>
+      <p>Kosson 等人推出了 AdamW 下尺度不变权重在平衡时的范数和每步转角 <sup><a href="#ref-15">[15]</a></sup>：</p>
+      <div class="equation">\[ \lVert W \rVert_{\mathrm{eq}} \approx \sqrt{\frac{\eta d}{2\lambda}}, \qquad \hat{\eta}_{r} \approx \sqrt{2\eta\lambda\,\frac{1 - \beta_{1}}{1 + \beta_{1}}} \]</div>
+      <p>这里 \(d\) 是权重向量的维度，\(\lambda\) 是权重衰减系数，\(\beta_{1}\) 是一阶动量系数。下文的“转角”都指 \(\hat{\eta}_{r}\)，即每步权重方向的变化。混元团队用梯度下降推出同一个标度：平衡时转角约为 \(\sqrt{2\eta\lambda}\) <sup><a href="#ref-11">[11]</a></sup>。</p>
+      <p>在平衡区，转角与 \(\eta\) 的平方根成正比。名义学习率降低 10 倍，平衡转角只降低 \(\sqrt{10} \approx 3.16\) 倍。在对数坐标中，ELR 的变化是名义学习率变化的一半，另一半被范数的变化抵消。这个关系适用于转角。在 Adam、Muon 这类更新量范数与权重范数无关的优化器下，它也适用于 \(\eta / \lVert W \rVert\)。它只在步数远大于 \(1/(\eta\lambda)\) 的平衡区成立。这是由上式推出的结论，没有论文直接测量它。</p>
+      <p>平衡需要时间。Wang 与 Aitchison 把 AdamW 的权重写成近期更新量的指数滑动平均，时间尺度是 \(1/(\eta\lambda)\) 步 <sup><a href="#ref-16">[16]</a></sup>。学习率降低后，权重衰减每步缩小范数的幅度也变小。范数在剩余步数内到达不了新的平衡值。Kosson 等人在 cosine 调度的后期观察到了这种偏离 <sup><a href="#ref-15">[15]</a></sup>。这时范数近似不变，ELR 跟随名义调度的形状。</p>
+      <p>混元团队的测量与这两段推理一致 <sup><a href="#ref-11">[11]</a></sup>。在 WSD、cosine 和线性调度下，不同调度的转角轨迹非常接近，训练早期尤其接近。早期转角先快速上升，再急剧下降，上升阶段比名义预热更短。后期转角跟随名义调度的形状。在 16 次 GPT 训练中用 AdamW 和 Muon 实测的权重范数变化，见英文文章 <a href="https://sensewang.com/writing/effective-learning-rate/">A Small Cosine Sets the Weight Norm under AdamW and Muon</a>。</p>
+      <p>干预实验检验了这个机制。Liu 等人先用权重衰减或 Hyperball 完成一次目标训练，再只调整另一次训练的名义学习率，使两者的 ELR 相同 <sup><a href="#ref-10">[10]</a></sup>。轨迹误差分别为 \(4.8 \times 10^{-3}\) 和 \(1.2 \times 10^{-3}\)。后者从第 7.5k 步开始计算，排除了开始匹配时的瞬态。Xiao 等人只改学习率调度，就使 MuonH 和带权重衰减的 Muon 复现对方的曲线 <sup><a href="#ref-12">[12]</a></sup>。HyperTransfer 用初始化和学习率调度构造出复现基础优化器轨迹的 Hyperball 优化器，反方向也成立 <sup><a href="#ref-17">[17]</a></sup>。</p>
+      <p>在 1.2B 以下的 Qwen3 式模型上，MuonH 比带权重衰减的 Muon 有 20% 到 30% 的 token 等效加速 <sup><a href="#ref-9">[9]</a></sup>。干预实验提示，这个差距可能主要来自两者的 ELR 调度不同。这是本文的推断，干预实验的规模小于 1.2B，原论文没有做这个归因。Xiao 等人的结论是：Hyperball 没有消除调度问题；更激进的衰减在训练前期有利，在后期可能有害 <sup><a href="#ref-12">[12]</a></sup>。</p>
+      <p>早期的 ELR 峰值和平方根关系由范数平衡决定，后期的衰减主要由名义调度决定。本文引用的工作中，没有一篇测量这两部分在整个训练中各占多少。</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s4">
+    <div class="layout block"><div class="prose">
+      <h2 id="s4">在 loss 上，衰减到多低通常比形状影响更大</h2>
+      <p>如果 loss 由调度决定，下一个问题是：调度的哪些特征对 loss 影响大？表 2 把已发表的比较放在一起。</p>
+    </div></div>
+
+    <div class="layout block"><div class="prose">
+      <div class="table-wrap"><table class="t2">
+        <thead><tr><th>比较</th><th>规模</th><th>结果</th><th class="src">来源</th></tr></thead>
+        <tbody>
+          <tr><td>线性衰减到 0，对比线性衰减到峰值的 10%</td><td>610M</td><td>80 TPP 的前者 loss 低于 200 TPP 的后者，约省 60% 算力</td><td class="src"><a href="#ref-18">[18]</a></td></tr>
+          <tr><td>衰减阶段 20% 的 1-sqrt / 线性；cosine 到 10% / cosine 到 0</td><td>1B，100B token，下游均分</td><td>46.23 / 46.20；46.26 / 45.88</td><td class="src"><a href="#ref-3">[3]</a></td></tr>
+          <tr><td>MPL 优化出的调度，对比调好的 WSD</td><td>25M 到 400M</td><td>最终 loss 略低</td><td class="src"><a href="#ref-5">[5]</a></td></tr>
+          <tr><td>1-sqrt 对比线性，MuonH；峰值和预热也不同</td><td>Modded-nanoGPT Track 3</td><td>达到验证 loss 3.28 用 3175 步，对比 3250 步</td><td class="src"><a href="#ref-11">[11]</a></td></tr>
+          <tr><td>0.4 次幂对比 1-sqrt，MuonH，峰值相同</td><td>同上</td><td>3150 步，对比 3175 步</td><td class="src"><a href="#ref-11">[11]</a></td></tr>
+          <tr><td>衰减阶段的形状，对比 AdamW 超参数</td><td>210M</td><td>两者带来的差异同一量级</td><td class="src"><a href="#ref-19">[19]</a></td></tr>
+          <tr><td>恒定或 \(1/\sqrt{t}\) 学习率加权重平均，对比调好的 cosine</td><td>150M、300M，最长 32 倍 Chinchilla</td><td>最终 loss 相当</td><td class="src"><a href="#ref-20">[20]</a></td></tr>
+          <tr><td>ScheduleFree+，对比线性衰减</td><td>120M 到 2B</td><td>1000 TPP（120M）少用 31% 训练时间；100 TPP 除 2B 外更优；20 TPP 较大规模略差</td><td class="src"><a href="#ref-21">[21]</a></td></tr>
+        </tbody>
+      </table></div>
+      <p class="table-caption">表 2. 调度特征的影响。TPP 是每个参数对应的训练 token 数。各行的设置和度量不同，只能在行内比较。</p>
+    </div></div>
+
+    <div class="layout block"><div class="prose">
+      <p>按现有比较，影响从大到小分成三层。这个排序是定性的：各层来自不同的模型、训练长度和度量，数字不能跨层比较。第一层是终值。Bergsma 等人在 610M 模型上比较了线性衰减到 0 和线性衰减到峰值的 10% <sup><a href="#ref-18">[18]</a></sup>。两者形状相同，只有终值不同。80 TPP 的前者比 200 TPP 的后者 loss 更低，约省 60% 算力。原文报告这个收益随 TPP 增大而增大，所以 60% 只代表这一设置。他们把 AdamW 的权重看作更新量的指数滑动平均：衰减到 0 时，后期平均更多步的更新，梯度噪声更低。第二层是范数控制方式。它通过上一节的机制改变 ELR 调度。</p>
+      <p>第三层是衰减的形状。Hägele 等人的 1B 模型中，衰减阶段占 20% 的 1-sqrt 和线性衰减，下游均分相差 0.03 分 <sup><a href="#ref-3">[3]</a></sup>。在 loss 上，Hägele 等人发现 1-sqrt 一致优于线性衰减，原文没有给出差距的数值。1-sqrt 衰减指学习率按 \(1 - \sqrt{x}\) 下降，\(x\) 是衰减阶段内的相对进度。在 Modded-nanoGPT Track 3 上，峰值相同的 0.4 次幂和 1-sqrt 两条 MuonH 调度只差约 0.8% 的步数 <sup><a href="#ref-11">[11]</a></sup>。混元的 1-sqrt 调度比线性基线少用 2.3% 的步数，但它同时提高了峰值、缩短了预热，所以 2.3% 不能只归于形状。Dremov 等人在 210M 模型上发现，选衰减形状的收益与调 AdamW 超参数的收益同一量级 <sup><a href="#ref-19">[19]</a></sup>。他们还发现，在衰减阶段提高 \(\beta_{2}\) 一致有益。</p>
+      <p>理论结果支持同一结论。Defazio 等人证明，最坏情况下的最优调度是线性衰减 \(1 - t/T\) <sup><a href="#ref-22">[22]</a></sup>。Li 等人在 FSL 框架下证明，一大类衰减形状都达到相同的最优收敛阶，末段衰减过慢会使结果变差 <sup><a href="#ref-23">[23]</a></sup>。</p>
+      <p>下游指标给出一个反例。Hägele 等人的 1B 实验中，cosine 衰减到峰值的 10%，与两种衰减到 0 的衰减阶段下游均分几乎相同 <sup><a href="#ref-3">[3]</a></sup>。cosine 衰减到 0 的 loss 更低，下游均分却最低。作者认为原因是模型在训练结束前已经饱和。所以衰减到 0 对 loss 的收益明确，对下游指标的收益要单独检查。</p>
+      <p>在下游指标和较短的训练中，形状之间的差别接近种子噪声。MPL 论文中，25M 模型 3 个种子的最终 loss 标准差为 0.0007 <sup><a href="#ref-5">[5]</a></sup>。Liu 等人在 124M 模型上测得，只换初始化种子或数据顺序，轨迹误差就达到 \(1.11 \times 10^{-2}\) 和 \(1.62 \times 10^{-2}\) <sup><a href="#ref-10">[10]</a></sup>。所以关于形状的结论需要多个种子，或者用 loss 模型做成对比较。</p>
+      <h3>衰减与权重平均</h3>
+      <p>按 Bergsma 等人的解释，终值越低，AdamW 的权重平均越多步的更新。另一组工作直接平均检查点，代替学习率衰减。Schedule-Free 不使用调度，它的理论把调度和迭代平均统一起来 <sup><a href="#ref-24">[24]</a></sup>。Song 等人用 river valley 地形分析 Schedule-Free，发现它隐式地做权重平均 <sup><a href="#ref-25">[25]</a></sup>。WSM 把 cosine、线性和逆平方根衰减写成检查点平均方案，实验中最重要的因素是参与平均的训练区间长度 <sup><a href="#ref-26">[26]</a></sup>。</p>
+      <p>Li 等人在最大超过 100B 参数的稠密和 MoE 模型上，合并恒定学习率阶段的检查点，性能明显提高 <sup><a href="#ref-27">[27]</a></sup>。Anytime Pretraining 用恒定或 \(1/\sqrt{t}\) 学习率加权重平均，最终 loss 与调好的 cosine 相当（表 2）<sup><a href="#ref-20">[20]</a></sup>。Hägele 等人在 210M 模型上发现，权重平均缩小了与衰减的差距，但没有达到衰减后的 loss <sup><a href="#ref-3">[3]</a></sup>。所以低终值的收益有一部分可以由权重平均得到。上文的 loss 模型都没有把权重平均作为输入。</p>
+      <p>结论还可能随训练长度变化。ScheduleFree+ 相对线性衰减的优势在 1000 TPP 最大；在 20 TPP 的较大模型上，它略差于线性衰减（表 2）<sup><a href="#ref-21">[21]</a></sup>。原文引言写作“20 到 100 TPP 没有最终 loss 优势”，表 2 按正文第 9.2 节写。混元团队在最大 6B MoE 的缩放阶梯上测试了 1-sqrt 调度 <sup><a href="#ref-11">[11]</a></sup>。它在每个预算下都最好，但拟合缩放曲线的斜率更小，外推后优势可能消失。</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s5">
+    <div class="layout block"><div class="prose">
+      <h2 id="s5">按现有证据怎样设调度</h2>
+      <p>下面的建议有明确的范围。本文引用的 loss 模型拟合都在 1B 参数以内。调度形状和终值的比较最大到 2B，混元的缩放阶梯到 6B MoE。只有检查点合并的结果到 100B 以上。所有结果都在固定批量大小下得到。</p>
+      <p>批量大小也可以调度。Seesaw 在简化设定下证明学习率衰减与批量增大等价，对 Adam 只用归一化 SGD 作近似 <sup><a href="#ref-28">[28]</a></sup>。Li 与 Maddison 的 loss 模型可以处理变化的批量 <sup><a href="#ref-29">[29]</a></sup>。所以“loss 由学习率调度决定”只在批量大小固定时成立。</p>
+      <p>在这个范围内，现有证据支持以下做法：</p>
+      <ol>
+        <li>衰减到接近 0。在 610M 模型上，线性衰减到 0 优于衰减到峰值的 10% <sup><a href="#ref-18">[18]</a></sup>。在 1B 模型上，衰减到 0 不一定提高下游均分 <sup><a href="#ref-3">[3]</a></sup>。</li>
+        <li>用 WSD 时，衰减阶段取总步数的 10% 到 20%。面积律在 594M 模型上由拟合公式给出这个比例 <sup><a href="#ref-4">[4]</a></sup>；Hägele 等人在 1B 以下的模型上用 20% 的衰减阶段达到 cosine 的水平 <sup><a href="#ref-3">[3]</a></sup>。</li>
+        <li>形状的差别小于终值的差别。在 Hägele 等人的实验中，1-sqrt 的 loss 低于线性衰减；在 1B 模型的下游均分上，两者只差 0.03 分 <sup><a href="#ref-3">[3]</a></sup>。要比较形状，就用多个种子，或用 loss 模型做成对比较。</li>
+        <li>在衰减阶段提高 \(\beta_{2}\)。这个结果来自 210M 模型 <sup><a href="#ref-19">[19]</a></sup>。</li>
+        <li>总步数未知时，恒定学习率加权重平均是一个可用的起点。在 150M 和 300M 模型上，它的最终 loss 与调好的 cosine 相当 <sup><a href="#ref-20">[20]</a></sup>。在 210M 模型上，权重平均缩小了与学习率衰减的差距，但没有消除差距 <sup><a href="#ref-3">[3]</a></sup>。</li>
+        <li>更换范数控制方式时，按 ELR 重新设学习率。同一个名义学习率在权重衰减和 Hyperball 下对应不同的 ELR。这个结果来自 124M 模型 <sup><a href="#ref-10">[10]</a></sup>。</li>
+        <li>在小规模上选出的调度，到大规模上要重新验证。在最大 6B MoE 的缩放阶梯上，1-sqrt 的优势随算力增大而变小 <sup><a href="#ref-11">[11]</a></sup>。</li>
+      </ol>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s6">
+    <div class="layout block"><div class="prose">
+      <h2 id="s6">仍然没解决的问题</h2>
+      <p>前五个问题仍然开放。后两个有部分答案。</p>
+      <ol>
+        <li><strong>跨优化器预测。</strong>现有的迁移测试都在一种优化器内。在 AdamW 上拟合的 ELR loss 模型，能否不重新拟合，就预测 Muon 在没见过的调度形状下的整条曲线？</li>
+        <li><strong>ELR 的坐标。</strong>每个矩阵有自己的 ELR 序列，loss 模型只接受一个标量序列。应该取均值、按参数量加权、取某一层，还是按联合对称性按参数对计算？范数形式、角度形式和按参数对的形式，在普通 pre-norm、加 QK-Norm 和完全尺度不变的架构上，哪一个作为自变量最准？上面的论文没有系统比较这些选择。</li>
+        <li><strong>衰减项的坐标。</strong>面积律的 \(S_{2}\) 和 MPL 的 \(\mathrm{LD}(t)\) 都用名义学习率的降幅。改用 ELR 的降幅后，同一组参数能否同时描述有权重衰减和无权重衰减的衰减阶段？</li>
+        <li><strong>跨规模迁移。</strong>MPL 和 ELR 版 FSL 的参数怎样随模型规模变化？在小模型上拟合的 loss 模型，能否为大模型的长训练选出调度？</li>
+        <li><strong>更多输入。</strong>一个 loss 模型能否同时接受学习率序列、批量序列和权重平均？例如，WSM 的合并时长能否换算成 MPL 的衰减项？临界批量大小在训练中增长 <sup><a href="#ref-30">[30]</a></sup>，已有针对 WSD 的批量调度 <sup><a href="#ref-31">[31]</a></sup>，但它们还没有进入调度的 loss 模型。</li>
+        <li><strong>隐式部分的大小（部分有答案）。</strong>AdamC 让后接归一化的层的权重衰减系数与学习率调度成正比，用来修正训练末期梯度范数的上升 <sup><a href="#ref-32">[32]</a></sup>。在 Transformer 中，这包括除输出层外的全部线性层。这类修正直接改变 ELR 调度中由范数决定的部分。仍然开放的是：在整个训练中，\(\log \eta^{\star}\) 的变化有多少来自 \(\log \eta\)，多少来自范数？</li>
+        <li><strong>早期的 ELR 峰值（部分有答案）。</strong>为什么训练初期能承受更高的峰值 ELR <sup><a href="#ref-11">[11]</a></sup>？预热文献说明预热限制早期过大的更新 <sup><a href="#ref-33">[33]</a></sup><sup><a href="#ref-34">[34]</a></sup>，但不能预测峰值的高度。</li>
+      </ol>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-label="参考文献">
+    <div class="layout block"><div class="prose footnotes">
+      <ol>
+        <li id="ref-1">Shengding Hu, Yuge Tu, Xu Han, Chaoqun He, Ganqu Cui, Xiang Long et al., <a class="source-link" href="https://arxiv.org/abs/2404.06395">MiniCPM: Unveiling the Potential of Small Language Models with Scalable Training Strategies</a>, arXiv:2404.06395, 2024.</li>
+        <li id="ref-2">Kaiyue Wen, Zhiyuan Li, Jason Wang, David Hall, Percy Liang, Tengyu Ma, <a class="source-link" href="https://arxiv.org/abs/2410.05192">Understanding Warmup-Stable-Decay Learning Rates: A River Valley Loss Landscape Perspective</a>, arXiv:2410.05192, 2024.</li>
+        <li id="ref-3">Alexander Hägele, Elie Bakouch, Atli Kosson, Loubna Ben Allal, Leandro Von Werra, Martin Jaggi, <a class="source-link" href="https://arxiv.org/abs/2405.18392">Scaling Laws and Compute-Optimal Training Beyond Fixed Training Durations</a>, NeurIPS 2024. Table 5.</li>
+        <li id="ref-4">Howe Tissue, Venus Wang, Lu Wang, <a class="source-link" href="https://arxiv.org/abs/2408.11029">Scaling Law with Learning Rate Annealing</a>, arXiv:2408.11029, 2024.</li>
+        <li id="ref-5">Kairong Luo, Haodong Wen, Shengding Hu, Zhenbo Sun, Zhiyuan Liu, Maosong Sun, Kaifeng Lyu, Wenguang Chen, <a class="source-link" href="https://arxiv.org/abs/2503.12811">A Multi-Power Law for Loss Curve Prediction Across Learning Rate Schedules</a>, arXiv:2503.12811, 2025. Table 1, Figure 14.</li>
+        <li id="ref-6">Binghui Li, Fengling Chen, Zixun Huang, Lean Wang, Lei Wu, <a class="source-link" href="https://arxiv.org/abs/2509.19189">Functional Scaling Laws in Kernel Regression: Loss Dynamics and Learning Rate Schedules</a>, NeurIPS 2025.</li>
+        <li id="ref-7">Fabian Schaipp, Alexander Hägele, Adrien Taylor, Umut Simsekli, Francis Bach, <a class="source-link" href="https://arxiv.org/abs/2501.18965">The Surprising Agreement Between Convex Optimization Theory and Learning-Rate Scheduling for Large Model Training</a>, arXiv:2501.18965, 2025.</li>
+        <li id="ref-8">Shikai Qiu, Lechao Xiao, Andrew Gordon Wilson, Jeffrey Pennington, Atish Agarwala, <a class="source-link" href="https://arxiv.org/abs/2507.02119">Scaling Collapse Reveals Universal Dynamics in Compute-Optimally Trained Neural Networks</a>, ICML 2025.</li>
+        <li id="ref-9">Kaiyue Wen, Xingyu Dang, Kaifeng Lyu, Tengyu Ma, Percy Liang, <a class="source-link" href="https://arxiv.org/abs/2606.16899">Fantastic Pretraining Optimizers and Where to Find Them II: Hyperball Optimization</a>, arXiv:2606.16899, 2026.</li>
+        <li id="ref-10">Zihan Liu, Ruiheng Zheng, Shaobo Zhang, Changxin Tian, Kunlong Chen, Zhiqiang Zhang, Lei Wu, <a class="source-link" href="https://arxiv.org/abs/2608.24814">Effective Learning Rate Governs Loss Dynamics in Language Model Pretraining</a>, arXiv:2608.24814, 2026. Sections 3–6, Figure 6, Appendix A.2 and E.</li>
+        <li id="ref-11">Zhanpeng Zhou, Wenjie Zhou, Yufei Gu, Juqiu Wang, Guanwei Zhang, Ruobing Xie, Xianbiao Qi, Yushi Bai, Kaifeng Lyu, Shunyu Yao（腾讯混元预训练团队）, <a class="source-link" href="https://hy.tencent.com/research/elr">From LR to ELR: A Better Heuristic for Pretraining Dynamics</a>, 2026-08-11.</li>
+        <li id="ref-12">Yihao Xiao, Jialong Sun, Zitian Gao, Zeming Wei, Chutian Wang, Ran Tao et al., <a class="source-link" href="https://arxiv.org/abs/2607.22444">Hyperball May Not Be a Free Lunch</a>, arXiv:2607.22444, 2026.</li>
+        <li id="ref-13">Kairong Luo, Jiarui Cui, Yaorui Yin, Shengqi Chen, Yiming Yang, Linxiang Gao et al., <a class="source-link" href="https://arxiv.org/abs/2608.27370">Puro-2B: Poor Lab&#39;s Qwen2-1.5B Trained on RTX 5090 within $5090</a>, arXiv:2608.27370, 2026. Appendix F.1.</li>
+        <li id="ref-14">苏剑林, <a class="source-link" href="https://kexue.fm/archives/11985">从参数对称性到有效学习率</a>, 科学空间, 2026-10-27.</li>
+        <li id="ref-15">Atli Kosson, Bettina Messmer, Martin Jaggi, <a class="source-link" href="https://arxiv.org/abs/2305.17212">Rotational Equilibrium: How Weight Decay Balances Learning Across Neural Networks</a>, ICML 2024. Table 1.</li>
+        <li id="ref-16">Xi Wang, Laurence Aitchison, <a class="source-link" href="https://arxiv.org/abs/2405.13698">How to set AdamW&#39;s weight decay as you scale model and dataset size</a>, ICML 2025.</li>
+        <li id="ref-17">Jinghui Yuan, Hongtao Zhang, Jade Zou, Tianyu Li, Wenjie Zhou, Tianyu He et al., <a class="source-link" href="https://arxiv.org/abs/2609.07017">HyperTransfer: Understanding the Equivalence between Base Optimizer and Hyperball</a>, arXiv:2609.07017, 2026.</li>
+        <li id="ref-18">Shane Bergsma, Nolan Dey, Gurpreet Gosal, Gavia Gray, Daria Soboleva, Joel Hestness, <a class="source-link" href="https://arxiv.org/abs/2502.15938">Straight to Zero: Why Linearly Decaying the Learning Rate to Zero Works Best for LLMs</a>, ICLR 2025. Figure 1.</li>
+        <li id="ref-19">Aleksandr Dremov, Alexander Hägele, Atli Kosson, Martin Jaggi, <a class="source-link" href="https://arxiv.org/abs/2508.01483">Training Dynamics of the Cooldown Stage in Warmup-Stable-Decay Learning Rate Scheduler</a>, TMLR, 2025.</li>
+        <li id="ref-20">Alexandru Meterez, Pranav Ajit Nair, Depen Morwani, Cengiz Pehlevan, Sham Kakade, <a class="source-link" href="https://arxiv.org/abs/2602.03702">Anytime Pretraining: Horizon-Free Learning-Rate Schedules with Weight Averaging</a>, arXiv:2602.03702, 2026.</li>
+        <li id="ref-21">Aaron Defazio, <a class="source-link" href="https://arxiv.org/abs/2605.19095">ScheduleFree+: Scaling Learning-Rate-Free &amp; Schedule-Free Learning to Large Language Models</a>, arXiv:2605.19095, 2026. Section 9.</li>
+        <li id="ref-22">Aaron Defazio, Ashok Cutkosky, Harsh Mehta, Konstantin Mishchenko, <a class="source-link" href="https://arxiv.org/abs/2310.07831">Optimal Linear Decay Learning Rate Schedules and Further Refinements</a>, arXiv:2310.07831, 2023.</li>
+        <li id="ref-23">Binghui Li, Zilin Wang, Fengling Chen, Shiyang Zhao, Ruiheng Zheng, Lei Wu, <a class="source-link" href="https://arxiv.org/abs/2602.06797">Optimal Learning Rate Schedules under Functional Scaling Laws: Power Decay and Warmup-Stable-Decay</a>, COLT 2026.</li>
+        <li id="ref-24">Aaron Defazio, Xingyu Alice Yang, Harsh Mehta, Konstantin Mishchenko, Ahmed Khaled, Ashok Cutkosky, <a class="source-link" href="https://arxiv.org/abs/2405.15682">The Road Less Scheduled</a>, arXiv:2405.15682, 2024.</li>
+        <li id="ref-25">Minhak Song, Beomhan Baek, Kwangjun Ahn, Chulhee Yun, <a class="source-link" href="https://arxiv.org/abs/2507.09846">Through the River: Understanding the Benefit of Schedule-Free Methods for Language Model Training</a>, NeurIPS 2025.</li>
+        <li id="ref-26">Changxin Tian, Jiapeng Wang, Qian Zhao, Kunlong Chen, Jia Liu, Ziqi Liu et al., <a class="source-link" href="https://arxiv.org/abs/2507.17634">WSM: Decay-Free Learning Rate Schedule via Checkpoint Merging for LLM Pre-training</a>, arXiv:2507.17634, 2025.</li>
+        <li id="ref-27">Yunshui Li, Yiyuan Ma, Shen Yan, Chaoyi Zhang, Jing Liu, Jianqiao Lu et al., <a class="source-link" href="https://arxiv.org/abs/2505.12082">Model Merging in Pre-training of Large Language Models</a>, arXiv:2505.12082, 2025.</li>
+        <li id="ref-28">Alexandru Meterez, Depen Morwani, Jingfeng Wu, Costin-Andrei Oncescu, Cengiz Pehlevan, Sham Kakade, <a class="source-link" href="https://arxiv.org/abs/2510.14717">Seesaw: Accelerating Training by Balancing Learning Rate and Batch Size Scheduling</a>, arXiv:2510.14717, 2025.</li>
+        <li id="ref-29">Chuning Li, Chris J. Maddison, <a class="source-link" href="https://arxiv.org/abs/2605.09154">Predicting Large Model Test Losses with a Noisy Quadratic System</a>, ICML 2026.</li>
+        <li id="ref-30">William Merrill, Shane Arora, Dirk Groeneveld, Hannaneh Hajishirzi, <a class="source-link" href="https://arxiv.org/abs/2505.23971">Critical Batch Size Revisited: A Simple Empirical Approach to Large-Batch Language Model Training</a>, NeurIPS 2025.</li>
+        <li id="ref-31">Yunhua Zhou, Junhao Huang, Shuhao Xing, Yechen Zhang, Runyu Peng, Qiping Guo et al., <a class="source-link" href="https://arxiv.org/abs/2601.05034">How to Set the Batch Size for Large-Scale Pre-training?</a>, arXiv:2601.05034, 2026.</li>
+        <li id="ref-32">Aaron Defazio, <a class="source-link" href="https://arxiv.org/abs/2506.02285">Why Gradients Rapidly Increase Near the End of Training</a>, arXiv:2506.02285, 2025.</li>
+        <li id="ref-33">Atli Kosson, Bettina Messmer, Martin Jaggi, <a class="source-link" href="https://arxiv.org/abs/2410.23922">Analyzing &amp; Reducing the Need for Learning Rate Warmup in GPT Training</a>, NeurIPS 2024.</li>
+        <li id="ref-34">Dayal Singh Kalra, Maissam Barkeshli, <a class="source-link" href="https://arxiv.org/abs/2406.09405">Why Warmup the Learning Rate? Underlying Mechanisms and Improvements</a>, NeurIPS 2024.</li>
+      </ol>
+      <p class="refs-note">表 1 和表 2 的数字取自所列论文和页面。表 1 的比值列由本文用原文数字计算。</p>
+    </div></div>
+  </section>
+</main>
+</body>
+</html>
