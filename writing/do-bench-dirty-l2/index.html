@@ -4,19 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Triton’s do_bench L2 Flush Adds 12–20 µs to One-Row BF16 GEMMs on an A100 - Sense Wang</title>
-<meta name="description" content="triton.testing.do_bench clears L2 by writing zeros. The timed kernel then writes those dirty lines back to HBM. On an A100 this adds 12–20 µs to one-row BF16 GEMMs and can change which kernel looks faster. A read pass after the flush removes the cost.">
+<meta name="description" content="triton.testing.do_bench clears L2 with zero_(). On an A100 the dirty lines add 12–20 µs to one-row BF16 GEMMs. A read pass after the flush removes the cost.">
 <link rel="canonical" href="https://sensewang.com/writing/do-bench-dirty-l2/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Sense Wang">
 <meta property="og:title" content="Triton’s do_bench L2 Flush Adds 12–20 µs to One-Row BF16 GEMMs on an A100">
-<meta property="og:description" content="triton.testing.do_bench clears L2 by writing zeros. The timed kernel then writes those dirty lines back to HBM. On an A100 this adds 12–20 µs to one-row BF16 GEMMs and can change which kernel looks faster. A read pass after the flush removes the cost.">
+<meta property="og:description" content="triton.testing.do_bench clears L2 with zero_(). On an A100 the dirty lines add 12–20 µs to one-row BF16 GEMMs. A read pass after the flush removes the cost.">
 <meta property="og:url" content="https://sensewang.com/writing/do-bench-dirty-l2/">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://sensewang.com/writing/do-bench-dirty-l2/assets/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Time per call of one 4096 × 4096 BF16 GEMM under five timing methods: 46.1 µs with the zero_() flush, 33.8 µs with a read flush, 29.2 µs in a rotating-weight CUDA graph.">
 <meta property="article:published_time" content="2026-10-30">
 <meta property="article:author" content="Sense Wang">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sensewang.com/writing/do-bench-dirty-l2/assets/og-card.png">
 <meta name="twitter:title" content="Triton’s do_bench L2 Flush Adds 12–20 µs to One-Row BF16 GEMMs on an A100">
-<meta name="twitter:description" content="triton.testing.do_bench clears L2 by writing zeros. The timed kernel then writes those dirty lines back to HBM. On an A100 this adds 12–20 µs to one-row BF16 GEMMs and can change which kernel looks faster. A read pass after the flush removes the cost.">
+<meta name="twitter:description" content="triton.testing.do_bench clears L2 with zero_(). On an A100 the dirty lines add 12–20 µs to one-row BF16 GEMMs. A read pass after the flush removes the cost.">
 <link rel="stylesheet" href="reader.css">
 <style>
   .site-nav { max-width:1440px; margin:0 auto 48px; padding:24px var(--gutter) 0; font-size:14px; line-height:20px; color:var(--muted); letter-spacing:normal; }
@@ -34,7 +39,7 @@
 
 <header class="article-header">
   <h1>Triton’s do_bench L2 Flush Adds <span style="white-space:nowrap">12–20&nbsp;µs</span> to One-Row BF16 GEMMs on an A100</h1>
-  <p class="deck">If you time short memory-bound kernels with <code>triton.testing.do_bench</code>, PyTorch Inductor, TileLang or nvbench, the number includes write-back of the flush buffer. A read pass after the flush removes it (section 5).</p>
+  <p class="deck">If you time memory-bound kernels that read less than a few hundred MB with <code>triton.testing.do_bench</code> or PyTorch Inductor, the number includes write-back of the flush buffer. Here that is 11–41% at 34–235 MB and 2.5% at 1.05 GB. TileLang and nvbench use the same kind of flush; I read their code but did not run them. A read pass after the flush removes the cost (section 5).</p>
   <p class="metadata">Sense Wang · October 2026</p>
 </header>
 
@@ -72,7 +77,7 @@ def clear_cache(self, cache):
     <p><strong>Setup.</strong> All measurements in sections 1–5 and 7 ran on one A100-PCIE-40GB, in one job. One Nsight Compute check in section 4 ran later on another A100 of the same server. Software: PyTorch 2.13.0 (CUDA 13.0 build), Triton 3.7.1, Nsight Compute 2025.1.1. Buffer sizes are in MiB. Byte counts from Nsight Compute are in MB (10<sup>6</sup> bytes). I wrote predictions before each run. Section 6 lists the ones that failed.</p>
 
     <h3>Write-back bytes in Nsight Compute</h3>
-    <p>I ran the GEMM under Nsight Compute with two options. <code>--cache-control none</code> keeps the profiler away from the cache. <code>--replay-mode application</code> takes each metric from a real pass of the whole program.</p>
+    <p>I ran the GEMM under Nsight Compute with three options. <code>--cache-control none</code> keeps the profiler away from the cache. <code>--clock-control none</code> leaves the GPU clocks as they are. <code>--replay-mode application</code> takes each metric from a real pass of the whole program.</p>
     <p>Before each GEMM, the program read a 256 MiB buffer, which leaves L2 clean. Then it zeroed a buffer of X MiB. Then it ran the GEMM. I repeated each case three times and report the median.</p>
     <p>With X = 0, the GEMM reads 33.56 MB, writes 0.02 MB and takes 29.63 µs. With X = 256, it reads the same 33.56 MB, writes 15.24 MB and takes 42.05 µs. Its own output is 8 KB, so the 15 MB is write-back of the zero buffer. The kernel takes 42% longer.</p>
     <p>The extra time matches the extra bytes. The clean kernel moves 33.56 MB at 1.13 TB/s. The dirty kernel moves 48.80 MB at 1.16 TB/s.</p>
@@ -81,19 +86,19 @@ def clear_cache(self, cache):
     <p>If the write-back causes the slowdown, the write-back and the time must both grow with X. Both must also stop growing at the same X. Figure 1 shows the result.</p>
   </div></div>
   <div class="layout block"><figure class="media">
-    <img src="assets/fig1-dose.png" alt="Two panels against MiB zeroed before the GEMM, from 0 to 256. Top: dirty data left in L2 rises to about 20 MB at 24 MiB, then stays flat. GEMM write-back rises to about 15 MB at 24 MiB, then stays flat. Bottom: GEMM kernel duration rises from about 30 to about 42 microseconds at 24 MiB, then stays flat. Event-loop medians follow the same shape about 4 microseconds higher." width="1627" height="2106" loading="lazy">
+    <a href="assets/fig1-dose.png"><img src="assets/fig1-dose.png" alt="Two panels against MiB zeroed before the GEMM, from 0 to 256. Top: dirty data left in L2 rises to about 20 MB at 24 MiB, then stays flat. GEMM write-back rises to about 15 MB at 24 MiB, then stays flat. Bottom: GEMM kernel duration rises from about 30 to about 42 microseconds at 24 MiB, then stays flat. Event-loop medians follow the same shape about 4 microseconds higher." width="1601" height="2080" loading="lazy"></a>
     <figcaption>Figure 1. A 4096 × 4096 BF16 GEMM with one input row, after a read flush and a zero_() flush of X MiB. The x axis is categorical. Top: HBM bytes written by the GEMM, from Nsight Compute. “Dirty data left in L2” is the bytes zeroed minus the fill kernel’s own HBM writes. Bottom: kernel duration in Nsight Compute, median of 3. Triangles: event-loop median of 1,500 samples, from a separate run without the profiler. That run used X = 0, 8, 16, 32, 40, 64, 128 and 256 MiB. Author’s measurements.</figcaption>
   </figure></div>
   <div class="layout block"><div class="prose">
     <p>A zero_() flush of 8 MiB leaves all 8.4 MB dirty, and the GEMM writes back 7.6 MB. At 16 MiB, the GEMM writes back 13.3 MB. From 24 MiB up, the fill kernel starts to write its own data to HBM. The GEMM write-back then stays at 15.1–15.3 MB. The kernel duration follows it: 29.6, 36.3, 40.6, then 41.7–42.2 µs. The slope is about 0.8 µs per MB of write-back.</p>
-    <p>The dirty data stops at about 19–20 MB. Two direct measurements agree. A read pass after a 256 MiB zero_() flush writes back 19.1–19.3 MB. A GEMM that reads 235 MB or 1.05 GB writes back 19.3–19.4 MB. The 4096 × 4096 GEMM reads only 33.6 MB and evicts 15 MB of the 19–20 MB.</p>
-    <p>I do not know why the limit is about half of the 40 MB L2. One hypothesis follows. Clean data has a similar limit. A buffer of 24 MiB that is read twice misses 1.0 MB on the second read. A buffer of 28 MiB misses 8.3 MB. The A100 L2 has two partitions, and each partition caches data for the SMs connected to it <a href="#ref-11">[11]</a>. If both partitions keep a copy of data that all SMs touch, the usable capacity is about 20 MB. I did not verify this.</p>
+    <p>The dirty data stops at about 20 MB. In Figure 1, the square markers show 20.0–20.6 MB. They are computed as the bytes zeroed minus the fill kernel’s own HBM writes. Two direct measurements give about 1 MB less. A read pass after a 256 MiB zero_() flush writes back 19.1–19.3 MB. A GEMM that reads 235 MB or 1.05 GB writes back 19.3–19.4 MB. The 4096 × 4096 GEMM reads only 33.6 MB and evicts about 15 MB of it.</p>
+    <p>I do not know why the limit is about half of the 40 MB L2. One hypothesis follows. Clean data has a similar limit. If L2 holds only about 20 MB of any data, a second read of a larger buffer must miss. A buffer of 24 MiB that is read twice misses 1.0 MB on the second read. A buffer of 28 MiB misses 8.3 MB. The A100 L2 has two partitions, and each partition caches data for the SMs connected to it <a href="#ref-11">[11]</a>. If both partitions keep a copy of data that all SMs touch, the usable capacity is about 20 MB. I did not verify this.</p>
 
     <h3>Six timing methods in one process</h3>
     <p>An event loop is a Python loop that records a CUDA event before and after each call. I compared six methods in one process, in three interleaved rounds. Each process starts with one second of warm-up, so the SM clock is at 1410 MHz. I repeated this in five independent processes. Figure 2 gives the median and interquartile range (IQR) of all samples.</p>
   </div></div>
   <div class="layout block"><figure class="media">
-    <img src="assets/fig2-methods.png" alt="Dot plot of time per call for one GEMM under six timing methods. do_bench with the zero_() flush and an event loop with the zero_() flush: 46.1 microseconds. Event loop with a read flush, and do_bench with the zero_() flush plus a read pass: 33.8. CUDA graph with 6 rotating weight copies: 29.2. do_bench_cudagraph with no flush: 24.4." width="1420" height="1675" loading="lazy">
+    <a href="assets/fig2-methods.png"><img src="assets/fig2-methods.png" alt="Dot plot of time per call for one GEMM under six timing methods. do_bench with the zero_() flush and an event loop with the zero_() flush: 46.1 microseconds. Event loop with a read flush, and do_bench with the zero_() flush plus a read pass: 33.8. CUDA graph with 6 rotating weight copies: 29.2. do_bench_cudagraph with no flush: 24.4." width="1427" height="1695" loading="lazy"></a>
     <figcaption>Figure 2. The same 4096 × 4096 BF16 GEMM, one input row, under six timing methods. Dot: median. Bar: IQR. For the two CUDA-graph rows, the IQR is narrower than the dot. 5 processes. The event timer has a resolution of about 1.02 µs, so event-loop medians fall on a 1.02 µs grid. Author’s measurements.</figcaption>
   </figure></div>
   <div class="layout block"><div class="prose">
@@ -103,7 +108,7 @@ def clear_cache(self, cache):
       <li>A CUDA graph that cycles through six weight copies (201 MB, about five times the L2 size) gives 29.18 µs per call. In Nsight Compute, each of these GEMMs reads the full 33.56 MB from HBM, so the weight is cold.</li>
       <li><code>do_bench_cudagraph</code> does not flush L2. It gives 24.40 µs, 4.8 µs less than the cold-weight graph, because part of the weight stays in L2.</li>
     </ul>
-    <p>For this shape, the event-loop medians are about 4 µs above the Nsight Compute kernel duration. For the four larger shapes, the event loop with a read flush and the rotating-weight graph differ by −1.0 to +2.6 µs. I did not find the cause of the 4 µs. Across the five processes, the per-process medians of each method differ by one timer step at most.</p>
+    <p>For this shape, the event-loop medians are about 4 µs above the Nsight Compute kernel duration. A second kernel does not cause this gap. In <code>torch.profiler</code>, <code>F.linear</code> with one row launches exactly one GEMM kernel per call for this shape. For the 4096 × 28672 shape, cuBLAS also launches a memset per call. For the four larger shapes, the event loop with a read flush and the rotating-weight graph differ by −1.0 to +2.6 µs. I did not find the cause of the 4 µs. Across the five processes, the per-process medians of each method differ by one timer step at most.</p>
   </div></div>
 </section>
 
@@ -113,11 +118,11 @@ def clear_cache(self, cache):
     <p>The write-back is at most 19–20 MB on this card. A kernel that moves a similar amount of data pays a large relative cost. Figure 3 shows the slowdown for five weight shapes from Llama 3.1 8B, each with one input row. The shapes are the output projection, fused QKV, down projection, fused gate and up projection, and the LM head.</p>
   </div></div>
   <div class="layout block"><figure class="media">
-    <img src="assets/fig3-size.png" alt="Slowdown of do_bench relative to an event loop with a read flush, against weight size on a log axis. 4096 × 4096 (34 MB): 36.4 percent, 12.3 microseconds. 4096 × 6144 (50 MB): 40.5 percent, 17.4. 14336 × 4096 (117 MB): 18.1 percent, 17.4. 4096 × 28672 (235 MB): 10.9 percent, 19.5. 4096 × 128256 (1.05 GB): 2.5 percent, 18.4." width="1579" height="1390" loading="lazy">
-    <figcaption>Figure 3. Median time with <code>do_bench</code> divided by median time with a read-flush event loop, for BF16 GEMMs with one input row. Labels give the shape K × N, the relative slowdown and the absolute difference. 5 processes. Author’s measurements.</figcaption>
+    <a href="assets/fig3-size.png"><img src="assets/fig3-size.png" alt="Slowdown of do_bench relative to an event loop with a read flush, against weight size on a log axis. 4096 × 4096 (34 MB): 36.4 percent, 12.3 microseconds. 4096 × 6144 (50 MB): 40.5 percent, 17.4. 14336 × 4096 (117 MB): 18.1 percent, 17.4. 4096 × 28672 (235 MB): 10.9 percent, 19.5. 4096 × 128256 (1.05 GB): 2.5 percent, 18.4." width="1604" height="1599" loading="lazy"></a>
+    <figcaption>Figure 3. Median time with <code>do_bench</code> divided by median time with a read-flush event loop, for BF16 GEMMs with one input row. The percentages use the event-loop median as the base. Nsight Compute kernel durations give 42%, 9.6% and 2.2% for the 34 MB, 235 MB and 1.05 GB shapes. Labels give the shape K × N, the relative slowdown and the absolute difference. 5 processes. Author’s measurements.</figcaption>
   </figure></div>
   <div class="layout block"><div class="prose">
-    <p>The absolute cost is 12.3–19.5 µs. The relative cost falls from 36–41% for weights of 34–50 MB to 10.9% at 235 MB and 2.5% at 1.05 GB. Nsight Compute gives the same trend: 42%, 9.6% and 2.2% for the 34 MB, 235 MB and 1.05 GB weights. I did not measure compute-bound shapes.</p>
+    <p>The absolute cost is 12.3–19.5 µs. The relative cost falls from 36–41% for weights of 34–50 MB to 18.1% at 117 MB, 10.9% at 235 MB and 2.5% at 1.05 GB. Nsight Compute gives the same trend: 42%, 9.6% and 2.2% for the 34 MB, 235 MB and 1.05 GB weights. I did not measure compute-bound shapes.</p>
 
     <h3>The flush can change which kernel looks faster</h3>
     <p>The cost depends on how much the timed kernel reads. A kernel that reads less evicts fewer dirty lines and pays less. So a zero_() flush can favor a kernel that reads fewer bytes, or one that uses less of the HBM bandwidth.</p>
@@ -136,32 +141,32 @@ def clear_cache(self, cache):
   </div></div>
   <div class="layout block"><div class="prose">
     <p>With the read flush, the second INT8 configuration is 15% slower than cuBLAS. With the zero_() flush, it is 7% faster. 9 of the 96 configurations change rank in this way by at least 2 µs on each side, in all three processes. 5 more change rank by one timer step (1.02 µs) on one side. No configuration changes rank in the other direction. With the read flush, 55–57 configurations are faster than cuBLAS. With the zero_() flush, 71 are faster.</p>
-    <p>Nsight Compute on another A100 of the same server confirms the flip for the configuration in Table 1. Its kernel takes 35.7 µs against 30.3 µs for cuBLAS after a read flush. After a zero_() flush, it takes 39.2 µs against 41.8 µs. Here cuBLAS writes back 15.6 MB and the INT8 kernel writes back 6.7 MB. Per MB of write-back, cuBLAS pays 0.74 µs and the fastest INT8 configuration 0.84 µs. The Table 1 configuration pays only 0.53 µs per MB, probably because it uses less of the HBM bandwidth. The fastest INT8 configuration looks 1.65 times faster than cuBLAS with the read flush and 1.73–1.77 times faster with the zero_() flush, across the three processes. GEAK saw the same direction on an AMD MI355X. A decode speedup of 1.12 with a read flush became 1.40 with a write flush <a href="#ref-8">[8]</a>.</p>
+    <p>Nsight Compute on another A100 of the same server confirms the flip for the configuration in Table 1. Its kernel takes 35.7 µs against 30.3 µs for cuBLAS after a read flush. After a zero_() flush, it takes 39.2 µs against 41.8 µs. Here cuBLAS writes back 15.6 MB and the INT8 kernel writes back 6.7 MB. Per MB of write-back, cuBLAS pays 0.74 µs and the fastest INT8 configuration 0.84 µs. The Table 1 configuration pays only 0.53 µs per MB, probably because it uses less of the HBM bandwidth. The fastest INT8 configuration looks 1.65 times faster than cuBLAS with the read flush. With the zero_() flush, it looks 1.73–1.77 times faster across the three processes. GEAK saw the same direction on an AMD MI355X. A decode speedup of 1.12 with a read flush became 1.40 with a write flush <a href="#ref-8">[8]</a>.</p>
 
     <h3>Which tools flush with a write</h3>
     <p>I read the benchmark code of several tools on 2026-10-30. Table 2 gives the result.</p>
   </div></div>
   <div class="layout block"><div class="prose">
-    <p class="table-caption">Table 2. How benchmark helpers prepare L2 before a timed call. “Write” means the flush leaves dirty lines.</p>
+    <p class="table-caption">Table 2. How benchmark helpers prepare L2 before a timed call. “Write” means the flush leaves dirty lines. The Proton functions exist from Triton v3.8.0.</p>
     <div class="table-wrap"><table>
-      <thead><tr><th>Tool</th><th>Flush before each call</th><th>Type</th></tr></thead>
+      <thead><tr><th>Tool</th><th>Type</th><th>Flush before each call</th></tr></thead>
       <tbody>
-        <tr><td>Triton <code>do_bench</code>, v2.0.0 to v3.9.0 and main</td><td><code>zero_()</code>, 256 MiB (256e6 B before v3.2)</td><td>write</td></tr>
-        <tr><td>Triton <code>do_bench_proton</code>, <code>do_bench_cudagraph_proton</code> (v3.8.0 and later)</td><td><code>zero_()</code>, 256 MiB</td><td>write</td></tr>
-        <tr><td>Triton <code>do_bench_cudagraph</code></td><td>none</td><td>warm L2</td></tr>
-        <tr><td>PyTorch Inductor default benchmarker</td><td><code>zero_()</code>, L2 size</td><td>write</td></tr>
-        <tr><td>TileLang <code>do_bench</code></td><td><code>zero_()</code>, 256 MiB</td><td>write</td></tr>
-        <tr><td>ThunderKittens <code>benchmark_l2_clear</code></td><td><code>random_()</code>, 128 MiB</td><td>write</td></tr>
-        <tr><td>NVIDIA nvbench</td><td><code>cudaMemsetAsync</code>, L2 size</td><td>write</td></tr>
-        <tr><td>GPU MODE reference-kernels</td><td><code>torch.randn</code>, 4 GiB</td><td>write</td></tr>
-        <tr><td><code>torch.utils.benchmark.Timer</code></td><td>none</td><td>warm L2</td></tr>
-        <tr><td>Nsight Compute, <code>--cache-control all</code></td><td>driver operation; a write kernel on vGPU</td><td>clean on this A100</td></tr>
+        <tr><td>Triton <code>do_bench</code></td><td>write</td><td><code>zero_()</code>, 256 MiB</td></tr>
+        <tr><td>Triton <code>do_bench_proton</code>, <code>do_bench_cudagraph_proton</code></td><td>write</td><td><code>zero_()</code>, 256 MiB</td></tr>
+        <tr><td>Triton <code>do_bench_cudagraph</code></td><td>warm L2</td><td>none</td></tr>
+        <tr><td>PyTorch Inductor default benchmarker</td><td>write</td><td><code>zero_()</code>, L2 size</td></tr>
+        <tr><td>TileLang <code>do_bench</code></td><td>write</td><td><code>zero_()</code>, 256 MiB</td></tr>
+        <tr><td>ThunderKittens <code>benchmark_l2_clear</code></td><td>write</td><td><code>random_()</code>, 128 MiB</td></tr>
+        <tr><td>NVIDIA nvbench</td><td>write</td><td><code>cudaMemsetAsync</code>, L2 size</td></tr>
+        <tr><td>GPU MODE reference-kernels</td><td>write</td><td><code>torch.randn</code>, 4 GiB</td></tr>
+        <tr><td><code>torch.utils.benchmark.Timer</code></td><td>warm L2</td><td>none</td></tr>
+        <tr><td>Nsight Compute, <code>--cache-control all</code></td><td>clean here</td><td>driver operation; a write kernel on vGPU</td></tr>
       </tbody>
     </table></div>
   </div></div>
   <div class="layout block"><div class="prose">
     <ul>
-      <li><strong>Triton.</strong> All releases from v2.0.0 to v3.9.0 (2026-10-27) and main at efd1112 use the zero_() flush <a href="#ref-3">[3]</a>. The Proton functions came in PR #10149 and first shipped in v3.8.0. They time only the kernel and still call the same flush <a href="#ref-12">[12]</a>. I read this code and did not run it.</li>
+      <li><strong>Triton.</strong> All releases from v2.0.0 to v3.9.0 (2026-10-27) and main at efd1112 use the zero_() flush. The buffer is 256e6 bytes before v3.2 and 256 MiB from v3.2 <a href="#ref-3">[3]</a>. The Proton functions came in PR #10149 and first shipped in v3.8.0. They time only the kernel and still call the same flush <a href="#ref-12">[12]</a>. I read this code and did not run it.</li>
       <li><strong>Timing only the kernel does not remove the cost.</strong> The write-back happens inside the timed kernel. The Nsight Compute kernel durations in Figure 1 show it: 29.6 µs clean, 42.1 µs after the zero_() flush.</li>
       <li><strong>PyTorch Inductor.</strong> In 2.13.0 and on main, the default benchmarker is <code>InductorBenchmarker</code>, which autotuning calls <a href="#ref-4">[4]</a>. Each call returns the minimum of its samples. On the 4096 × 4096 GEMM, five calls returned 45.1–49.2 µs. A read-flush event loop in the same process had a minimum of 32.8 µs. I did not test whether max-autotune, the mode that benchmarks candidate configurations, picks a different one.</li>
       <li><strong>Nsight Compute.</strong> On this bare-metal A100, I profiled the GEMM after a 256 MiB zero_() flush with <code>--cache-control all</code>. The first GEMM wrote 2.1 MB; each later GEMM wrote 3.2 KB. The reply in [2] states that on vGPU, the profiler clears L2 with a write kernel.</li>
@@ -230,7 +235,7 @@ print(f"zero_: {t_zero*1e3:.1f} us  "
   <div class="layout block"><div class="prose">
     <h2 id="s7">7. Reproducing the numbers</h2>
     <p>The snippet in section 5 runs in a few seconds. I ran it three times as printed. It gave 53.2 and 33.8 µs, 50.2 and 37.9 µs, and 48.1 and 33.8 µs. The absolute numbers move with the GPU clock, and the gap of 12–20 µs stays. The warm-up line is necessary. Without it, an earlier job on the same GPU slot started at an SM clock of 795 MHz.</p>
-    <p>To see the write-back bytes, run this program under Nsight Compute.</p>
+    <p>To see the write-back bytes, run this program under Nsight Compute. It runs each L2 state twice, because the first profiled GEMM is about 2 µs slower.</p>
 <pre><code># dirty_l2.py
 import torch, torch.nn.functional as F
 MiB = 1 &lt;&lt; 20
@@ -242,9 +247,12 @@ W = torch.randn(4096, 4096, device=dev, dtype=bf16)
 x = torch.randn(1, 4096, device=dev, dtype=bf16)
 F.linear(x, W); torch.cuda.synchronize()
 torch.cuda.profiler.start()
-rbuf.sum(); F.linear(x, W)                # clean L2
-zbuf.zero_(); F.linear(x, W)              # dirty L2
-zbuf.zero_(); rbuf.sum(); F.linear(x, W)  # read pass
+for _ in range(2):                  # clean L2
+    rbuf.sum(); F.linear(x, W)
+for _ in range(2):                  # dirty L2
+    zbuf.zero_(); F.linear(x, W)
+for _ in range(2):                  # read pass
+    zbuf.zero_(); rbuf.sum(); F.linear(x, W)
 torch.cuda.synchronize()
 torch.cuda.profiler.stop()</code></pre>
 <pre><code>ncu --cache-control none --clock-control none \
@@ -252,7 +260,7 @@ torch.cuda.profiler.stop()</code></pre>
     --metrics gpu__time_duration.sum,\
 dram__bytes_read.sum,dram__bytes_write.sum \
     python dirty_l2.py</code></pre>
-    <p>On the A100 of this post, the three GEMMs took 33.2, 42.7 and 31.5 µs. They wrote 0.12, 15.6 and 0.05 MB to HBM, and each read 33.6 MB. If you have an H100 or a B200, these three lines show whether the effect is larger there.</p>
+    <p>I ran it three times on another A100 of the same server, with the same <code>--clock-control none</code> as in section 3. The first clean GEMM took 32.6–32.8 µs and wrote 0.12 MB. For the second GEMM of each pair, the medians are 30.8 µs (clean), 43.1 µs (dirty) and 30.1 µs (read pass). They wrote 0.01, 15.4–15.6 and 0.04 MB or less, and each read 33.6 MB. These values are within about 1 µs of section 3. If you have an H100 or a B200, these three lines show whether the effect is larger there.</p>
   </div></div>
 </section>
 
