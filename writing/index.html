@@ -100,12 +100,39 @@
 
     <h1>Writing</h1>
     <p class="intro">
-      Technical essays and research notes on AI infrastructure, agent systems,
-      and the mechanics behind modern models.
+      Technical essays and research notes on LLM pretraining and
+      infrastructure, GPU kernels, model mechanics, and robot world models.
     </p>
 
     <div class="section">
-      <div class="section-title">Essays</div>
+      <div class="section-title">Pretraining and optimization</div>
+
+      <article class="entry">
+        <div class="entry-title">
+          <a href="lr-schedule-loss-curves/">给定一条学习率调度，能算出整条 loss 曲线吗？</a>
+        </div>
+        <div class="entry-meta">October 2026 · 中文</div>
+        <p class="entry-desc">
+          面积律、多幂律和函数缩放律把 loss 写成学习率调度的泛函。本文核对这些模型的预测误差、改用有效学习率后的变化、衰减终值与形状哪个更重要，以及按现有证据怎样设调度。
+        </p>
+      </article>
+
+      <article class="entry">
+        <div class="entry-title">
+          <a href="effective-learning-rate/">A Small Cosine Sets the Weight Norm under AdamW and Muon</a>
+        </div>
+        <div class="entry-meta">October 2026 · bilingual</div>
+        <p class="entry-desc">
+          Per-matrix effective learning rate in 16 GPT-2-small-shaped runs.
+          A cosine of only −0.02 to −0.06 between update and weight supplies
+          94–97% of the weight-norm growth, and a random-walk model with
+          momentum predicts its median size and the equilibrium step size.
+        </p>
+      </article>
+    </div>
+
+    <div class="section">
+      <div class="section-title">GPU kernels and inference systems</div>
 
       <article class="entry">
         <div class="entry-title">
@@ -123,26 +150,18 @@
 
       <article class="entry">
         <div class="entry-title">
-          <a href="lr-schedule-loss-curves/">给定一条学习率调度，能算出整条 loss 曲线吗？</a>
+          <a href="attention-as-memory/">Attention Is Not Expensive. Remembering Attention Is.</a>
         </div>
-        <div class="entry-meta">October 2026</div>
+        <div class="entry-meta">April 2026</div>
         <p class="entry-desc">
-          面积律、多幂律和函数缩放律把 loss 写成学习率调度的泛函。本文核对这些模型的预测误差、改用有效学习率后的变化、衰减终值与形状哪个更重要，以及按现有证据怎样设调度。
+          A note on KV cache, MQA/GQA, MLA, and why long-context models are
+          becoming memory systems.
         </p>
       </article>
+    </div>
 
-      <article class="entry">
-        <div class="entry-title">
-          <a href="effective-learning-rate/">A Small Cosine Sets the Weight Norm under AdamW and Muon</a>
-        </div>
-        <div class="entry-meta">October 2026</div>
-        <p class="entry-desc">
-          Per-matrix effective learning rate in 16 GPT-2-small-shaped runs.
-          A cosine of only −0.02 to −0.06 between update and weight supplies
-          94–97% of the weight-norm growth, and a random-walk model with
-          momentum predicts its median size and the equilibrium step size.
-        </p>
-      </article>
+    <div class="section">
+      <div class="section-title">Model mechanics and evaluation</div>
 
       <article class="entry">
         <div class="entry-title">
@@ -169,6 +188,10 @@
           embeddings mixes.
         </p>
       </article>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Robotics and world models</div>
 
       <article class="entry">
         <div class="entry-title">
@@ -485,29 +508,6 @@
           A Chinese paper note on TD-MPC, task-oriented latent dynamics,
           reconstruction quality, action quality, short-horizon planning,
           and terminal value estimation.
-        </p>
-      </article>
-
-      <article class="entry">
-        <div class="entry-title">
-          <a href="attention-as-memory/">Attention Is Not Expensive. Remembering Attention Is.</a>
-        </div>
-        <div class="entry-meta">April 2026</div>
-        <p class="entry-desc">
-          A note on KV cache, MQA/GQA, MLA, and why long-context models are
-          becoming memory systems.
-        </p>
-      </article>
-    </div>
-
-    <div class="section">
-      <div class="section-title">Notes</div>
-
-      <article class="entry">
-        <div class="entry-title">Paper notes</div>
-        <div class="entry-meta">Coming soon</div>
-        <p class="entry-desc">
-          Dense notes on papers worth understanding deeply, not summaries for engagement.
         </p>
       </article>
     </div>
