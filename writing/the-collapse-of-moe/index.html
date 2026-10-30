@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The Collapse of MoE - Sense Wang</title>
+  <meta name="description" content="一个损失项就能防止路由崩塌，前沿模型为什么还在换方法？前沿报告给出的理由可以归为三个约束：均衡约束的范围越窄，专家分工越弱；专家并行要求每一步每张卡的负载接近；每个 token 激活的专家比例很小时，现有方法可能在浅层失效。">
+  <link rel="canonical" href="https://sensewang.com/writing/the-collapse-of-moe/">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Sense Wang">
+  <meta property="og:title" content="The Collapse of MoE">
+  <meta property="og:description" content="一个损失项就能防止路由崩塌，前沿模型为什么还在换方法？前沿报告给出的理由可以归为三个约束：均衡约束的范围越窄，专家分工越弱；专家并行要求每一步每张卡的负载接近；每个 token 激活的专家比例很小时，现有方法可能在浅层失效。">
+  <meta property="og:url" content="https://sensewang.com/writing/the-collapse-of-moe/">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="article:published_time" content="2026-10-31">
+  <meta property="article:author" content="Sense Wang">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="The Collapse of MoE">
+  <meta name="twitter:description" content="一个损失项就能防止路由崩塌，前沿模型为什么还在换方法？前沿报告给出的理由可以归为三个约束：均衡约束的范围越窄，专家分工越弱；专家并行要求每一步每张卡的负载接近；每个 token 激活的专家比例很小时，现有方法可能在浅层失效。">
+  <link rel="stylesheet" href="reader.css?v=1">
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg.js"></script>
+  <style>
+    .site-nav { max-width: 1440px; margin: 0 auto 48px; padding: 24px var(--gutter) 0; font-size: 14px; line-height: 20px; color: var(--muted); letter-spacing: normal; }
+    .site-nav a { color: inherit; }
+    .equation { display: block; margin-block: 28px; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding-block: 8px; }
+    mjx-container[display="true"] { margin: 0 !important; }
+    .table-caption { margin: 16px 0 0; font-size: 14px; line-height: 22.96px; letter-spacing: normal; color: var(--muted); }
+    th { border-bottom-color: #bbb; }
+    td.num, th.num { text-align: right; white-space: nowrap; }
+    .footnotes li { overflow-wrap: anywhere; }
+    .refs-note { margin-top: 20px; }
+    th.src, td.src { white-space: nowrap; }
+    .table-wrap { max-width: 100%; }
+    @media (max-width: 767px) { .equation { font-size: 13px; } table { font-size: 13px; } th, td { padding-right: 10px; } }
+    .prose figure { margin-block: 28px; }
+  </style>
+</head>
+<body>
+<a class="skip" href="#article">跳到正文</a>
+<nav class="site-nav"><a href="../">Writing</a> / <a href="../../">Sense Wang</a></nav>
+<main id="article">
+
+  <header class="article-header">
+    <h1>The Collapse of MoE</h1>
+    <p class="deck">一个损失项就能防止路由崩塌，前沿模型为什么还在换方法？前沿报告给出的理由可以归为三个约束：均衡约束的范围越窄，专家分工越弱；专家并行要求每一步每张卡的负载接近；每个 token 激活的专家比例很小时，现有方法可能在浅层失效。</p>
+    <p class="metadata">Sense Wang · 2026 年 10 月</p>
+  </header>
+
+  <section class="chapter" aria-label="引言">
+    <div class="layout block"><div class="prose">
+<p>2017 年，Shazeer 等人在两层 LSTM 之间放了一个 256 个专家的 MoE 层，训练语言模型。不加均衡项时，最忙专家的负载是平均值的 17.80 倍，测试困惑度（PPL）是 39.8。加上辅助损失后，这个倍数降到 1.07 到 1.47，PPL 降到 35.6 到 35.7。损失系数从 0.01 变到 1.0，PPL 几乎不变。在这个设置下，防止路由崩塌的代价很小。</p>
+<p>但 2024 到 2026 年，前沿模型一直在换方法。DeepSeek-V3 给每个专家加一个按负载调整的偏置。Qwen3 把辅助损失的统计范围扩大到全局 batch。Kimi K3 用分位数直接算出偏置。DeepSeek-V4 把前 3 层的学习路由换成按 token id 查表，但 DeepSeek-V4 的报告没有说明原因。一个损失项就能防止路由崩塌，前沿模型为什么还在换方法？</p>
+<p>本文的结论是：前沿报告给出的理由可以归为三个约束。第一，均衡约束的范围越窄，专家分工越弱。这一条只有相关性证据。第二，专家并行要求每一步每张卡的负载接近。训练侧没有公开的代价数字。第三，每个 token 激活的专家比例很小时，现有方法可能在浅层失效。这一条只有一个直接证据。Sigma-MoE-Tiny 在 96 个专家选 1 个的初步实验中用偏置法，浅层出现了路由崩塌。负载最小的专家在 2K 步后一直收到 0 个 token。这个实验的 \(k = 1\)。前沿模型的 \(k\) 是 4 到 16。这个区间没有公开的失效数据。</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s1">
+    <div class="layout block"><div class="prose">
+<h2 id="s1">1. 路由崩塌是什么</h2>
+<h3 id="s1-1">1.1 MoE 层</h3>
+<p>一个稠密 Transformer 层的 FFN 对每个 token 做同样的计算。MoE 层把这个 FFN 换成 \(N\) 个 FFN，每个 FFN 叫一个专家。每个 token 只经过其中 \(k\) 个专家。所以总参数随 \(N\) 增长，每个 token 的计算量只随 \(k\) 增长。本文把 \(k/N\) 叫激活比例。</p>
+<p>路由器决定每个 token 去哪几个专家。它是一个线性层 \(W_{r}\)。设进入这一层的 token 向量是 \(x\)。路由器先算出 \(N\) 个 logit：</p>
+<div class="equation">\[ z = W_{r} x \]</div>
+<p>再把 logit 变成打分 \(s\)，选出打分最高的 \(k\) 个专家，记作集合 \(T\)。层的输出是这 \(k\) 个专家输出的加权和：</p>
+<div class="equation">\[ y = \sum_{i \in T} w_{i} \, E_{i}(x) \]</div>
+<p>不同模型的打分和权重 \(w_{i}\) 有三种写法。<a class="xref" href="#s2-2">第 2.2 节</a>说明三种写法的梯度不同。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>写法</th>
+<th>打分</th>
+<th>权重 \(w_{i}\)</th>
+<th>代表</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>对全部 \(N\) 个 logit 做 softmax</td>
+<td>直接用 softmax 值，不重新归一化</td>
+<td>Switch</td>
+</tr>
+<tr>
+<td>B</td>
+<td>先选 top-k 的 logit</td>
+<td>只在选中的 \(k\) 个 logit 上做 softmax</td>
+<td>Shazeer 2017，Mixtral，gpt-oss，nanoMoE</td>
+</tr>
+<tr>
+<td>C</td>
+<td>每个 logit 做 sigmoid</td>
+<td>在选中的 \(k\) 个专家内归一化</td>
+<td>DeepSeek-V3，Kimi K3</td>
+</tr>
+</tbody>
+</table></div>
+<p>很多前沿模型还有共享专家（shared expert）。共享专家处理所有 token，不经过路由器。本文讨论的路由崩塌只涉及路由专家。</p>
+<p>大模型训练常把不同专家放在不同的卡上。这叫专家并行（expert parallelism，EP）。放同一组专家的若干张卡叫一个 EP 组。</p>
+<h3 id="s1-2">1.2 负载和 MaxVio</h3>
+<p>负载指一个专家在一组 token 里收到的 token 数。负载不均衡指各专家的负载不相等。本文用 MaxVio 度量负载不均衡。MaxVio 来自 DeepSeek 提出偏置法的论文，下文称 Loss-Free 论文（<a href="https://arxiv.org/abs/2408.15664">Loss-Free 2024</a>）：</p>
+<div class="equation">\[ \mathrm{MaxVio} = \frac{\max_{i} \mathrm{Load}_{i} - \overline{\mathrm{Load}}}{\overline{\mathrm{Load}}} \]</div>
+<p>例：8 个专家，1000 个 token，每个 token 选 1 个专家。平均负载是 125。最忙专家收到 500 个 token 时，MaxVio 等于 3。每个 token 都选中同一个专家时，MaxVio 取最大值 \(N/k - 1\)。</p>
+<p>统计范围不同，MaxVio 的含义不同。MaxVio_batch 在一个训练 batch 上统计。训练时一个 batch 常被切成多个 micro-batch，分到不同的卡上。MaxVio_global 在整个验证集上统计。Loss-Free 论文报告所有层的平均值。</p>
+<h3 id="s1-3">1.3 定义</h3>
+<p>路由崩塌（routing collapse）是负载不均衡的极端状态。本文用两个条件定义它：</p>
+<ol type="1">
+<li>程度极端。少数专家收到大部分 token，其他专家几乎收不到 token。本文的操作判据是：某一层的 MaxVio_batch 持续大于 1。这个阈值由本文选定，文献没有统一阈值。</li>
+<li>自我放大。差距来自训练动力学，不来自数据。</li>
+</ol>
+<p>第二个条件把路由崩塌和普通的不均衡分开。普通的不均衡来自数据。例如一个 batch 里代码多，处理代码的专家就忙。下一个 batch 可能相反。Shazeer 等人在原论文<a class="xref" href="#s4">第 4 节</a>描述了自我放大。路由器倾向于总给同几个专家大权重。这些专家训练得更快，所以不均衡会自我强化（<a href="https://arxiv.org/abs/1701.06538">Shazeer 2017</a>）。DeepSeek-V3 报告 §2.1.2 引用了这个说法：“an unbalanced expert load will lead to routing collapse (Shazeer et al., 2017)”（<a href="https://arxiv.org/abs/2412.19437">DeepSeek-V3 2024</a>）。</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s2">
+    <div class="layout block"><div class="prose">
+<h2 id="s2">2. 路由崩塌为什么发生</h2>
+<p>路由崩塌有两个前提和一个反馈环。</p>
+<h3 id="s2-1">2.1 前提一：top-k 是硬选择</h3>
+<p>top-k 是离散操作。一个专家要么被选中，要么不被选中。未选中的专家对这个 token 的输出没有贡献。系统不计算它的 \(E_{j}(x)\)。</p>
+<h3 id="s2-2">2.2 前提二：路由器得不到未选中专家的信息</h3>
+<p>记 \(g_{m} = \frac{\partial L}{\partial y} \cdot E_{m}(x)\)。\(g_{m}\) 为负时，专家 \(m\) 的输出能降低损失。三种写法下，语言模型损失对 logit 的梯度如下。</p>
+<p>写法 A。对 \(y = \sum_{i \in T} s_{i} E_{i}(x)\) 和 \(s = \mathrm{softmax}(z)\) 求导，得到：</p>
+<div class="equation">\[ \frac{\partial L}{\partial z_{m}} = s_{m} \left( g_{m} \, \mathbb{1}_{m \in T} - \frac{\partial L}{\partial y} \cdot y \right) \]</div>
+<p>对未选中的专家 \(j\)，梯度是 \(-s_{j}\) 乘一个所有未选中专家共用的标量。这个梯度只把 \(z_{j}\) 整体推高或压低。它不含 \(E_{j}(x)\) 的信息。</p>
+<p>写法 B 和 C。权重只依赖选中专家的 logit，所以未选中专家的梯度严格为 0。选中专家的梯度只含选中专家之间的相对差。\(k = 1\) 时权重恒等于 1，路由器从语言模型损失得到的梯度全部为 0。Shazeer 2017 用写法 B。原文 §2.1 写道：\(k &gt; 1\) 时，选中专家的权重对路由器参数才有非零导数。Switch 做 top-1，所以改用写法 A。</p>
+<p>三种写法有一个共同点：路由器只能比较被选中专家的效果，不知道未选中专家的效果。Shazeer 2017 的 Noisy Top-K 在 logit 上加可训练的噪声，让未选中的专家有机会被选中。原文说噪声帮助负载均衡。没有这类机制时，路由器不探索。</p>
+<h3 id="s2-3">2.3 反馈环</h3>
+<p>两个前提组成一个三步的环：</p>
+<ol type="1">
+<li>路由器把较多 token 送给专家 A。</li>
+<li>专家 A 在这些 token 上得到较多梯度更新，它对这类 token 的输出变好。</li>
+<li>A 的输出变好，\(g_{A}\) 变负。由<a class="xref" href="#s2-2">第 2.2 节</a>的梯度，梯度下降推高 A 在这些 token 上的 logit。如果这些 token 的向量和其他 token 的向量有共同分量，A 的 logit 在其他 token 上也升高。路由器把更多 token 送给 A。</li>
+</ol>
+<p>未选中的专家 B 得不到更新。它的输出不变好，所以更难被选中。环里没有一项让负载变得更均匀。所以初始化时的随机差距会被放大。</p>
+<p>这个环是一个机制假说。它的依据是 Shazeer 2017 的定性描述。<a class="xref" href="#s3-3">第 3.3 节</a>的偏置法轨迹满足自我放大的条件，但它的触发因素是偏置法，不能证明这个环。最强的反方解释是输入的几何结构。第一个 MoE 层的输入接近 token 嵌入。嵌入有共同的均值方向，token 频率服从 Zipf 分布。某个专家的路由向量和均值方向的内积最大时，它在初始化后很快拿到大部分 token。这个解释不需要第 2 步。它也能解释<a class="xref" href="#s3-3">第 3.3 节</a>的层间差别：第 0 层负载很不均匀，第 52 层正常。<a class="xref" href="#s9-2">第 9.2 节</a>给出一个能区分两种解释的实验。</p>
+<h3 id="s2-4">2.4 相同结构的其他失效</h3>
+<p>两种已知的失效有相同的前提：硬选择，只有被选中的单元得到梯度。</p>
+<ol type="1">
+<li>VQ-VAE 的码本崩塌（codebook collapse）。编码器输出只更新距离最近的码字。Jukebox 把码本崩塌定义为：所有编码映射到一个或少数几个码字，其余码字不被使用。修复方法是：把使用率低于阈值的码字重置为当前 batch 的一个编码器输出（<a href="https://arxiv.org/abs/2005.00341">Jukebox 2020</a>，§3.1）。Huh 等人用 ResNet18、ImageNet100 和 1024 个码字做实验。Kaiming 初始化时 active 指标是 6.8，用 LRU 替换后是 99.9（<a href="https://arxiv.org/abs/2305.08842">Huh 2023</a>，Table 1）。</li>
+<li>ReLU 神经元死亡（dying ReLU）。预激活一直为负的神经元梯度为零，所以它不再被激活。Lu 等人证明，深度 ReLU 网络在深度趋于无穷时会死亡（<a href="https://arxiv.org/abs/1903.06733">Lu 2019</a>，Theorem 3.1）。他们分析的是初始化时整个网络死亡，和训练中单个神经元逐步死亡不同。</li>
+</ol>
+<p>MoE 里对应码本重置的方法是：重新初始化收不到 token 的专家。本文没有找到在 LLM 预训练中用这个方法并报告效果的工作。</p>
+<h3 id="s2-5">2.5 修复方法打断哪一步</h3>
+<p><a class="xref" href="#s4">第 4 节</a>按修复方法打断的环节，把方法分成五组：</p>
+<ol type="1">
+<li>补信号：让路由器得到未选中专家的信息。打断前提二。</li>
+<li>加纠偏项：在损失里加一项，让负载高的专家打分下降。打断第 3 步。</li>
+<li>改选择分数：不改梯度，直接改 top-k 用的分数。打断第 1 步。</li>
+<li>改分配规则：让分配本身保证均衡。打断前提一。</li>
+<li>去掉学习路由：在最容易路由崩塌的层不学习路由。整个环不存在。</li>
+</ol>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s3">
+    <div class="layout block"><div class="prose">
+<h2 id="s3">3. 测量与证据</h2>
+<h3 id="s3-1">3.1 指标</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>指标</th>
+<th>定义</th>
+<th>能发现什么</th>
+<th>来源</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MaxVio_batch</td>
+<td>一个 batch 内最大负载相对平均负载的超出比例</td>
+<td>当前步的不均衡</td>
+<td>Loss-Free 论文</td>
+</tr>
+<tr>
+<td>MaxVio_global</td>
+<td>整个验证集上的 MaxVio</td>
+<td>长期的不均衡</td>
+<td>Loss-Free 论文</td>
+</tr>
+<tr>
+<td>每层每专家的 token 比例</td>
+<td>每个专家收到的 token 占比</td>
+<td>哪一层、哪个专家路由崩塌</td>
+<td>OLMoE Figure 10</td>
+</tr>
+<tr>
+<td>每卡 token 数的最大值除以平均值</td>
+<td>按专家并行的分组统计</td>
+<td>每步耗时和显存</td>
+<td>Step 3.5 Flash</td>
+</tr>
+<tr>
+<td>专家激活范数的最小值除以中位数</td>
+<td>每个专家中间激活的 RMS</td>
+<td>死专家</td>
+<td>Step 3.5 Flash</td>
+</tr>
+<tr>
+<td>路由器权重的余弦相似度，\(R_{g}\)</td>
+<td>见<a class="xref" href="#s5-3">第 5.3 节</a></td>
+<td>均衡约束过强</td>
+<td>LongCat-Flash</td>
+</tr>
+<tr>
+<td>偏置的绝对值</td>
+<td>偏置法中每个专家的偏置</td>
+<td>偏置持续增大</td>
+<td>Sigma-MoE-Tiny</td>
+</tr>
+</tbody>
+</table></div>
+<p>MaxVio_batch 有一个由抽样决定的下限。近似地，每个专家的负载服从二项分布。相对标准差是：</p>
+<div class="equation">\[ \frac{\sigma}{q} \approx \sqrt{\frac{1 - k/N}{q}}, \quad q = \frac{Mk}{N} \]</div>
+<p>\(M\) 是 batch 的 token 数，\(q\) 是目标负载。例：\(N = 896\)，\(k = 16\)，\(M = 32768\) 时，\(q \approx 585\)，相对标准差约 0.041。MaxVio_batch 取 896 个专家的最大值，约为 3 个标准差。均匀随机分配的模拟给出约 0.13。这些数字由本文计算。偏置法和分位数均衡用上一个 batch 定规则。所以它们在新 batch 上的 MaxVio_batch 不能低于这个下限。\(q\) 越小，这个下限越高。</p>
+<h3 id="s3-2">3.2 小规模对照：不加均衡时负载集中，质量低于加均衡</h3>
+<p><strong>Shazeer 2017 附录 Table 6。</strong> MoE-256，\(k = 4\)，1 Billion Word，训练 10 个 epoch：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>\(w_{\mathrm{importance}}\)</th>
+<th>\(w_{\mathrm{load}}\)</th>
+<th>测试 PPL</th>
+<th>最大负载 / 平均负载</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.0</td>
+<td>0.0</td>
+<td>39.8</td>
+<td>17.80</td>
+</tr>
+<tr>
+<td>0.2</td>
+<td>0.0</td>
+<td>35.6</td>
+<td>1.47</td>
+</tr>
+<tr>
+<td>0.0</td>
+<td>0.2</td>
+<td>35.7</td>
+<td>1.15</td>
+</tr>
+<tr>
+<td>0.1</td>
+<td>0.1</td>
+<td>35.6</td>
+<td>1.14</td>
+</tr>
+<tr>
+<td>0.01</td>
+<td>0.01</td>
+<td>35.7</td>
+<td>1.37</td>
+</tr>
+<tr>
+<td>1.0</td>
+<td>1.0</td>
+<td>35.7</td>
+<td>1.07</td>
+</tr>
+</tbody>
+</table></div>
+<p>\(w_{\mathrm{importance}}\) 惩罚各专家打分之和的差异。\(w_{\mathrm{load}}\) 惩罚各专家负载的差异。表中的负载是被选中概率之和。它是平滑估计，不是硬计数。17.80 表示约 27.8% 的 token 选中了最忙专家，算法是 17.80 × 4 / 256。最忙专家占全部分配的 6.95%。所有行都用了 Noisy Top-K 和零初始化的路由器权重。原文说这让初始负载近似均衡。</p>
+    </div></div>
+    <div class="layout block"><figure class="media">
+<img src="figures/shazeer2017-table6-light.png" alt="不加均衡项的一组，最大负载是平均负载的 17.80 倍，测试 PPL 是 39.8" width="1200" height="720" loading="lazy" decoding="async">
+<figcaption>不加均衡项的一组，最大负载是平均负载的 17.80 倍，测试 PPL 是 39.8。加均衡项的 5 组，倍数在 1.07 到 1.47 之间，PPL 在 35.6 到 35.7 之间。横轴是对数轴。数据来自 <a href="https://arxiv.org/abs/1701.06538">Shazeer 2017</a> 附录 Table 6，本文重画。</figcaption>
+</figure></div>
+    <div class="layout block"><div class="prose">
+<p><strong>OLMoE 的消融</strong>（<a href="https://arxiv.org/abs/2409.02060">OLMoE 2024</a>，§4.1.6，Figure 9 和 10）。不加辅助损失时，第一个 MoE 层一开始把几乎全部 token 分给原文所说的“6th expert”。几十亿 token 以后，部分 token 转到“1st expert”。图中只画了 8 个专家。原文没有给这个消融的模型配置。加辅助损失后，训练损失和验证损失都更低。</p>
+<p><strong>Hash Layers 附录 Table 9。</strong> Switch 去掉辅助损失后，验证 PPL 是 24.80。稠密基线是 24.90。辅助损失系数为 0.1 时是 23.65（<a href="https://arxiv.org/abs/2106.04426">Hash Layers 2021</a>）。不加辅助损失的 Switch 只比稠密基线低 0.10，比系数 0.1 时高 1.15。</p>
+<p><strong>ReMoE 附录 Table 11。</strong> dMoE 不加辅助损失时下游平均分是 37.67，低于稠密模型的 38.20。加辅助损失时是 39.67（<a href="https://arxiv.org/abs/2412.14711">ReMoE 2024</a>）。dMoE 指 dropless MoE，见<a class="xref" href="#s4-7">第 4.7 节</a>。</p>
+<p>这些对照有四个限制。第一，每个配置只有一次运行，原文都没有给误差。第二，\(k/N\) 在 1/8 到 1/64 之间。Shazeer 2017 是 4/256，Hash Layers 的 Switch 是 1/64，ReMoE 的默认配置是 1/8，OLMoE 的消融没有给配置。这个区间覆盖了<a class="xref" href="#s8">第 8 节</a>表中前沿模型的 1/16 到 1/64。但 \(k\) 最大是 4，\(N\) 最大是 256。第三，规模小。Shazeer 的模型只有一个 MoE 层。第四，Hash Layers 和 ReMoE 只报告质量，没有报告负载。</p>
+<h3 id="s3-3">3.3 低激活比例：加了均衡仍然路由崩塌</h3>
+<p>Sigma-MoE-Tiny 的最终模型有 20B 总参数和 0.5B 激活参数。每层最多 96 个专家，每个 token 选 1 个（<a href="https://arxiv.org/abs/2512.16248">Sigma-MoE-Tiny 2025</a>）。它在初步实验中报告了两种均衡方法在浅层失效。原文给了 96 选 1 的设置，没有给这些实验的模型规模和训练步数：</p>
+<ol type="1">
+<li>全局 batch 辅助损失，§2.2.2。第 0 层负载最小的专家几乎收不到 token。负载最大的专家收到约 3 倍的目标负载。第 52 层正常。见原文 Figure 2。</li>
+<li>偏置法，§3.5.2。负载最小的专家在 2K 步后一直收到 0 个 token。负载最大的专家收到约 40 倍的目标负载，约占全局 batch 一半的 token。浅层的偏置随训练持续增大，最后主导了打分。每一步偏置最大的专家拿走大部分 token。见原文 Figure 3。</li>
+</ol>
+<p>第 2 条是一条轨迹：偏置持续增大，负载差距在训练中持续。它满足<a class="xref" href="#s1-3">第 1.3 节</a>的两个条件。它的触发因素是偏置法本身，所以它不能证明<a class="xref" href="#s2-3">第 2.3 节</a>的环。</p>
+<p>本文查了 2025 到 2026 年的 9 份前沿报告：DeepSeek-V4、Kimi K2、Kimi K3、Qwen3、GLM-4.5、LongCat-Flash、Ling 2.0、Step 3.5 Flash、Sigma-MoE-Tiny。只有 Sigma-MoE-Tiny 给出了路由崩塌的数字。</p>
+<h3 id="s3-4">3.4 死专家</h3>
+<p>本文的死专家只指专家侧的失效。Step 3.5 Flash 报告 §4.1.2 写道：路由分配稳定时，专家也可能失效。表现是专家激活趋于零，专家参数范数停滞或下降（<a href="https://arxiv.org/abs/2602.10604">Step 3.5 Flash 2026</a>）。报告给出两个原因：</p>
+<ol type="1">
+<li>有共享专家时，路由专家的输出需要一个显式的缩放系数。没有这个系数时，即使路由频率正常，路由专家的贡献也可能被压低。</li>
+<li>细粒度专家下，micro-batch 级的均衡约束过严。</li>
+</ol>
+<p>报告说路由统计通常稳定，所以它不能灵敏地发现这种失效。报告建议监控每个专家的激活范数和参数范数，用最小值和中位数之比做预警。报告没有给数字。Kimi K3 §2.3.3 引用 Step 3.5 Flash，说不均衡的路由可能让一些专家训练不足。</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s4">
+    <div class="layout block"><div class="prose">
+<h2 id="s4">4. 修复方法</h2>
+<p>下表按<a class="xref" href="#s2-5">第 2.5 节</a>的五组列出修复方法。各小节给机制、代表数字和代价。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>打断的环节</th>
+<th>解决什么</th>
+<th>主要代价</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Noisy Top-K</td>
+<td>前提二</td>
+<td>路由崩塌</td>
+<td>噪声增加方差</td>
+</tr>
+<tr>
+<td>Default MoE，ReMoE</td>
+<td>前提二</td>
+<td>路由崩塌，部分</td>
+<td>少量计算和存储；激活数可变</td>
+</tr>
+<tr>
+<td>辅助损失</td>
+<td>第 3 步</td>
+<td>路由崩塌</td>
+<td>干扰语言建模；低激活比例下有捷径解</td>
+</tr>
+<tr>
+<td>全局 batch 统计</td>
+<td>第 3 步</td>
+<td>路由崩塌，允许分工</td>
+<td>一次额外通信</td>
+</tr>
+<tr>
+<td>设备级、EP 组损失</td>
+<td>第 3 步</td>
+<td>卡级不均衡</td>
+<td>更强的约束</td>
+</tr>
+<tr>
+<td>偏置法</td>
+<td>第 1 步</td>
+<td>路由崩塌</td>
+<td>更新率 \(u\)；\(k = 1\)、低激活比例下浅层偏置持续增大</td>
+</tr>
+<tr>
+<td>分位数均衡</td>
+<td>第 1 步</td>
+<td>路由崩塌，大专家池</td>
+<td>一次直方图 all-reduce</td>
+</tr>
+<tr>
+<td>专家容量</td>
+<td>无</td>
+<td>只限制路由崩塌的计算后果</td>
+<td>丢 token</td>
+</tr>
+<tr>
+<td>BASE，Expert Choice</td>
+<td>前提一</td>
+<td>路由崩塌</td>
+<td>泄露未来信息，测试时规则不同</td>
+</tr>
+<tr>
+<td>Hash，前几层稠密，渐进稀疏化</td>
+<td>整个环</td>
+<td>浅层路由崩塌</td>
+<td>浅层不学习路由，或激活参数更多</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s4-1">4.1 补信号</h3>
+<ol type="1">
+<li>Noisy Top-K（Shazeer 2017）。在 logit 上加可训练的噪声，再取 top-k。未选中的专家有机会被选中。</li>
+<li>Default MoE。每个专家保留一个默认输出向量。默认向量是该专家过去真实输出的指数滑动平均。前向时，未选中的专家用默认向量乘权重补上。路由器得到所有专家的梯度。专家计算仍然稀疏。1.96B 总参数、FineWeb-Edu 160B token 的设置下，达到 PPL 12.18 时少用约 9% 的 token。吞吐下降 1.85%（<a href="https://arxiv.org/abs/2504.12463">Panda 2025</a>）。</li>
+<li>ReMoE。把 top-k 换成 ReLU 打分 \(w = \mathrm{ReLU}(W_{r} x)\)，这样整个路由可导。自适应 L1 正则把未激活专家的比例控制在 \(1 - k/N\)。L1 项按专家负载加权，所以它也起均衡作用。469M 激活参数、120B token、\(N = 8\)、\(k = 1\) 时，ReMoE 的验证损失是 1.689，dMoE 是 1.716（附录 C Table 5）。论文 §5.2 写道，不加均衡时，ReMoE 也有一些专家保持不活跃。</li>
+</ol>
+    </div></div>
+    <div class="layout block"><figure class="media">
+<img src="figures/remoe-fig8.png" alt="ReMoE 论文 Figure 8" width="1275" height="396" loading="lazy" decoding="async">
+<figcaption>ReMoE 论文 Figure 8。(a) 是 MoE 和 ReMoE 加或不加均衡时的训练损失。(b) 是不加均衡时 ReMoE 每层每个专家收到的 token 比例，白格是收到少于 1/64 token 的专家。(c) 是加均衡时的 token 比例。(d) 是每层的稀疏度。(b) 和 (c) 在测试集的 50M token 上统计。来源：Ziteng Wang, Jun Zhu, Jianfei Chen. ReMoE: Fully Differentiable Mixture-of-Experts with ReLU Routing. Figure 8. <a href="https://arxiv.org/abs/2412.14711">arXiv:2412.14711</a>，<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>。</figcaption>
+</figure></div>
+    <div class="layout block"><div class="prose">
+<p>代价：Default MoE 每个专家多存一个向量。ReMoE 每个 token 的激活专家数可变，计算量只在平均值上受控。</p>
+<h3 id="s4-2">4.2 加纠偏项：辅助损失</h3>
+<p>Switch Transformer 的形式是现在的标准写法（<a href="https://arxiv.org/abs/2101.03961">Switch 2021</a>）：</p>
+<div class="equation">\[ L_{\mathrm{aux}} = \alpha \cdot N \sum_{i=1}^{N} f_{i} P_{i} \]</div>
+<p>\(f_{i}\) 是路由到专家 \(i\) 的 token 比例。它不可导，按常数处理。\(P_{i}\) 是专家 \(i\) 在这组 token 上的平均打分。它可导。记 \(p_{m}\) 为一个 token 对专家 \(m\) 的 softmax 打分。这个 token 的 logit 梯度正比于 \(p_{m} \left( f_{m} - \sum_{i} f_{i} p_{i} \right)\)。负载高于加权平均的专家，打分被压低。</p>
+<p>例：2 个专家。\(f = P = (0.9, 0.1)\) 时，\(N \sum f_{i} P_{i} = 2 \times 0.82 = 1.64\)。\(f = P = (0.5, 0.5)\) 时是 1.0。</p>
+<p>系数：Switch 把 \(\alpha\) 从 \(10^{-1}\) 扫到 \(10^{-5}\)，选 0.01。OLMoE 用 0.01。DeepSeekMoE 在 2B 模型用 0.01，在 16B 模型用 0.001。作者说更大的系数降低性能（<a href="https://arxiv.org/abs/2401.06066">DeepSeekMoE 2024</a>）。<a href="https://arxiv.org/abs/2408.15664">Loss-Free 论文 Figure 2</a> 画了这个折中：\(\alpha\) 小时路由崩塌，\(\alpha\) 大时 PPL 变差。</p>
+<p>捷径解。\(P\) 均匀时，\(N \sum f_{i} P_{i} = \sum f_{i} = 1\)。这个值和 \(f\) 无关，等于完全均衡时的值。这时梯度很小。设这组 token 有 \(M\) 个，\(P_{i}\) 是它们打分的平均值。对 token \(t\) 的 logit 求导，得到：</p>
+<div class="equation">\[ \frac{\partial L_{\mathrm{aux}}}{\partial z_{t,m}} = \frac{\alpha N}{M} \, p_{t,m} \left( f_{m} - \sum_{i} f_{i} \, p_{t,i} \right) \]</div>
+<p>打分均匀时，每个打分是 \(1/N\)。系数里的 \(N\) 和打分的 \(1/N\) 抵消：</p>
+<div class="equation">\[ \frac{\partial L_{\mathrm{aux}}}{\partial z_{t,m}} = \frac{\alpha}{M} \left( f_{m} - \frac{1}{N} \right) \]</div>
+<p>梯度只取决于负载偏差。设最忙专家的负载是目标负载的 \(c\) 倍，它的负载偏差是 \((c - 1)/N\)。所以不均衡的倍数相同时，专家越多，梯度越小。例：\(c = 3\) 时，8 个专家的梯度是 96 个专家的 12 倍。语言模型梯度可能抵消这么小的梯度。所以损失值已经等于均衡时的值，token 分布仍然偏斜。Sigma-MoE-Tiny §2.2.2 在激活比例 1/96 的第 0 层观察到这个现象：\(P\) 趋于均匀，\(f\) 仍然很不均匀。原文说这时损失接近它的理想值。第 52 层相反，\(f\) 均匀，\(P\) 不均匀。1 不是数学上的最小值：\(f\) 按常数处理时，损失的最小值是 \(N \min_{i} f_{i}\)。</p>
+<p>代价：辅助损失的梯度和语言模型损失的梯度方向不同。系数大时，辅助损失干扰语言建模。</p>
+<h3 id="s4-3">4.3 辅助损失的统计范围</h3>
+<p>\(f_{i}\) 在多少 token 上统计，决定均衡约束有多强。</p>
+<p><a class="xref" href="#s1-2">第 1.2 节</a>说过，训练把一个全局 batch 切成多个 micro-batch。每张卡一次只算自己的 micro-batch。Qwen 团队发现，Megatron-Core 等框架在 micro-batch 内算 \(f_{i}\)。一个 micro-batch 只有几条序列，所以均衡几乎在序列级执行。这时一条代码序列的 token 也要均匀分给所有专家。Qwen 团队在所有并行组之间同步 \(f_{i}\)，得到全局 batch 级的均衡（<a href="https://arxiv.org/abs/2501.11873">Qiu 2025</a>）。</p>
+<p>Table 1 节选。Balance BSZ 指算 \(f_{i}\) 时包含的序列数。每个配置一次运行：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>模型与训练量</th>
+<th>方法</th>
+<th>Balance BSZ</th>
+<th>MMLU</th>
+<th>GSM8k</th>
+<th>平均 PPL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3.4B 总 / 0.6B 激活，120B token</td>
+<td>辅助损失</td>
+<td>4</td>
+<td>41.63</td>
+<td>13.57</td>
+<td>8.167</td>
+</tr>
+<tr>
+<td>同上</td>
+<td>辅助损失</td>
+<td>512</td>
+<td>43.48</td>
+<td>15.31</td>
+<td>8.038</td>
+</tr>
+<tr>
+<td>同上</td>
+<td>偏置法</td>
+<td>4</td>
+<td>41.30</td>
+<td>12.43</td>
+<td>8.521</td>
+</tr>
+<tr>
+<td>同上</td>
+<td>偏置法</td>
+<td>512</td>
+<td>42.74</td>
+<td>14.18</td>
+<td>8.080</td>
+</tr>
+<tr>
+<td>15B / 2.54B，400B token</td>
+<td>辅助损失</td>
+<td>16</td>
+<td>59.99</td>
+<td>48.07</td>
+<td>5.778</td>
+</tr>
+<tr>
+<td>同上</td>
+<td>辅助损失</td>
+<td>512</td>
+<td>60.78</td>
+<td>54.28</td>
+<td>5.603</td>
+</tr>
+</tbody>
+</table></div>
+<p>两点读法：</p>
+<ol type="1">
+<li><p>范围越宽，PPL 越低。Figure 2 在 3.4B、400B token 的设置下，Balance BSZ 从 2 增到 512，PPL 从 7.383 降到 7.198。超过 128 后，PPL 下降变慢。</p>
+<figure class="media">
+<img src="figures/qiu2025-fig2-balance-bsz-light.png" alt="MoE-3.4A0.6B 训练 400B token 后的测试 PPL" width="1200" height="720" loading="lazy" decoding="async">
+<figcaption>MoE-3.4A0.6B 训练 400B token 后的测试 PPL。圆点是不同的 Balance BSZ。方块是 Balance BSZ 128 加缓冲区。三角是 Balance BSZ 2 时把激活专家从 top-4 增到 top-6。横轴是对数轴。数据来自 <a href="https://arxiv.org/abs/2501.11873">Qiu 2025</a> Figure 2 的标注值，本文重画。</figcaption>
+</figure></li>
+<li><p>偏置法也依赖统计范围。Balance BSZ 为 4 时，偏置法的 PPL 是 8.521，比同范围的辅助损失差 0.354。</p></li>
+</ol>
+<p>DeepSeek-V3 §4.5.3 独立得出同一结论。1B MoE 的验证损失：序列级辅助损失 2.258，batch 级辅助损失 2.253，偏置法 2.253。3B MoE 上分别是 2.085、2.080、2.080。DeepSeek 的结论是优势来自统计范围更宽。</p>
+<p>Qwen3 采用了全局 batch 辅助损失，报告 §2 原文是“to encourage expert specialization”（<a href="https://arxiv.org/abs/2505.09388">Qwen3 2025</a>）。</p>
+<p>代价：多一次跨并行组的通信。节点不够时，Qwen 用缓冲区在梯度累积步之间累计 \(f_{i}\)。</p>
+<h3 id="s4-4">4.4 加纠偏项：卡级的损失</h3>
+<p>专家级的均衡不保证每张卡的负载均衡。三份报告在专家级之外加了卡级的约束：</p>
+<ol type="1">
+<li>DeepSeek-V2 有三个辅助损失：专家级、设备级、通信级。设备级就是卡级。三个损失的系数分别是 0.003、0.05、0.02。它还限制每个 token 的专家最多分布在 3 个设备上（<a href="https://arxiv.org/abs/2405.04434">DeepSeek-V2 2024</a>，§2.2.2 到 §2.2.3）。</li>
+<li>DeepSeek-V3 限制每个 token 最多发往 4 个节点。DeepSeek-V4 去掉了这个限制，原文是“we remove the constraint on the number of routing target nodes”。DeepSeek-V4 还重新设计了并行策略（<a href="https://arxiv.org/abs/2606.19348">DeepSeek-V4 2026</a>，§2.1）。</li>
+<li>Step 3.5 Flash 用偏置法做专家级均衡。报告说偏置法不保证 micro-batch 级每张卡的均衡，所以另加一个 EP 组损失。EP 组损失把专家按卡分组，按组聚合 \(f\) 和 \(P\)。它的形式同<a class="xref" href="#s4-2">第 4.2 节</a>，系数是 0.001。</li>
+</ol>
+<h3 id="s4-5">4.5 改选择分数：偏置法</h3>
+<p>DeepSeek 提出给每个专家加一个偏置 \(b_{i}\)。偏置只加在 top-k 用的分数上，不进入权重，也不产生梯度：</p>
+<div class="equation">\[ \begin{aligned} T &amp;= \mathrm{topk}(s + b), \quad y = \sum_{i \in T} w_{i}(s) \, E_{i}(x) \\ b_{i} &amp;\leftarrow b_{i} + u \cdot \mathrm{sign}(\bar{c} - c_{i}) \end{aligned} \]</div>
+<p>第二行是每个 batch 后的更新。\(c_{i}\) 是专家 \(i\) 的 token 数，\(\bar{c}\) 是平均值。负载高的专家偏置下降，负载低的上升。</p>
+<p>偏置用上一个 batch 的负载更新，所以不泄露未来 token 的信息。语言模型逐个预测 token。如果路由决定用到同一序列后面的 token，训练时模型就看到了答案。推理时这个信息不存在。</p>
+<p>Loss-Free 论文 Table 2。辅助损失基线 \(\alpha = 0.001\)，MaxVio_global 是层平均值：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>规模</th>
+<th>方法</th>
+<th>验证 PPL</th>
+<th>MaxVio_global</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1B</td>
+<td>辅助损失</td>
+<td>9.56</td>
+<td>0.72</td>
+</tr>
+<tr>
+<td>1B</td>
+<td>偏置法</td>
+<td>9.50</td>
+<td>0.04</td>
+</tr>
+<tr>
+<td>3B</td>
+<td>辅助损失</td>
+<td>7.97</td>
+<td>0.52</td>
+</tr>
+<tr>
+<td>3B</td>
+<td>偏置法</td>
+<td>7.92</td>
+<td>0.04</td>
+</tr>
+</tbody>
+</table></div>
+<p>更新率 \(u\) 取 0.0001 时早期均衡差，取 0.01 时后期均衡变差，0.001 最好（Figure 4）。</p>
+<p>DeepSeek-V3 在前 14.3T token 用 \(u = 0.001\)，最后 500B token 用 0。它另加一个系数 0.0001 的序列级辅助损失，只防止单条序列内的极端不均衡。GLM-4.5 的配方相同：前 15T token 用 0.001，之后用 0，序列级辅助损失 0.0001（<a href="https://arxiv.org/abs/2508.06471">GLM-4.5 2025</a>）。DeepSeek-V4 用更新率 0.001 和序列级辅助损失系数 0.0001（§4.2.2）。</p>
+<p>失效：Sigma-MoE-Tiny 在 \(k = 1\)、\(N = 96\) 时，浅层的偏置持续增大并主导打分（<a class="xref" href="#s3-3">第 3.3 节</a>）。</p>
+<p>理论：Han 和 Zhong 把偏置法写成求解分配问题的原始-对偶方法。每步做一次常数时间的更新。他们在在线设定下给出对数 regret 界（<a href="https://arxiv.org/abs/2512.03915">Han and Zhong 2025</a>）。</p>
+<p>代价：多一个超参数 \(u\)。\(u\) 在适应速度和负载振荡之间折中。</p>
+<h3 id="s4-6">4.6 改选择分数：分位数均衡</h3>
+<p>Kimi K3 有 896 个路由专家，每个 token 激活 16 个（<a href="https://github.com/MoonshotAI/Kimi-K3/blob/3cb39dfd32/k3_tech_report.pdf">Kimi K3 2026</a>，Table 1）。报告 §2.3.3 说，固定的更新率 \(u\) 在适应太慢和负载振荡之间折中。专家池增到 896 后，均衡更难。报告没有给失效的数字。</p>
+<p>K3 提出分位数均衡（Quantile Balancing，QB）。设一个 batch 有 \(M\) 个 token，目标负载 \(q = Mk/N\)。K3 用 sigmoid 打分。token \(t\) 对专家 \(i\) 的打分记作 \(s_{t,i}\)。步骤：</p>
+<ol type="1">
+<li>路由时取 top-(k+1)。前 \(k\) 个是实际路由。第 \(k+1\) 名的带偏置打分记作截断值 \(\tau_{t}\)。</li>
+<li>对专家 \(i\)，算每个 token 的余量 \(s_{t,i} - \tau_{t}\)。</li>
+<li>截断值固定时，取余量在所有 token 上的 \(1 - k/N\) 分位数，取负，作为专家 \(i\) 的新偏置。没有并列时，恰好有 \(q\) 个 token 的余量超过阈值。</li>
+<li>所有专家的偏置减去它们的均值。共同的偏移不改变 top-k 选择。</li>
+</ol>
+<div class="equation">\[ \hat{b}_{i} \leftarrow - \mathrm{quantile}_{1 - k/N} \left( s_{:,i} - \tau \right), \quad b \leftarrow \hat{b} - \mathrm{mean}(\hat{b}) \]</div>
+<p>手算例：4 个 token，2 个专家，\(k = 1\)，目标负载 \(q = 2\)。当前偏置为 0，打分如下：</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>token</th>
+<th>\(s_{t,1}\)</th>
+<th>\(s_{t,2}\)</th>
+<th>当前选择</th>
+<th>截断值 \(\tau_{t}\)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>0.9</td>
+<td>0.2</td>
+<td>专家 1</td>
+<td>0.2</td>
+</tr>
+<tr>
+<td>2</td>
+<td>0.8</td>
+<td>0.3</td>
+<td>专家 1</td>
+<td>0.3</td>
+</tr>
+<tr>
+<td>3</td>
+<td>0.7</td>
+<td>0.6</td>
+<td>专家 1</td>
+<td>0.6</td>
+</tr>
+<tr>
+<td>4</td>
+<td>0.4</td>
+<td>0.5</td>
+<td>专家 2</td>
+<td>0.4</td>
+</tr>
+</tbody>
+</table></div>
+<p>专家 1 的余量是 0.7、0.5、0.1、0.0。用线性插值取 0.5 分位数，得 0.3，所以 \(\hat{b}_{1} = -0.3\)。专家 2 的余量是 0.0、0.0、0.0、0.1，0.5 分位数是 0.0，所以 \(\hat{b}_{2} = 0\)。专家 2 的余量有并列，没有阈值能让恰好 2 个余量超过它。中心化后 \(b = (-0.15, 0.15)\)。新分数下 token 1、2 选专家 1，token 3、4 选专家 2，负载是 (2, 2)。专家 1 的阈值取区间端点 0.1 时，token 3 的新分数是 0.65 对 0.65，出现并列。所以分位数的取法和并列的处理都影响结果。</p>
+<p>这一步假设截断值不变。所有专家的偏置同时改变时，截断值也会变。所以 K3 附录 C 说 QB 要几步更新才达到均衡，不是一步。</p>
+<p>附录 C 还给出 QB 和偏置法的关系。两者优化同一个对偶目标。固定更新率的 sign 更新是这个目标上的一步 SignSGD。QB 直接取坐标最优解。所以 QB 没有类似学习率的超参数。K3 说这个推导沿用了苏剑林的博客 “Travels in MoE: 6. Promoting Load Balance via Optimal Assignment”（<a href="https://spaces.ac.cn/archives/11619">spaces.ac.cn/archives/11619</a>，2026-02）。本文没有读到这篇博客的原文。相关的前作有 BIP 均衡（<a href="https://arxiv.org/abs/2502.15451">Sun 2025</a>）和 Expert Threshold Routing（<a href="https://arxiv.org/abs/2603.11535">Sun 2026</a>）。后者给每个专家维护一个 EMA 阈值，训练和推理用同一规则。</p>
+<p>工程实现：全局 batch 的余量有几百万个，分布在不同的卡和累积步上。K3 给每个专家维护一个直方图，一次 all-reduce 汇总各卡的计数，再从计数读出分位数。附录 D 用 1000 个 bin。原文说没有可测量的残余不均衡。Megatron-LM 已把它作为 <code>moe_router_load_balancing_type</code> 的取值 <code>quantile_balancing</code>（<a href="https://github.com/NVIDIA/Megatron-LM/blob/92641a421f/megatron/core/transformer/moe/README.md">Megatron-LM MoE README，commit 92641a421f</a>）。</p>
+<p>代价：每步多一次直方图 all-reduce，路由多算一个 top-(k+1)，bin 数是一个超参数。报告没有给 QB 和偏置法在同一规模下的损失对比。</p>
+<h3 id="s4-7">4.7 改分配规则</h3>
+<ol type="1">
+<li><p>专家容量。每个专家有一个 token 数上限，超出的 token 跳过这一层。Switch 的专家容量等于平均每专家 token 数乘以容量因子。容量因子 1.25 表示最多收平均值的 1.25 倍。专家容量不防止路由崩塌，只给路由崩塌的计算后果设上界。代价是丢 token。OpenMoE 发现序列后部的 token 更容易被丢（<a href="https://arxiv.org/abs/2402.01739">OpenMoE 2024</a>），见下图。前沿模型改用 dropless：不设专家容量，所有 token 都计算。MegaBlocks 用块稀疏矩阵乘法实现 dropless（<a href="https://arxiv.org/abs/2211.15841">MegaBlocks 2022</a>）。DeepSeek-V3 §2.1.2 说，因为均衡策略有效，训练和推理都不丢 token。dropless 的前提是均衡足够好，否则单卡的 token 数没有上界。</p>
+<figure class="media">
+<img src="figures/openmoe-fig12.png" alt="OpenMoE 论文 Figure 12：OpenMoE 在每个位置被丢的 token 比例" width="1305" height="501" loading="lazy" decoding="async">
+<figcaption>OpenMoE 论文 Figure 12：OpenMoE 在每个位置被丢的 token 比例。(a) 是 RedPajama、TheStack、多语言 TED 和 MTBench 四个数据集。(b) 是 SFT 前后的模型。来源：Fuzhao Xue et al. OpenMoE: An Early Effort on Open Mixture-of-Experts Language Models. Figure 12. <a href="https://arxiv.org/abs/2402.01739">arXiv:2402.01739</a>，<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>。</figcaption>
+</figure></li>
+<li><p>BASE Layers。把分配写成线性分配问题，每个专家正好收 \(M/N\) 个 token，用拍卖算法求解。测试时贪心选 top-1，原因是均衡分配会泄露未来 token 的信息（<a href="https://arxiv.org/abs/2103.16716">BASE Layers 2021</a>，§3.2.2）。</p></li>
+<li><p>Expert Choice。每个专家选 top-k 个 token，负载按结构完全均衡（<a href="https://arxiv.org/abs/2202.09368">Expert Choice 2022</a>）。代价是 top-k 选择用到同 batch 的未来 token。Loss-Free 论文 §5.2 把分块从 8192 token 缩到 512 token，损失异常下降约 10%。这个下降是信息泄露的证据。</p></li>
+</ol>
+<h3 id="s4-8">4.8 去掉学习路由，或提高浅层激活比例</h3>
+<p><a class="xref" href="#s3">第 3 节</a>的路由崩塌数字都来自第 0 层。OLMoE 只画了第一个 MoE 层。Sigma-MoE-Tiny 比较了第 0 层和第 52 层，是唯一的层间比较。Ling 2.0 §5.6 写道，浅层 MoE 的路由更不均衡，含这些层的流水线阶段更容易显存溢出（<a href="https://arxiv.org/abs/2510.22115">Ling 2.0 2025</a>）。前沿模型用三种方法处理浅层：</p>
+<ol type="1">
+<li>前几层用稠密 FFN。DeepSeek-V3 和 GLM-4.5 用 3 层，Kimi K2、Kimi K3、GLM-4.5-Air 用 1 层。Ling 2.0 §5.4.2 说，这个策略缓解了浅层不均衡，所以提高了算子效率。</li>
+<li>前几层用 hash 路由。Hash 路由在训练前按 token id 把每个 token 固定分给专家。它没有路由参数，也没有辅助损失。Hash Layers 论文 Table 1 中，单个稀疏层时，Hash 的验证 PPL 比 Switch 低 0.49（64 个专家）和 0.63（128 个专家）。5 个稀疏层、每层 16 个专家时，Switch 是 23.00，Hash 是 23.21，Switch 更好。DeepSeek-V4 把前 3 层换成 hash 路由的 MoE 层（§2.1，§4.2.1）。报告没有给原因。</li>
+<li>渐进稀疏化。Sigma-MoE-Tiny 在训练前期让前 8 层分别激活 8、8、6、6、4、4、2、2 个专家，其他层激活 1 个。后期全部切到 1 个。从同一个中间 checkpoint 继续训练 200B token：保持前期设置时激活参数 0.65B、MMLU 63.69；全部切到 1 个专家后激活参数 0.50B、MMLU 63.53（Table 3）。</li>
+</ol>
+<p>这些方法的代价和收益，公开文献没有在同一规模下比较过。</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s5">
+    <div class="layout block"><div class="prose">
+<h2 id="s5">5. 其他相关失效</h2>
+<p>死专家见<a class="xref" href="#s3-4">第 3.4 节</a>。MoE 文献里还有几种和路由有关的失效，它们的机制和路由崩塌不同。下表把它们分成两组。退化型指某个量在训练结束时退化。不稳定型指训练中出现跳变或不一致。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>组</th>
+<th>名称</th>
+<th>什么退化或不稳定</th>
+<th>测量</th>
+<th>修复</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>退化型</td>
+<td>死专家</td>
+<td>少数专家的激活和参数范数</td>
+<td>激活范数最小值 / 中位数</td>
+<td>路由专家缩放系数；更宽的均衡范围</td>
+</tr>
+<tr>
+<td>退化型</td>
+<td>表示崩塌</td>
+<td>token 向量的有效维度</td>
+<td>类内与类间协方差之比</td>
+<td>低维归一化打分</td>
+</tr>
+<tr>
+<td>退化型</td>
+<td>专家同质化</td>
+<td>专家之间的差异</td>
+<td>专家权重或输出的余弦相似度</td>
+<td>细粒度专家和共享专家</td>
+</tr>
+<tr>
+<td>退化型</td>
+<td>路由器同质化</td>
+<td>路由对输入的依赖</td>
+<td>路由器权重的余弦相似度，\(R_{g}\)</td>
+<td>减小辅助损失系数</td>
+</tr>
+<tr>
+<td>不稳定型</td>
+<td>logit 增大</td>
+<td>路由器 logit 的大小</td>
+<td>logit 大小，发散次数</td>
+<td>z-loss</td>
+</tr>
+<tr>
+<td>不稳定型</td>
+<td>MoE 层激活离群值</td>
+<td>专家内的激活值</td>
+<td>激活最大值，loss spike</td>
+<td>激活限幅；Anticipatory Routing</td>
+</tr>
+<tr>
+<td>不稳定型</td>
+<td>路由波动</td>
+<td>同一 token 在不同训练步的专家选择</td>
+<td>换专家的 token 比例</td>
+<td>冻结路由器；Routing Replay</td>
+</tr>
+<tr>
+<td>不稳定型</td>
+<td>训推路由不一致</td>
+<td>同一 token 在两套实现中的专家选择</td>
+<td>选了不同专家的路由器比例</td>
+<td>R3</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s5-1">5.1 表示崩塌</h3>
+<p>Chi 等人指出，路由器用点积打分会让 token 向量向专家向量聚集，把 token 向量压到最多 \(N\) 维的子空间（<a href="https://arxiv.org/abs/2204.09179">Chi 2022</a>）。他们的 X-MoE 先把 token 和专家向量降到 16 维，再做 L2 归一化，再用可学温度打分。12 层编码器、32 专家的设置下，MLM 验证 PPL 从 19.02 降到 18.72。负载均衡的模型也可能出现表示崩塌。</p>
+<h3 id="s5-2">5.2 专家同质化</h3>
+<p>专家同质化指不同专家学到相近的函数。Lo 等人测了专家之间的权重余弦相似度（<a href="https://arxiv.org/abs/2406.18219">Lo 2024</a>）：</p>
+<ol type="1">
+<li>Mixtral 的专家之间主要在 0.2 到 0.4。Mixtral 的专家和 Mistral 的 FFN 之间约 0.6。Lo 2024 据此推测，Mixtral 复制 Mistral 的 FFN 来初始化专家，这个过程叫 upcycling。Mixtral 论文没有写初始化方法。</li>
+<li>DeepSeek 和 Grok 的路由专家之间接近 0。</li>
+<li>Mixtral 专家输出的相似度在最后几层超过 0.8。</li>
+</ol>
+    </div></div>
+    <div class="layout block"><figure class="media">
+<img src="figures/lo2024-fig1.png" alt="Lo 2024 Figure 1：专家权重矩阵之间的余弦相似度" width="1275" height="918" loading="lazy" decoding="async">
+<figcaption>Lo 2024 Figure 1：专家权重矩阵之间的余弦相似度。每层的三张热图分别对应 Wup、Wact、Wdown。刻度是专家编号，F 是 Mistral 的 FFN。Mixtral 和 Mixtral-22 的专家之间有明显的相似度，DeepSeek 和 Grok 的专家之间接近 0。来源：Ka Man Lo et al. A Closer Look into Mixture-of-Experts in Large Language Models. Figure 1. <a href="https://arxiv.org/abs/2406.18219">arXiv:2406.18219</a>，<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>。</figcaption>
+</figure></div>
+    <div class="layout block"><div class="prose">
+<p>DeepSeekMoE 用细粒度专家和共享专家减少冗余。它屏蔽打分最高的一部分专家时，损失比 GShard×1.5 上升得快。作者据此认为专家冗余更少（Figure 4）。GShard×1.5 指专家宽度为 1.5 倍的 GShard 模型。</p>
+<h3 id="s5-3">5.3 路由器同质化</h3>
+<p>路由器同质化和路由崩塌方向相反。LongCat-Flash 报告 §3.1.3 写道：辅助损失的梯度占主导时，所有专家的路由器参数趋于相同，路由不再依赖输入（<a href="https://arxiv.org/abs/2509.01322">LongCat-Flash 2025</a>）。这时负载均衡，但条件计算失去作用。</p>
+<p>LongCat-Flash 用两个指标监控它：路由器权重向量之间的平均余弦相似度；梯度范数比 \(R_{g}\)，即辅助损失与语言模型损失对平均打分 \(P\) 的梯度范数之比。报告建议选辅助损失系数，让 \(R_{g}\) 小于 0.1。</p>
+<h3 id="s5-4">5.4 logit 增大与 MoE 层激活离群值</h3>
+<p>ST-MoE 发现路由器 logit 会增大，在低精度下引起舍入误差和发散（<a href="https://arxiv.org/abs/2202.08906">ST-MoE 2022</a>）。它的 z-loss 惩罚过大的 logit：</p>
+<div class="equation">\[ L_{z} = \frac{1}{M} \sum_{t=1}^{M} \left( \log \sum_{i=1}^{N} e^{z_{t,i}} \right)^{2} \]</div>
+<p>稳定性实验用一个计算量和 T5-XL 相当的稀疏模型。Table 4：基线 6 次运行中 4 次稳定，质量 -1.755 ± 0.02；加 z-loss 后 3 次中 3 次稳定，质量 -1.741 ± 0.02。质量是负对数 PPL，越大越好。两者的差在误差范围内。OLMoE 用 z-loss 系数 0.001，Figure 11 显示 loss spike 更少。DeepSeek-V3、DeepSeek-V4、Kimi K3 的报告正文没有写 z-loss。</p>
+<p>MoE 层激活离群值是另一个问题。DeepSeek-V4 §4.2.3 写道：loss spike 总和 MoE 层的离群值一起出现，路由机制本身加剧了离群值。它从两个方向处理，原文是“breaking the vicious cycle induced by routing, and directly suppressing anomalous values”：</p>
+<ol type="1">
+<li>Anticipatory Routing。第 \(s\) 步用当前参数 \(\theta_{s}\) 算特征，用旧参数 \(\theta_{s - \Delta s}\) 算路由索引。额外墙钟时间约 20%。DeepSeek-V4 只在检测到 spike 时短暂回滚并开启它，所以整体开销可以忽略。</li>
+<li>SwiGLU 限幅。SwiGLU 是 FFN 的一种激活函数。线性分量限制在 -10 到 10，门控分量上限 10。</li>
+</ol>
+<p>报告说，这两个方法为什么有效仍是开放问题。Kimi K3 用 SiTU-GLU 给专家输出设上界 100（§2.3.2）。LongCat-Flash 用 hidden z-loss 压制大幅激活。</p>
+<h3 id="s5-5">5.5 路由波动与训推路由不一致</h3>
+<p>本小节需要 RL 背景。</p>
+<p>路由波动指同一个 token 在训练中不断换专家。</p>
+<ol type="1">
+<li>StableMoE 在 BASE Layer 上测了验证集 token 最后一次换专家的时间：训练 20% 以后，40.9% 的 token 还会换专家；50% 以后 29.1%；80% 以后 15.4%（<a href="https://arxiv.org/abs/2204.08396">StableMoE 2022</a>，Figure 2）。它的修复方法是先学一个均衡的路由，蒸馏到一个轻量路由器，再冻结它。</li>
+<li>OLMoE §5 从反方向测了同一件事：训练 5000 步时，top-8 路由已有最多约 60% 与最终 checkpoint 一致；训练 40% 时约 80%。第 0 层最慢。</li>
+<li>GSPO 论文 §5.3 测到，48 层的 Qwen3-30B-A3B-Base 每次 RL 梯度更新后，同一个 rollout 样本约 10% 的激活专家改变。GRPO 需要 Routing Replay 才能让 MoE 的 RL 正常收敛。Routing Replay 缓存旧策略激活的专家，在算新策略的重要性比时重放它们（<a href="https://arxiv.org/abs/2507.18071">GSPO 2025</a>）。</li>
+<li>Step 3.5 Flash 在 mid-training 和 SFT 阶段冻结路由器权重，并关闭 EP 组损失。</li>
+</ol>
+<p>训推路由不一致指同一个 token 在推理引擎和训练框架中选了不同的专家。RL 用推理引擎生成 rollout，用训练框架算梯度。两套实现的数值差异会改变 top-k 选择。R3（Rollout Routing Replay）论文在 Qwen3-30B-A3B 上测到，约 10% 的路由器选了不同专家，94% 的 token 至少在一层选了不同专家。训推 KL 散度，MoE 是 1.535e-3，稠密的 Qwen3-8B 是 6.4e-4。R3 在推理时记录路由掩码，训练时重放它。这样 KL 降到 7.5e-4。SWE 任务上，GRPO 在约第 90 步崩溃。GRPO 加 R3 的 Pass@1 是 38.6，GRPO 的最好值是 31.8（<a href="https://arxiv.org/abs/2510.11370">R3 2025</a>）。</p>
+<p>两种现象都来自 top-k 的不连续性。打分的微小变化可以改变专家选择。专家选择改变后，输出跳变。</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s6">
+    <div class="layout block"><div class="prose">
+<h2 id="s6">6. 约束一：均衡和专家分工</h2>
+<p>均衡约束越强，专家越难分工。证据如下。</p>
+<ol type="1">
+<li>统计范围。<a href="https://arxiv.org/abs/2501.11873">Qwen 论文 Figure 1b</a>：micro-batch 均衡下，代码和数学数据上没有一个专家的选择频率超过 0.15。全局 batch 均衡下，数学数据上很多专家超过 0.2。<a href="https://arxiv.org/abs/2412.19437">DeepSeek-V3 Figure 9</a> 显示，16B 模型上偏置法的专家分工比辅助损失更强。</li>
+<li>路由器同质化。LongCat-Flash 观察到，辅助损失主导时路由不再依赖输入，见<a class="xref" href="#s5-3">第 5.3 节</a>。</li>
+<li>作者自述。OLMoE §4.1.6 写道，辅助损失限制了模型的灵活性，可能阻碍专家分工。Step 3.5 Flash §4.1.2 说，细粒度专家下 micro-batch 均衡过严，会阻碍专家分工。</li>
+</ol>
+<p>这些证据有两个限制。第一，专家分工用某领域上专家的选择频率测量。这个指标本身就是领域内的负载集中，全局 batch 均衡在构造上允许它。第二，每组对照同时改变了约束的范围和强度。所以证据只支持相关，不能证明因果。有一个专家分工指标不依赖负载：屏蔽专家后各领域损失的上升。DeepSeekMoE 用过这个指标。</p>
+<p>两者的冲突取决于均衡的统计范围。专家分工要求某类 token 集中到某些专家。均衡在一条序列内执行时，一条数学序列的 token 也必须平均分给所有专家。这时领域级分工不可能。均衡在全局 batch 上执行时，数学 token 可以集中，只要整个 batch 里其他 token 填满其他专家。所以<a class="xref" href="#s8">第 8 节</a>表中有 5 个模型在大范围上做专家级均衡。DeepSeek-V3、DeepSeek-V4、GLM-4.5 用偏置法，序列级辅助损失只保留系数 0.0001。Qwen3 和 Sigma-MoE-Tiny 用全局 batch 辅助损失。卡级均衡不同：Step 3.5 Flash 在 micro-batch 级另加 EP 组损失，见<a class="xref" href="#s7">第 7 节</a>。</p>
+<p>专家分工太强也会失效。Step 3.5 Flash §4.1.3 报告，细粒度专家可以专门处理高频 bigram，造成局部激活爆炸。</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s7">
+    <div class="layout block"><div class="prose">
+<h2 id="s7">7. 约束二：每张卡每一步均衡</h2>
+<p>专家并行把不同专家放在不同的卡上。每个 MoE 层做两次 all-to-all 通信：dispatch 把 token 发到专家所在的卡，combine 把结果发回。每张卡要等其他卡都算完，才能进入下一步。</p>
+<p>所以负载最多的卡决定每步耗时。BASE Layers 论文 §2 写道：“expert layer processing speed is limited by the slowest worker”。Ling 2.0 §5.6 写道，EP 组的时间受最慢的卡限制。EP 组越大，每张卡的专家越少，这个效应越强。</p>
+<p>这个约束的统计范围和<a class="xref" href="#s6">第 6 节</a>不同：</p>
+<ol type="1">
+<li>专家级均衡服务训练质量。它可以在全局 batch 上统计。</li>
+<li>卡级均衡服务每步耗时和显存。它在每一步、每个 micro-batch、每张卡上都必须成立。</li>
+</ol>
+<p>全局 batch 均衡只满足第 1 条，所以有的模型另加卡级损失，见<a class="xref" href="#s4-4">第 4.4 节</a>。</p>
+<p>卡级不均衡还影响显存。dropless 下，一张卡收到的 token 数没有上界。Megatron-LM 文档的显存表中，EP 下的峰值激活随均衡程度变化。Ling 2.0 因浅层不均衡调整了流水线切分，并接受了性能损失。</p>
+<p>推理时的专家负载分布和训练不同。SGLang 在 DeepSeek-V3 部署中测到，默认专家分布下 prefill 吞吐是每节点每秒 50,302 token，模拟完美的专家复制时是 59,337，DeepSeek 自己的 profile 是 62,713（<a href="https://lmsys.org/blog/2025-05-05-large-scale-ep/">SGLang 2025</a>）。本文据此算出，默认分布的吞吐比完美复制低约 15%。DeepSeek 的 EPLB 在推理时复制高负载的专家（<a href="https://github.com/deepseek-ai/EPLB">EPLB, GitHub deepseek-ai/EPLB</a>）。</p>
+<p>本文没有找到训练时卡级不均衡造成多少每步耗时损失的公开数字。</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s8">
+    <div class="layout block"><div class="prose">
+<h2 id="s8">8. 约束三：激活比例，以及前沿配方</h2>
+<p>下表来自各模型的技术报告和官方 <code>config.json</code>。激活比例写作 \(k/N\)。“—”表示本文在一手来源中没有查到。标“config”的格子只来自 <code>config.json</code>。这些字段可能是推理代码的开关，不能证明训练配方。</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>模型</th>
+<th>路由专家 / 激活</th>
+<th>\(k/N\)</th>
+<th>共享专家</th>
+<th>打分</th>
+<th>负载均衡</th>
+<th>前几层</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OLMoE-1B-7B（2024-09）</td>
+<td>64 / 8</td>
+<td>1/8</td>
+<td>0</td>
+<td>—</td>
+<td>辅助损失 0.01，z-loss 0.001</td>
+<td>0</td>
+</tr>
+<tr>
+<td>DeepSeek-V3（2024-12）</td>
+<td>256 / 8</td>
+<td>1/32</td>
+<td>1</td>
+<td>sigmoid</td>
+<td>偏置法 0.001，序列级辅助损失 0.0001</td>
+<td>3 层稠密</td>
+</tr>
+<tr>
+<td>Qwen3-235B-A22B（2025-05）</td>
+<td>128 / 8</td>
+<td>1/16</td>
+<td>0</td>
+<td>—</td>
+<td>全局 batch 辅助损失</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Kimi K2（2025-07）</td>
+<td>384 / 8</td>
+<td>1/48</td>
+<td>1</td>
+<td>sigmoid</td>
+<td>报告未写</td>
+<td>1 层稠密</td>
+</tr>
+<tr>
+<td>GLM-4.5（2025-08）</td>
+<td>160 / 8</td>
+<td>1/20</td>
+<td>1</td>
+<td>sigmoid</td>
+<td>偏置法 0.001，序列级辅助损失 0.0001</td>
+<td>3 层稠密</td>
+</tr>
+<tr>
+<td>gpt-oss-120b（2025-08）</td>
+<td>128 / 4</td>
+<td>1/32</td>
+<td>0</td>
+<td>选中专家内 softmax</td>
+<td>model card 未写</td>
+<td>0</td>
+</tr>
+<tr>
+<td>Sigma-MoE-Tiny（2025-12）</td>
+<td>96 / 1</td>
+<td>1/96</td>
+<td>—</td>
+<td>—</td>
+<td>全局 batch 辅助损失，渐进稀疏化</td>
+<td>前 8 层渐进稀疏化</td>
+</tr>
+<tr>
+<td>Step 3.5 Flash（2026-02）</td>
+<td>288 / 8</td>
+<td>1/36</td>
+<td>1</td>
+<td>—</td>
+<td>偏置法，EP 组损失 0.001</td>
+<td>—</td>
+</tr>
+<tr>
+<td>GLM-5（2026-02）</td>
+<td>256 / 8</td>
+<td>1/32</td>
+<td>1</td>
+<td>sigmoid（config）</td>
+<td><code>noaux_tc</code>（config）</td>
+<td>3 层稠密（config）</td>
+</tr>
+<tr>
+<td>Qwen3.5-397B-A17B（2026-02）</td>
+<td>512 / 10</td>
+<td>1/51</td>
+<td>1（config）</td>
+<td>—</td>
+<td>—</td>
+<td>0（config）</td>
+</tr>
+<tr>
+<td>DeepSeek-V4-Pro（2026-04）</td>
+<td>384 / 6</td>
+<td>1/64</td>
+<td>1</td>
+<td>sqrt(softplus)</td>
+<td>偏置法 0.001，序列级辅助损失 0.0001</td>
+<td>3 层 hash 路由</td>
+</tr>
+<tr>
+<td>Kimi K3（2026-07）</td>
+<td>896 / 16</td>
+<td>1/56</td>
+<td>2</td>
+<td>sigmoid</td>
+<td>分位数均衡</td>
+<td>1 层稠密</td>
+</tr>
+</tbody>
+</table></div>
+    </div></div>
+    <div class="layout block"><figure class="media">
+<img src="figures/recipes-n-vs-k-light.png" alt="上表各模型的路由专家数 N 和激活专家数 k，两轴都是对数轴" width="1320" height="840" loading="lazy" decoding="async">
+<figcaption>上表各模型的路由专家数 N 和激活专家数 k，两轴都是对数轴。虚线是 k/N 等于 1/8、1/32、1/64。橙点是 Sigma-MoE-Tiny，它的初步实验在 96 选 1 的设置下报告了浅层路由崩塌。灰色方块是 Shazeer 2017 Table 6 的设置。数据来自上表引用的技术报告和 config.json，本文重画。</figcaption>
+</figure></div>
+    <div class="layout block"><div class="prose">
+<p>从表中读出三点：</p>
+<ol type="1">
+<li>激活比例在下降，\(N\) 和 \(k\) 都在增加。\(k/N\) 从 OLMoE 的 1/8 降到 1/16 到 1/64，2026 年的 5 个模型在 1/32 到 1/64 之间。\(k\) 是 4 到 16，\(N\) 是 128 到 896。<a class="xref" href="#s3-2">第 3.2 节</a>的对照按 \(k/N\) 覆盖这个区间，但都是 \(k \le 4\)、单层或小模型。唯一的失效数字来自 \(k = 1\)、\(N = 96\) 的初步实验。Kimi K3 说 896 个专家时固定的更新率更难，但没有给失效数字。<a class="xref" href="#s3">第 3 节</a>的路由崩塌证据都来自 AdamW。Kimi K2、Kimi K3、Step 3.5 Flash 用 Muon。所以公开文献没有回答现有方法在前沿区间是否失效。另外，<a class="xref" href="#s3-1">第 3.1 节</a>的 MaxVio_batch 抽样下限随 \(q\) 变小而上升。</li>
+<li>12 个模型中有 4 个的报告写明用偏置法加一个小损失：DeepSeek-V3、GLM-4.5、DeepSeek-V4-Pro 加序列级辅助损失，Step 3.5 Flash 加 EP 组损失。GLM-5 只有 config 写了 <code>noaux_tc</code>。Qwen3 和 Sigma-MoE-Tiny 用全局 batch 辅助损失。两种做法的同规模对比见<a class="xref" href="#s4-3">第 4.3 节</a>：差别很小，都是单次运行。</li>
+<li>浅层的处理有分歧：0 层、1 层、3 层稠密，3 层 hash 路由，或渐进稀疏化。</li>
+</ol>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="s9">
+    <div class="layout block"><div class="prose">
+<h2 id="s9">9. 开放问题与单卡实验</h2>
+<h3 id="s9-1">9.1 开放问题</h3>
+<ol type="1">
+<li>在什么设置下，现有均衡方法在浅层失效？唯一的数据点是 Sigma-MoE-Tiny 的 \(k = 1\)、\(N = 96\)。\(k \ge 4\)、\(N \ge 128\) 的多层 Transformer 没有公开的逐层负载数据。需要的对照是固定 \(k/N\)、改变 \(k\)。它能区分“\(k = 1\)“和”\(k/N\) 小“两种解释。</li>
+<li>分位数均衡比偏置法好多少？Kimi K3 报告没有给同规模对比，也没有给偏置法在 896 个专家下失效的数字。对偶更新有三种：固定更新率、衰减更新率、一步取坐标最优。在低激活比例的浅层，哪一种先失效，没有数据。</li>
+<li><a class="xref" href="#s2-3">第 2.3 节</a>的反馈环和输入几何，哪个是浅层路由崩塌的主因？没有对照实验。</li>
+<li>DeepSeek-V4 为什么用 hash 层代替稠密层？为什么把 sigmoid 换成 sqrt(softplus)？报告都没有给原因。</li>
+<li>路由和 loss spike 的因果关系是什么？DeepSeek-V4 承认，Anticipatory Routing 为什么有效仍是开放问题。</li>
+<li>训练时卡级不均衡损失多少每步耗时？公开文献没有数字。</li>
+<li>Muon 类优化器下，均衡和死专家的行为是否不同？Kimi K2、Kimi K3、Step 3.5 Flash 都用 Muon。<a class="xref" href="#s3">第 3 节</a>的路由崩塌证据都来自 AdamW。</li>
+</ol>
+<h3 id="s9-2">9.2 1 张 A100 的复现实验</h3>
+<p>目标：在小模型上复现路由崩塌，区分<a class="xref" href="#s2-3">第 2.3 节</a>的两种解释，比较无均衡和三种均衡方法。</p>
+<p>设置：</p>
+<ol type="1">
+<li>底座用 nanoMoE（<a href="https://github.com/wolfecameron/nanoMoE">GitHub wolfecameron/nanoMoE</a>），MIT 许可。它的默认值会影响结果：每 2 层放一个 MoE 层，即 <code>stride=2</code>；用写法 B；默认开启容量，容量因子 1.25；词表 50304。本实验设 <code>stride=1</code>，关闭容量。</li>
+<li>模型：4 层 decoder，\(d_{\mathrm{model}} = 256\)，8 个专家，top-2，专家 FFN 维度 1024。数据 TinyStories。这个设置的 \(k/N\) 是 1/4，\(k = 2\)。它只检验<a class="xref" href="#s2-3">第 2.3 节</a>的两种解释，不检验约束三，也不能外推到<a class="xref" href="#s3-3">第 3.3 节</a>的 \(k = 1\)、1/96 区间。</li>
+<li>四组：无均衡；辅助损失 \(\alpha = 0.01\)；偏置法 \(u = 0.001\)；分位数均衡。偏置法和分位数均衡按第 4.5 和 4.6 节的公式写。</li>
+<li>两组机制对照，都不加均衡：第一组冻结专家，只训练路由器和其余参数；第二组先把路由器输入减去 batch 均值。</li>
+<li>每组 3 个种子。每 50 步记录每层每专家的 token 比例、MaxVio_batch、偏置的绝对值、专家激活 RMS、验证损失。</li>
+</ol>
+<p>算力：每 token 的 FLOPs 约为：</p>
+<div class="equation">\[ 6 \times \left( N_{\mathrm{active}} + V d \right) + 12 \, n_{\mathrm{layer}} \, n_{\mathrm{ctx}} \, d \]</div>
+<p>\(N_{\mathrm{active}}\) 是不含嵌入的激活参数，4 个 MoE 层时约 5.25M。\(V d\) 是输出层，50304 × 256 ≈ 12.9M。输出层和嵌入共享权重，也不减少这项计算量。\(n_{\mathrm{layer}}\) 是层数，\(n_{\mathrm{ctx}}\) 是上下文长度，\(d\) 是宽度。\(n_{\mathrm{ctx}} = 256\) 时，第二项约 3.1M。合计约 1.1e8 FLOPs/token。6 组 × 3 种子 × 1000 万 token，共 1.8e8 token，约 2e16 FLOPs。1 小时内完成需要每秒约 5 万 token。先跑 200 步测吞吐，再按测得的吞吐定 token 数。吞吐不够时，先减少机制对照的种子数。</p>
+<p>预注册：</p>
+<ol type="1">
+<li>复现判据。无均衡组某个 MoE 层的末期 MaxVio_batch 大于 1.0，3 个种子都满足，算“复现路由崩塌”。\(N = 8\)、\(k = 2\) 时，MaxVio_batch 的上限是 3。不满足时，后面的比较作废，改用 \(N = 32\)、\(k = 1\)。\(k = 1\) 时必须改用写法 A，否则路由器没有语言模型梯度。</li>
+<li>浅层预测。无均衡组第 0 层的末期 MaxVio_batch 比第 3 层大至少 0.5，3 个种子都满足，算成立。反过来成立，算推翻。其他情况记为“未决”，包括种子之间不一致。</li>
+<li>损失预测。无均衡组 3 个种子的平均验证损失比每种均衡组的平均值都高至少 0.05，算成立。有一组均衡组高于无均衡组，算推翻。其他情况记为“未决”。</li>
+<li>机制预测。冻结专家后，如果无均衡组第 0 层的末期 MaxVio_batch 仍大于 1.0，就推翻“专家学习是路由崩塌的必要条件”，并支持输入几何的解释。如果去均值后路由崩塌消失，说明共同分量是必要条件。两种解释都需要这个条件。所以去均值对照只检验它们共同的前提，不能区分它们。</li>
+<li>均衡方法比较。两两验证损失之差的 90% 置信区间完全落在 ±0.02 内，记为“无差别”。完全落在 ±0.02 外，记为“有差别”。其他情况记为“未决”。</li>
+</ol>
+<p>扩展：把 \(\alpha\) 从 0 扫到 0.1，画 PPL 对 MaxVio 的曲线。把第 0 层换成 hash 路由，看损失变化多少。</p>
+    </div></div>
+  </section>
+
+  <section class="chapter" aria-labelledby="refs">
+    <div class="layout block"><div class="prose footnotes">
+<h2 id="refs">参考文献</h2>
+<p>经典工作：</p>
+<ol type="1">
+<li>Shazeer et al. Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer. <a class="source-link" href="https://arxiv.org/abs/1701.06538">https://arxiv.org/abs/1701.06538</a> ，2017-01-23。</li>
+<li>Fedus et al. Switch Transformers. <a class="source-link" href="https://arxiv.org/abs/2101.03961">https://arxiv.org/abs/2101.03961</a> ，2021-01-11。</li>
+<li>Lewis et al. BASE Layers: Simplifying Training of Large, Sparse Models. <a class="source-link" href="https://arxiv.org/abs/2103.16716">https://arxiv.org/abs/2103.16716</a> ，2021-03-30。</li>
+<li>Roller et al. Hash Layers For Large Sparse Models. <a class="source-link" href="https://arxiv.org/abs/2106.04426">https://arxiv.org/abs/2106.04426</a> ，2021-06-08。</li>
+<li>Zoph et al. ST-MoE: Designing Stable and Transferable Sparse Expert Models. <a class="source-link" href="https://arxiv.org/abs/2202.08906">https://arxiv.org/abs/2202.08906</a> ，2022-02-17。</li>
+<li>Zhou et al. Mixture-of-Experts with Expert Choice Routing. <a class="source-link" href="https://arxiv.org/abs/2202.09368">https://arxiv.org/abs/2202.09368</a> ，2022-02-18。</li>
+<li>Dai et al. StableMoE: Stable Routing Strategy for Mixture of Experts. <a class="source-link" href="https://arxiv.org/abs/2204.08396">https://arxiv.org/abs/2204.08396</a> ，2022-04-18。</li>
+<li>Chi et al. On the Representation Collapse of Sparse Mixture of Experts. <a class="source-link" href="https://arxiv.org/abs/2204.09179">https://arxiv.org/abs/2204.09179</a> ，2022-04-20。</li>
+<li>Gale et al. MegaBlocks. <a class="source-link" href="https://arxiv.org/abs/2211.15841">https://arxiv.org/abs/2211.15841</a> ，2022-11-29。</li>
+<li>Dai et al. DeepSeekMoE. <a class="source-link" href="https://arxiv.org/abs/2401.06066">https://arxiv.org/abs/2401.06066</a> ，2024-01-11。</li>
+<li>Xue et al. OpenMoE. <a class="source-link" href="https://arxiv.org/abs/2402.01739">https://arxiv.org/abs/2402.01739</a> ，2024-01-29。</li>
+<li>DeepSeek-AI. DeepSeek-V2. <a class="source-link" href="https://arxiv.org/abs/2405.04434">https://arxiv.org/abs/2405.04434</a> ，2024-05-07。</li>
+<li>Lo et al. A Closer Look into Mixture-of-Experts in Large Language Models. <a class="source-link" href="https://arxiv.org/abs/2406.18219">https://arxiv.org/abs/2406.18219</a> ，2024-06-26。</li>
+<li>Wang et al. Auxiliary-Loss-Free Load Balancing Strategy for Mixture-of-Experts. <a class="source-link" href="https://arxiv.org/abs/2408.15664">https://arxiv.org/abs/2408.15664</a> ，2024-08-28。</li>
+<li>Muennighoff et al. OLMoE: Open Mixture-of-Experts Language Models. <a class="source-link" href="https://arxiv.org/abs/2409.02060">https://arxiv.org/abs/2409.02060</a> ，2024-09-03。</li>
+<li>Wang et al. ReMoE: Fully Differentiable Mixture-of-Experts with ReLU Routing. <a class="source-link" href="https://arxiv.org/abs/2412.14711">https://arxiv.org/abs/2412.14711</a> ，2024-12-19。</li>
+<li>DeepSeek-AI. DeepSeek-V3 Technical Report. <a class="source-link" href="https://arxiv.org/abs/2412.19437">https://arxiv.org/abs/2412.19437</a> ，2024-12-27。</li>
+</ol>
+<p>2025 到 2026 年：</p>
+<ol start="18" type="1">
+<li>Qiu et al. Demons in the Detail: On Implementing Load Balancing Loss for Training Specialized Mixture-of-Expert Models. <a class="source-link" href="https://arxiv.org/abs/2501.11873">https://arxiv.org/abs/2501.11873</a> ，2025-01-21。</li>
+<li>Sun. Binary-Integer-Programming Based Algorithm for Expert Load Balancing in Mixture-of-Experts Models. <a class="source-link" href="https://arxiv.org/abs/2502.15451">https://arxiv.org/abs/2502.15451</a> ，2025-02-21。</li>
+<li>Panda et al. Dense Backpropagation Improves Training for Sparse Mixture-of-Experts. <a class="source-link" href="https://arxiv.org/abs/2504.12463">https://arxiv.org/abs/2504.12463</a> ，2025-04-16。</li>
+<li>SGLang Team. Deploying DeepSeek with PD Disaggregation and Large-Scale Expert Parallelism. <a class="source-link" href="https://lmsys.org/blog/2025-05-05-large-scale-ep/">https://lmsys.org/blog/2025-05-05-large-scale-ep/</a> ，2025-05-05。</li>
+<li>Qwen Team. Qwen3 Technical Report. <a class="source-link" href="https://arxiv.org/abs/2505.09388">https://arxiv.org/abs/2505.09388</a> ，2025-05-14。</li>
+<li>Zheng et al. Group Sequence Policy Optimization. <a class="source-link" href="https://arxiv.org/abs/2507.18071">https://arxiv.org/abs/2507.18071</a> ，2025-07-24。</li>
+<li>Kimi Team. Kimi K2: Open Agentic Intelligence. <a class="source-link" href="https://arxiv.org/abs/2507.20534">https://arxiv.org/abs/2507.20534</a> ，2025-07-28。</li>
+<li>OpenAI. gpt-oss-120b &amp; gpt-oss-20b Model Card. <a class="source-link" href="https://arxiv.org/abs/2508.10925">https://arxiv.org/abs/2508.10925</a> ，2025-08-08。</li>
+<li>GLM Team. GLM-4.5. <a class="source-link" href="https://arxiv.org/abs/2508.06471">https://arxiv.org/abs/2508.06471</a> ，2025-08-08。</li>
+<li>Meituan LongCat Team. LongCat-Flash Technical Report. <a class="source-link" href="https://arxiv.org/abs/2509.01322">https://arxiv.org/abs/2509.01322</a> ，2025-09-01。</li>
+<li>Ma et al. Stabilizing MoE Reinforcement Learning by Aligning Training and Inference Routers. <a class="source-link" href="https://arxiv.org/abs/2510.11370">https://arxiv.org/abs/2510.11370</a> ，2025-10-13。</li>
+<li>Ling Team. Every Activation Boosted: Scaling General Reasoner to 1 Trillion Open Language Foundation (Ling 2.0). <a class="source-link" href="https://arxiv.org/abs/2510.22115">https://arxiv.org/abs/2510.22115</a> ，2025-10-25。</li>
+<li>Han and Zhong. A Theoretical Framework for Auxiliary-Loss-Free Load Balancing of Sparse Mixture-of-Experts in Large-Scale AI Models. <a class="source-link" href="https://arxiv.org/abs/2512.03915">https://arxiv.org/abs/2512.03915</a> ，2025-12-03。</li>
+<li>Sigma Team, Microsoft Research. Sigma-MoE-Tiny Technical Report. <a class="source-link" href="https://arxiv.org/abs/2512.16248">https://arxiv.org/abs/2512.16248</a> ，2025-12-18。</li>
+<li>StepFun Team. Step 3.5 Flash: Open Frontier-Level Intelligence with 11B Active Parameters. <a class="source-link" href="https://arxiv.org/abs/2602.10604">https://arxiv.org/abs/2602.10604</a> ，2026-02-11。</li>
+<li>GLM Team. GLM-5: from Vibe Coding to Agentic Engineering. <a class="source-link" href="https://arxiv.org/abs/2602.15763">https://arxiv.org/abs/2602.15763</a> ，2026-02-17。</li>
+<li>Sun et al. Expert Threshold Routing for Autoregressive Language Modeling with Dynamic Computation Allocation and Load Balancing. <a class="source-link" href="https://arxiv.org/abs/2603.11535">https://arxiv.org/abs/2603.11535</a> ，2026-03-12。</li>
+<li>DeepSeek-AI. DeepSeek-V4: Towards Highly Efficient Million-Token Context Intelligence. <a class="source-link" href="https://arxiv.org/abs/2606.19348">https://arxiv.org/abs/2606.19348</a> ，2026-04-26。</li>
+<li>Moonshot AI. Kimi K3: Open Frontier Intelligence. <a class="source-link" href="https://github.com/MoonshotAI/Kimi-K3/blob/3cb39dfd32/k3_tech_report.pdf">https://github.com/MoonshotAI/Kimi-K3/blob/3cb39dfd32/k3_tech_report.pdf</a> ，首次提交 2026-07-27，本文引用 2026-08-06 的版本。</li>
+</ol>
+<p>相关领域：</p>
+<ol start="37" type="1">
+<li>Lu et al. Dying ReLU and Initialization: Theory and Numerical Examples. <a class="source-link" href="https://arxiv.org/abs/1903.06733">https://arxiv.org/abs/1903.06733</a> ，2019-03-15。</li>
+<li>Dhariwal et al. Jukebox: A Generative Model for Music. <a class="source-link" href="https://arxiv.org/abs/2005.00341">https://arxiv.org/abs/2005.00341</a> ，2020-04-30。</li>
+<li>Huh et al. Straightening Out the Straight-Through Estimator. <a class="source-link" href="https://arxiv.org/abs/2305.08842">https://arxiv.org/abs/2305.08842</a> ，2023-05-15。</li>
+</ol>
+    </div></div>
+  </section>
+</main>
+</body>
+</html>
