@@ -77,45 +77,32 @@ Images should be placed as background atmosphere with strong black overlays. The
 
 ## Homepage Strategy
 
-The homepage is the public front door. It should feel like a mission cover, not a resume.
+The homepage is the public front door. It reads as a short letter to the visitor, not a mission cover and not a resume.
 
 ### Current Direction
 
-The homepage uses a large, slowly rotating 3D Moon built from NASA CGI Moon Kit texture and displacement maps. The Moon sits on the right side and is intentionally cropped so only part of the body is visible. This makes it feel like a massive celestial presence rather than a small decorative circle.
+The letter sits on the left in plain system sans text. The large, slowly rotating 3D Moon stays on the right, built from NASA CGI Moon Kit texture and displacement maps and intentionally cropped.
 
-The homepage message is intentionally short:
-
-```text
-Build great works.
-Do extraordinary things.
-```
-
-Supporting language should stay compact and directional:
-
-```text
-I build AI infrastructure and agent systems for a future where intelligence
-expands human capability beyond Earth.
-```
+The first screen is the whole page. It must not scroll vertically at common desktop and phone sizes.
 
 ### Content Hierarchy
 
-1. Brand: `Sense Wang`
-2. Navigation: `Writing / Will / GitHub / X`
-3. Small mission label: `AI Systems / Space Intelligence / Civilization`
-4. Main mission statement
-5. One supporting sentence
-6. Selected work list
-7. Quiet footer
+1. Greeting
+2. What I am learning now
+3. What I believe in, as a bulleted list
+4. An invitation to write, with the email address
+5. Signature
+
+Links to other pages sit in the top-right navigation. No other links or sections go on the page.
 
 ### What To Avoid On The Homepage
 
-- Long self-introduction
-- Dense project descriptions
-- Resume-like sections
+- Slogans and large headline statements
+- Project lists and resume-like sections
+- A brand mark or footer
 - Colorful value tags
 - Decorative moon, stars, rockets, or planets
 - Small complete moon icons or static circular moon stickers
-- Marketing hero layout with split cards
 - Anything that feels like a personal website template
 
 ## Will Page Strategy
