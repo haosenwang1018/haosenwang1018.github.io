@@ -141,6 +141,25 @@
       margin: 1.6em 0 0;
     }
 
+    .credit {
+      position: absolute;
+      right: 36px;
+      bottom: 30px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .credit a {
+      color: var(--muted);
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+    }
+
+    .credit a:hover {
+      color: var(--text);
+    }
+
     .sr-only {
       position: absolute;
       width: 1px;
@@ -174,6 +193,12 @@
       .page {
         padding: 18px 20px;
         gap: 10px;
+      }
+
+      .credit {
+        right: 20px;
+        bottom: 18px;
+        font-size: 11px;
       }
 
       .letter {
@@ -227,6 +252,10 @@
         padding-top: 8px;
         padding-bottom: 6px;
         gap: 6px;
+      }
+
+      .credit {
+        bottom: 6px;
       }
 
       .letter {
@@ -305,6 +334,8 @@
       </p>
       <p class="signature">Sense Wang</p>
     </main>
+
+    <p class="credit">Page inspired by <a href="https://nathanchen.me/">Nathan Chen</a></p>
   </div>
   <script type="module">
     import * as THREE from "./assets/three.module.js";
