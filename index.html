@@ -425,13 +425,13 @@
 
         const radius = width <= 820 ? 2.92 : Math.min(3.72, Math.max(2.96, frustumWidth * 0.31));
         moon.scale.setScalar(radius);
-        moon.position.set(frustumWidth / 2 + radius * (width <= 820 ? 0.16 : 0.14), width <= 820 ? 0.74 : -0.02, 0);
+        moon.position.set(frustumWidth / 2 + radius * (width <= 820 ? 0.16 : -0.4), width <= 820 ? 0.74 : -0.02, 0);
       }
 
       function render() {
         const delta = Math.min(clock.getDelta(), 0.05);
         if (!reduceMotion.matches) {
-          moon.rotation.y += delta * 0.014;
+          moon.rotation.y += delta * 0.028;
         }
         renderer.render(scene, camera);
         frameId = window.requestAnimationFrame(render);
